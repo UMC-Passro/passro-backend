@@ -4,5 +4,6 @@ public enum DeliveryState {
     WAIT,
     MATCHED,
     DELIVERING,
+    CONFIRM_REQUESTED,
     DELIVERED
 }
