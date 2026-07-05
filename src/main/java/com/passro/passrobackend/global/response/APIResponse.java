@@ -12,4 +12,5 @@ public class APIResponse<T> {
     private final String message;
 
     private T result;
+
 }
