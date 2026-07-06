@@ -26,10 +26,6 @@ public class Delivery extends BaseEntity {
     private Place dest;
 
     private Boolean matched;
-    private String goodName;
-    private Long goodPrice;
-    private String goodSize;
-    private String picture;
     private String memo;
     private DeliveryState status;
     private Boolean terms;
