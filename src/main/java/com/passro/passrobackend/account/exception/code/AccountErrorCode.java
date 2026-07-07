@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum AccountErrorCode implements BaseErrorCode {
 
-    NOT_FOUNT(HttpStatus.NOT_FOUND,
+    NOT_FOUND(HttpStatus.NOT_FOUND,
             "ACCOUNT404_1",
             "해당 계정을 찾을 수 없습니다.");
 
