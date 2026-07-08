@@ -1,5 +1,7 @@
 package com.passro.passrobackend.global.response;
 
+import com.passro.passrobackend.global.code.BaseErrorCode;
+import com.passro.passrobackend.global.code.BaseSuccessCode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -13,4 +15,11 @@ public class APIResponse<T> {
 
     private T result;
 
+    public static <T> APIResponse<T> onSuccess(BaseSuccessCode code, T result){
+        return new APIResponse<>(true, code.getCode(), code.getMessage(), result);
+    }
+
+    public static <T> APIResponse<T> onFailure(BaseErrorCode code, T result){
+        return new APIResponse<>(false, code.getCode(), code.getMessage(), result);
+    }
 }

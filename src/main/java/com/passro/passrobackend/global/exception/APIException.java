@@ -1,13 +1,11 @@
 package com.passro.passrobackend.global.exception;
 
-import lombok.AllArgsConstructor;
+import com.passro.passrobackend.global.code.BaseErrorCode;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Getter
-@AllArgsConstructor
-public class APIException extends RuntimeException{
-    private final String code;
-    private final String message;
-
-    private final Object payload;
+@RequiredArgsConstructor
+public class APIException extends RuntimeException {
+    private final BaseErrorCode code;
 }
