@@ -1,4 +1,4 @@
-package com.passro.passrobackend.sender.code;
+package com.passro.passrobackend.shipper.code;
 
 import com.passro.passrobackend.global.code.BaseSuccessCode;
 import lombok.AllArgsConstructor;
@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 
 @AllArgsConstructor
 @Getter
-public enum SenderSuccessCode implements BaseSuccessCode {
+public enum ShipperSuccessCode implements BaseSuccessCode {
     OK(HttpStatus.OK,
             "ACCOUNT200_1",
             "요청 성공.");

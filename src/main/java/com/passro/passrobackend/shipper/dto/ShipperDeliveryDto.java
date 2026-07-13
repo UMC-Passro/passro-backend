@@ -1,4 +1,4 @@
-package com.passro.passrobackend.sender.dto;
+package com.passro.passrobackend.shipper.dto;
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
@@ -10,7 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 @Getter
-public class SenderDeliveryDto {
+public class ShipperDeliveryDto {
     private Account senderAccount;
     private Account shipperAccount;
 
@@ -20,8 +20,8 @@ public class SenderDeliveryDto {
     private DeliveryState deliveryState;
     private String memo;
 
-    public static SenderDeliveryDto fromDelivery(Delivery delivery) {
-        return SenderDeliveryDto.builder()
+    public static ShipperDeliveryDto fromDelivery(Delivery delivery) {
+        return ShipperDeliveryDto.builder()
                 .senderAccount(delivery.getSender())
                 .shipperAccount(delivery.getShipper())
                 .originPlace(delivery.getOrigin())

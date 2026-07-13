@@ -1,4 +1,4 @@
-package com.passro.passrobackend.sender.service;
+package com.passro.passrobackend.shipper.service;
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
@@ -8,17 +8,14 @@ import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryGoodInfoRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryInfoRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class SenderService {
+public class ShipperService {
     private final DeliveryRepository deliveryRepository;
     private final DeliveryInfoRepository deliveryInfoRepository;
     private final DeliveryGoodInfoRepository deliveryGoodInfoRepository;
