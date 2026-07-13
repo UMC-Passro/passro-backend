@@ -1,11 +1,9 @@
 package com.passro.passrobackend.file.controller;
 
-import com.passro.passrobackend.account.exception.code.AccountSuccessCode;
-import com.passro.passrobackend.delivery.service.S3Service;
+import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.file.exception.code.FileSuccessCode;
 import com.passro.passrobackend.global.response.APIResponse;
 import lombok.AllArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
