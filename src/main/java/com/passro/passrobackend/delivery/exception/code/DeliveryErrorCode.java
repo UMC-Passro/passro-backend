@@ -14,6 +14,6 @@ public enum DeliveryErrorCode implements BaseErrorCode {
             "해당 배송을 찾을 수 없습니다.");
 
     private final HttpStatus status;
-    private final String message;
     private final String code;
+    private final String message;
 }

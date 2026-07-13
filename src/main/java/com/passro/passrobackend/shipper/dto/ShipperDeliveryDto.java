@@ -11,6 +11,8 @@ import lombok.*;
 @Builder
 @Getter
 public class ShipperDeliveryDto {
+    private Long id;
+
     private Account senderAccount;
     private Account shipperAccount;
 
@@ -22,6 +24,7 @@ public class ShipperDeliveryDto {
 
     public static ShipperDeliveryDto fromDelivery(Delivery delivery) {
         return ShipperDeliveryDto.builder()
+                .id(delivery.getId())
                 .senderAccount(delivery.getSender())
                 .shipperAccount(delivery.getShipper())
                 .originPlace(delivery.getOrigin())

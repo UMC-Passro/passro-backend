@@ -20,8 +20,8 @@ public class ShipperService {
     private final DeliveryInfoRepository deliveryInfoRepository;
     private final DeliveryGoodInfoRepository deliveryGoodInfoRepository;
 
-    public List<Delivery> listAllBySender(Account account) {
-        return deliveryRepository.findAllBySender(account);
+    public List<Delivery> listAllByShipper(Account account) {
+        return deliveryRepository.findAllByShipper(account);
     }
 
     public Delivery getDeliveryById(Account shipper, Long id){

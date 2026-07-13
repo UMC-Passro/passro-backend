@@ -14,4 +14,6 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
     List<Delivery> findAllBySender(Account sender);
 
     List<Delivery> findAllByStatus(DeliveryState status);
+
+    List<Delivery> findAllByShipper(Account shipper);
 }
