@@ -16,13 +16,19 @@ import org.springframework.web.bind.annotation.*;
 public class ShipperController {
     private final ShipperService shipperService;
 
-    @GetMapping("/delivery")
+    @GetMapping("/matched")
+    @ResponseBody
+    public APIResponse<?> listMatched(@AuthenticationPrincipal Account account) {
+        return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperService.listMatchRequested().stream().map(ShipperDeliveryDto::fromDelivery).toList());
+    }
+
+    @GetMapping("/")
     @ResponseBody
     public APIResponse<?> listDelivery(@AuthenticationPrincipal Account account) {
          return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperService.listAllBySender(account).stream().map(ShipperDeliveryDto::fromDelivery).toList());
     }
 
-    @GetMapping("/delivery/{deliveryId}")
+    @GetMapping("/{deliveryId}/")
     @ResponseBody
     public APIResponse<?> getDelivery(@AuthenticationPrincipal Account account, @PathVariable("deliveryId") Long deliveryId) {
         Delivery delivery = shipperService.getDeliveryById(account, deliveryId);
@@ -30,37 +36,24 @@ public class ShipperController {
         return APIResponse.onSuccess(ShipperSuccessCode.OK, ShipperDeliveryDto.fromDelivery(delivery));
     }
 
-    @GetMapping("/matched")
-    @ResponseBody
-    public APIResponse<?> getMatched(@AuthenticationPrincipal Account account) {
-        return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperService.listMatchRequested().stream().map(ShipperDeliveryDto::fromDelivery).toList());
-    }
-
-    @PostMapping("/matched/{deliveryId}")
+    @PatchMapping("/{deliveryId}/matched")
     @ResponseBody
     public APIResponse<?> matchAccept(@AuthenticationPrincipal Account account, @PathVariable("deliveryId") Long deliveryId) {
         shipperService.matchAccept(account, deliveryId);
         return APIResponse.onSuccess(ShipperSuccessCode.OK, null);
     }
 
-    @PostMapping("/acquire/{deliveryId}")
+    @PatchMapping("/{deliveryId}/acquire")
     @ResponseBody
     public APIResponse<?> acquireAccept(@AuthenticationPrincipal Account account, @PathVariable("deliveryId") Long deliveryId) {
         shipperService.acquireAccept(account, deliveryId);
         return APIResponse.onSuccess(ShipperSuccessCode.OK, null);
     }
 
-    @PostMapping("/confirm/{deliveryId}")
+    @PatchMapping("/{deliveryId}/confirm")
     @ResponseBody
     public APIResponse<?> acquireConfirm(@AuthenticationPrincipal Account account, @PathVariable("deliveryId") Long deliveryId) {
         shipperService.acquireConfirm(account, deliveryId);
-        return APIResponse.onSuccess(ShipperSuccessCode.OK, null);
-    }
-
-    @PostMapping("/complete/{deliveryId}")
-    @ResponseBody
-    public APIResponse<?> acquireComplete(@AuthenticationPrincipal Account account, @PathVariable("deliveryId") Long deliveryId) {
-        shipperService.acquireComplete(account, deliveryId);
         return APIResponse.onSuccess(ShipperSuccessCode.OK, null);
     }
 }

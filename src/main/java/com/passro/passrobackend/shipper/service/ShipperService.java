@@ -50,10 +50,4 @@ public class ShipperService {
         delivery.setStatus(DeliveryState.CONFIRM_REQUESTED);
         deliveryRepository.save(delivery);
     }
-
-    public void acquireComplete(Account shipper, Long id){
-        Delivery delivery = deliveryRepository.findById(id).orElseThrow(() -> new DeliveryException(DeliveryErrorCode.NOT_FOUND));
-        delivery.setStatus(DeliveryState.DELIVERED);
-        deliveryRepository.save(delivery);
-    }
 }
