@@ -31,5 +31,8 @@ public class Delivery extends BaseEntity {
     private Boolean terms;
 
     @ManyToOne
-    private Account matchedAccount;
+    private Account sender;
+
+    @ManyToOne
+    private Account shipper;
 }
