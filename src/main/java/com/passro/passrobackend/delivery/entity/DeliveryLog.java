@@ -2,6 +2,7 @@ package com.passro.passrobackend.delivery.entity;
 
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.global.entity.BaseEntity;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -24,5 +25,7 @@ public class DeliveryLog extends BaseEntity {
     @ManyToOne
     private Delivery delivery;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private DeliveryLogType type;
 }
