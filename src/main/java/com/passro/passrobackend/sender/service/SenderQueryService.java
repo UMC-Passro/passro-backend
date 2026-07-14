@@ -32,6 +32,7 @@ public class SenderQueryService {
     private final DeliveryLogRepository deliveryLogRepository;
     private final DeliveryPointRepository deliveryPointRepository;
     private final DeliveryGoodInfoRepository deliveryGoodInfoRepository;
+    private final SenderDeliveryValidator senderDeliveryValidator;
 
     // 발송자 배송 목록 전체 조회
     public List<SenderDeliveryListDto> getSenders(Account sender) {
@@ -64,8 +65,7 @@ public class SenderQueryService {
 
     // 발송 단건 상세 정보 조회
     public SenderDeliveryDetailDto getDeliveryDetail(Account sender, Long deliveryId) {
-        Delivery delivery = getDeliveryOrThrow(deliveryId);
-        validateSenderOwnership(delivery, sender);
+        Delivery delivery = senderDeliveryValidator.getDeliveryAndValidateOwnership(deliveryId, sender);
 
         // 배송 타임라인을 날짜 오름차순으로 조회
         List<DeliveryLog> logs = deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(delivery);
@@ -75,8 +75,7 @@ public class SenderQueryService {
 
     // 발송 금액 정보 조회
     public SenderPaymentAmountDto getPaymentAmount(Account sender, Long deliveryId) {
-        Delivery delivery = getDeliveryOrThrow(deliveryId);
-        validateSenderOwnership(delivery, sender);
+        Delivery delivery = senderDeliveryValidator.getDeliveryAndValidateOwnership(deliveryId, sender);
 
         DeliveryPoint deliveryPoint = deliveryPointRepository.findByDelivery(delivery)
                 .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.NOT_FOUND));
@@ -84,17 +83,5 @@ public class SenderQueryService {
         return SenderPaymentAmountDto.fromEntity(deliveryPoint);
     }
 
-    // 배송 ID로 배송 조회 혹은 예외 발생
-    private Delivery getDeliveryOrThrow(Long deliveryId) {
-        return deliveryRepository.findById(deliveryId)
-                .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.NOT_FOUND));
-    }
-
-    // 발송자 권한 검증
-    private void validateSenderOwnership(Delivery delivery, Account sender) {
-        if (!delivery.getSender().getId().equals(sender.getId())) {
-            throw new DeliveryException(DeliveryErrorCode.FORBIDDEN_ACCESS);
-        }
-    }
 
 }

@@ -27,13 +27,18 @@ public class SenderCommandService {
     private final DeliveryRepository deliveryRepository;
     private final PlaceRepository placeRepository;
     private final DeliveryGoodInfoRepository deliveryGoodInfoRepository;
+    private final SenderDeliveryValidator senderDeliveryValidator;
 
     private final ApplicationEventPublisher eventPublisher;
 
     // 발송 완료 처리
     public void completeDelivery(Account sender, Long deliveryId) {
-        Delivery delivery = getDeliveryOrThrow(deliveryId);
-        validateSenderOwnership(delivery, sender);
+        Delivery delivery = senderDeliveryValidator.getDeliveryAndValidateOwnership(deliveryId, sender);
+
+        // '검수 요청' 상태에서만 배송 완료 처리 가능
+        if (delivery.getStatus() != DeliveryState.CONFIRM_REQUESTED) {
+            throw new DeliveryException(DeliveryErrorCode.INVALID_STATUS_FOR_COMPLETION);
+        }
 
         delivery.setStatus(DeliveryState.DELIVERED);
         deliveryRepository.save(delivery);
@@ -82,8 +87,7 @@ public class SenderCommandService {
 
     // 발송 약관 동의
     public void agreeTerms(Account sender, Long deliveryId) {
-        Delivery delivery = getDeliveryOrThrow(deliveryId);
-        validateSenderOwnership(delivery, sender);
+        Delivery delivery = senderDeliveryValidator.getDeliveryAndValidateOwnership(deliveryId, sender);
 
         delivery.setTerms(true);
         deliveryRepository.save(delivery);
@@ -91,8 +95,7 @@ public class SenderCommandService {
 
     // 발송 요청 취소 처리
     public void cancelDelivery(Account sender, Long deliveryId) {
-        Delivery delivery = getDeliveryOrThrow(deliveryId);
-        validateSenderOwnership(delivery, sender);
+        Delivery delivery = senderDeliveryValidator.getDeliveryAndValidateOwnership(deliveryId, sender);
 
         // 매칭이 되었다면, 취소 할 수 없음.
         if (delivery.getStatus() != DeliveryState.WAIT) {
@@ -106,17 +109,5 @@ public class SenderCommandService {
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.CANCELED));
     }
 
-    // 배송 ID로 배송 조회 혹은 예외 발생
-    private Delivery getDeliveryOrThrow(Long deliveryId) {
-        return deliveryRepository.findById(deliveryId)
-                .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.NOT_FOUND));
-    }
-
-    // 발송자 권한 검증
-    private void validateSenderOwnership(Delivery delivery, Account sender) {
-        if (!delivery.getSender().getId().equals(sender.getId())) {
-            throw new DeliveryException(DeliveryErrorCode.FORBIDDEN_ACCESS);
-        }
-    }
 
 }

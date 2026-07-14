@@ -17,7 +17,10 @@ public enum DeliveryErrorCode implements BaseErrorCode {
             "해당 배송에 대한 접근 권한이 없습니다."),
     CANNOT_CANCEL(HttpStatus.BAD_REQUEST,
             "DELIVERY400_1",
-            "매칭이 진행된 발송은 취소할 수 없습니다.");
+            "매칭이 진행된 발송은 취소할 수 없습니다."),
+    INVALID_STATUS_FOR_COMPLETION(HttpStatus.BAD_REQUEST,
+            "DELIVERY400_2",
+            "배송 완료 처리를 할 수 없는 상태입니다.");
 
     private final HttpStatus status;
     private final String code;
