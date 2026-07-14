@@ -4,7 +4,7 @@ services:
     container_name: passro-db
     restart: unless-stopped
     env_file:
-      - .env.example
+      - .env
     networks:
       - passro-network
     environment:
@@ -35,7 +35,7 @@ services:
       db:
         condition: service_healthy
     env_file:
-      - .env.example
+      - .env
     environment:
       DATABASE_URL: "jdbc:mysql://passro-db:3306/${MYSQL_DATABASE}"
       DATABASE_USERNAME: "${MYSQL_USER}"
