@@ -1,0 +1,31 @@
+name: Continuous Deploy
+on:
+    workflow_dispatch:
+    push:
+        branches:
+        - deploy
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Deploy
+              uses: appleboy/ssh-action@master
+              with:
+                  host: ${{ secrets.REMOTE_IP }}
+                  username: ${{ secrets.REMOTE_SSH_ID }}
+                  key: ${{ secrets.REMOTE_SSH_KEY }}
+                  port: ${{ secrets.REMOTE_SSH_PORT }}
+                  script: |
+                    cd passro-backend
+                    git pull
+                    rm .env
+                    cat > .env <<EOF
+                      MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
+                      MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
+                      MYSQL_USER=${{ secrets.MYSQL_USER }}
+                      MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+                      DATABASE_URL=${{ secrets.DATABASE_URL }}
+                    EOF
+                    docker build -t passro-backend:latest .
+                    docker compose down
+                    docker compose up -d
