@@ -2,61 +2,35 @@ package com.passro.passrobackend.sender.service;
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
-import com.passro.passrobackend.delivery.entity.DeliveryLog;
-import com.passro.passrobackend.delivery.entity.DeliveryPoint;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.event.DeliveryLogEvent;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
-import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
-import com.passro.passrobackend.delivery.repository.DeliveryPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
-import com.passro.passrobackend.sender.dto.SenderDeliveryDetailDto;
-import com.passro.passrobackend.sender.dto.SenderPaymentAmountDto;
+import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
+import com.passro.passrobackend.delivery.repository.DeliveryGoodInfoRepository;
+import com.passro.passrobackend.place.entity.Place;
+import com.passro.passrobackend.place.repository.PlaceRepository;
+import com.passro.passrobackend.sender.dto.SenderDeliveryCreateRequestDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
+// 발송 관련 DB 수정 (INSERT, UPDATE, DELETE) 관련 Service
 @Service
 @RequiredArgsConstructor
-public class SenderService {
+@Transactional
+public class SenderCommandService {
 
     private final DeliveryRepository deliveryRepository;
-    private final DeliveryLogRepository deliveryLogRepository;
-    private final DeliveryPointRepository deliveryPointRepository;
+    private final PlaceRepository placeRepository;
+    private final DeliveryGoodInfoRepository deliveryGoodInfoRepository;
 
     private final ApplicationEventPublisher eventPublisher;
 
-    // 발송 단건 상세 정보 조회
-    @Transactional(readOnly = true)
-    public SenderDeliveryDetailDto getDeliveryDetail(Account sender, Long deliveryId) {
-        Delivery delivery = getDeliveryOrThrow(deliveryId);
-        validateSenderOwnership(delivery, sender);
-
-        // 배송 타임라인을 날짜 오름차순으로 조회
-        List<DeliveryLog> logs = deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(delivery);
-
-        return SenderDeliveryDetailDto.fromEntity(delivery, logs);
-    }
-
-    // 발송 금액 정보 조회
-    @Transactional(readOnly = true)
-    public SenderPaymentAmountDto getPaymentAmount(Account sender, Long deliveryId) {
-        Delivery delivery = getDeliveryOrThrow(deliveryId);
-        validateSenderOwnership(delivery, sender);
-
-        DeliveryPoint deliveryPoint = deliveryPointRepository.findByDelivery(delivery)
-                .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.NOT_FOUND));
-
-        return SenderPaymentAmountDto.fromEntity(deliveryPoint);
-    }
-
     // 발송 완료 처리
-    @Transactional
     public void completeDelivery(Account sender, Long deliveryId) {
         Delivery delivery = getDeliveryOrThrow(deliveryId);
         validateSenderOwnership(delivery, sender);
@@ -68,8 +42,45 @@ public class SenderService {
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.DONE));
     }
 
-    // 발송 약관 동의 변경 후 저장
-    @Transactional
+    // 배송 요청 생성
+    public Long createDelivery(Account sender, SenderDeliveryCreateRequestDto request) {
+        // 출발지 및 도착지 Place 엔티티 생성/저장
+        // TODO: 주소 정책 확정 전까지 임시 생성 로직을 사용합니다. (2026-07-14 기준)
+        Place origin = Place.builder().address(request.getOriginAddress()).build();
+        Place dest = Place.builder().address(request.getDestAddress()).build();
+        placeRepository.save(origin);
+        placeRepository.save(dest);
+
+        // 배송 (Delivery) 엔티티 생성 및 저장
+        Delivery delivery = Delivery.builder()
+                .sender(sender)
+                .origin(origin)
+                .dest(dest)
+                .memo(request.getMemo())
+                .status(DeliveryState.WAIT)
+                .terms(false)
+                .matched(false)
+                .build();
+        deliveryRepository.save(delivery);
+
+        // 배송 물품 정보 (DeliveryGoodInfo) 생성 및 저장
+        DeliveryGoodInfo goodInfo = DeliveryGoodInfo.builder()
+                .delivery(delivery)
+                .name(request.getName())
+                .price(request.getPrice())
+                .size(request.getSize()) // TODO: 배송 사이즈는 enum으로 관리 고려 중입니다.
+                .picture(request.getPicture())
+                .build();
+        deliveryGoodInfoRepository.save(goodInfo);
+
+        // 배송 요청 로그 저장
+        eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.SEND_REQUEST));
+
+        // 생성된 배송 정보 id return
+        return delivery.getId();
+    }
+
+    // 발송 약관 동의
     public void agreeTerms(Account sender, Long deliveryId) {
         Delivery delivery = getDeliveryOrThrow(deliveryId);
         validateSenderOwnership(delivery, sender);
@@ -79,7 +90,6 @@ public class SenderService {
     }
 
     // 발송 요청 취소 처리
-    @Transactional
     public void cancelDelivery(Account sender, Long deliveryId) {
         Delivery delivery = getDeliveryOrThrow(deliveryId);
         validateSenderOwnership(delivery, sender);
