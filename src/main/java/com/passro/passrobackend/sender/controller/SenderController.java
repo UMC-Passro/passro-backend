@@ -3,6 +3,9 @@ package com.passro.passrobackend.sender.controller;
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.global.response.APIResponse;
 import com.passro.passrobackend.sender.code.SenderSuccessCode;
+import com.passro.passrobackend.sender.dto.SenderDeliveryDetailDto;
+import com.passro.passrobackend.sender.dto.SenderPaymentAmountDto;
+import com.passro.passrobackend.sender.service.SenderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class SenderController {
 
+    private final SenderService senderService;
+
     // 발송자 발송 조회
     @GetMapping
     public APIResponse<String> getSenders(@AuthenticationPrincipal Account account) {
@@ -25,16 +30,16 @@ public class SenderController {
 
     // 발송자 배송 단건 조회
     @GetMapping("/{deliveryId}")
-    public APIResponse<String> getSenderById(@AuthenticationPrincipal Account account,
-                                             @PathVariable Long deliveryId) {
-        return APIResponse.onSuccess(SenderSuccessCode.OK, null);
+    public APIResponse<SenderDeliveryDetailDto> getSenderById(@AuthenticationPrincipal Account account,
+                                                             @PathVariable Long deliveryId) {
+        return APIResponse.onSuccess(SenderSuccessCode.OK, senderService.getDeliveryDetail(account, deliveryId));
     }
 
     // 결제 금액 조회
     @GetMapping("/{deliveryId}/payment")
-    public APIResponse<String> getPaymentAmount(@AuthenticationPrincipal Account account,
-                                                @PathVariable Long deliveryId) {
-        return APIResponse.onSuccess(SenderSuccessCode.OK, null);
+    public APIResponse<SenderPaymentAmountDto> getPaymentAmount(@AuthenticationPrincipal Account account,
+                                                                @PathVariable Long deliveryId) {
+        return APIResponse.onSuccess(SenderSuccessCode.OK, senderService.getPaymentAmount(account, deliveryId));
     }
 
     // 배송 요청
@@ -47,6 +52,7 @@ public class SenderController {
     @PatchMapping("/{deliveryId}/complete")
     public APIResponse<String> completeDelivery(@AuthenticationPrincipal Account account,
                                                 @PathVariable Long deliveryId) {
+        senderService.completeDelivery(account, deliveryId);
         return APIResponse.onSuccess(SenderSuccessCode.OK, null);
     }
 
@@ -54,6 +60,7 @@ public class SenderController {
     @PatchMapping("/{deliveryId}/terms")
     public APIResponse<String> agreeTerms(@AuthenticationPrincipal Account account,
                                           @PathVariable Long deliveryId) {
+        senderService.agreeTerms(account, deliveryId);
         return APIResponse.onSuccess(SenderSuccessCode.OK, null);
     }
 
@@ -61,6 +68,8 @@ public class SenderController {
     @PatchMapping("/{deliveryId}/cancel")
     public APIResponse<String> cancelDelivery(@AuthenticationPrincipal Account account,
                                               @PathVariable Long deliveryId) {
+        senderService.cancelDelivery(account, deliveryId);
         return APIResponse.onSuccess(SenderSuccessCode.OK, null);
     }
+
 }

@@ -5,5 +5,6 @@ public enum DeliveryLogType {
     MATCHED,
     PICKED_UP,
     DELIVERED,
-    DONE
+    DONE,
+    CANCELED
 }

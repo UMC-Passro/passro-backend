@@ -25,7 +25,7 @@ public class ShipperController {
     @GetMapping("/")
     @ResponseBody
     public APIResponse<?> listDelivery(@AuthenticationPrincipal Account account) {
-         return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperService.listAllBySender(account).stream().map(ShipperDeliveryDto::fromDelivery).toList());
+         return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperService.listAllByShipper(account).stream().map(ShipperDeliveryDto::fromDelivery).toList());
     }
 
     @GetMapping("/{deliveryId}/")
