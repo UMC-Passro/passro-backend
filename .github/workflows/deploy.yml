@@ -19,11 +19,13 @@ jobs:
                     cd passro-backend
                     git pull
                     rm .env
-                    echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" > .env
-                    echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env
-                    echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env
-                    echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env
-                    echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+                    cat > .env <<EOF
+                      MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
+                      MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
+                      MYSQL_USER=${{ secrets.MYSQL_USER }}
+                      MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+                      DATABASE_URL=${{ secrets.DATABASE_URL }}
+                    EOF
                     docker build -t passro-backend:latest .
                     docker compose down
                     docker compose up -d
