@@ -14,5 +14,8 @@ public enum DeliveryState {
     CONFIRM_REQUESTED,
 
     // 검수 완료, 배달 끝
-    DELIVERED
+    DELIVERED,
+
+    // 취소 상태
+    CANCEL
 }
