@@ -41,6 +41,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation platform('software.amazon.awssdk:bom:2.31.67')
     implementation 'software.amazon.awssdk:s3'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 }
 
 tasks.named('test') {

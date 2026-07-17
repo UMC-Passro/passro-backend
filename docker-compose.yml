@@ -22,6 +22,20 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: passro-redis
+    restart: unless-stopped
+    networks:
+      - passro-network
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   passro-backend:
     build:
       context: .
@@ -34,19 +48,23 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - .env
     environment:
       DATABASE_URL: "jdbc:mysql://passro-db:3306/${MYSQL_DATABASE}"
       DATABASE_USERNAME: "${MYSQL_USER}"
       DATABASE_PASSWORD: "${MYSQL_PASSWORD}"
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       JAVA_OPTS: "${JAVA_OPTS}"
     ports:
       - "8080:8080"
 
 networks:
-    passro-network:
-        driver: bridge
+  passro-network:
+    driver: bridge
 
 volumes:
   db_data:
