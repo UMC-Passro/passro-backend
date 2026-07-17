@@ -17,10 +17,19 @@ public class AuthController {
 
     private final AccountService accountService;
 
-    @PostMapping("/mail")
+
+
+    @PostMapping("/mail/send")
     public APIResponse<Void> mailSend(@Valid @RequestBody AuthDTO.SendMail dto){
         BaseSuccessCode code = AccountSuccessCode.OK;
         accountService.sendMailMessage(dto);
+        return APIResponse.onSuccess(code, null);
+    }
+
+    @PostMapping("/mail/confirm")
+    public APIResponse<Void> confirmCode(@Valid @RequestBody AuthDTO.ConfirmCode dto){
+        BaseSuccessCode code = AccountSuccessCode.OK;
+        accountService.confirmCode(dto);
         return APIResponse.onSuccess(code, null);
     }
 }

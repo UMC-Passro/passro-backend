@@ -1,6 +1,9 @@
 package com.passro.passrobackend.account.service;
 
 import com.passro.passrobackend.account.dto.AuthDTO;
+import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.account.exception.AccountException;
+import com.passro.passrobackend.account.exception.code.AccountErrorCode;
 import com.passro.passrobackend.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -19,7 +22,7 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender javaMailSender;
-    private final StringRedisTemplate StringRedisTemplate;
+    private final StringRedisTemplate stringRedisTemplate;
     private final Random random;
 
     private static final String CODE_PREFIX = "email:verify:code:";
@@ -35,7 +38,7 @@ public class AccountService {
 
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
 
-        StringRedisTemplate.opsForValue().set(CODE_PREFIX + mail, code, CODE_TTL);
+        stringRedisTemplate.opsForValue().set(CODE_PREFIX + mail, code, CODE_TTL);
 
         // 메일을 받을 수신자 설정
         simpleMailMessage.setTo(mail);
@@ -46,6 +49,21 @@ public class AccountService {
 
         javaMailSender.send(simpleMailMessage);
 
+    }
+
+    public void confirmCode(AuthDTO.ConfirmCode dto){
+        String mail = dto.getMail();
+        String code = dto.getCode();
+
+        String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX+mail);
+
+        if(savedCode==null)
+            throw new AccountException(AccountErrorCode.MAIL_CODE_EXPIRED);
+        if(!savedCode.equals(code))
+            throw new AccountException(AccountErrorCode.MAIL_CODE_MISMATCH);
+
+        stringRedisTemplate.delete(CODE_PREFIX + mail);
+        stringRedisTemplate.opsForValue().set(CODE_PREFIX + mail, "true", CODE_TTL);
     }
 
     private String generateCode(){
