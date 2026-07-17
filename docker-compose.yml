@@ -58,7 +58,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: "${DATABASE_URL}"
+      DATABASE_URL: "jdbc:mysql://passro-db:3306/${MYSQL_DATABASE}"
       DATABASE_USERNAME: "${MYSQL_USER}"
       DATABASE_PASSWORD: "${MYSQL_PASSWORD}"
       REDIS_HOST: "redis"
