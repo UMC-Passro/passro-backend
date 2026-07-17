@@ -1,23 +1,36 @@
 package com.passro.passrobackend.account.dto;
 
+import com.passro.passrobackend.account.enums.AccountRole;
+import com.passro.passrobackend.place.entity.Place;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.ManyToOne;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 
+import java.time.LocalDate;
+
 public class AuthDTO {
 
     @Getter
     public static class Signup{
+        private Long id;
+
         private String email;
         private String password;
         private String nickname;
 
+        private Place place_id;
+
         private String name;
-        private String phoneNumber;
-        private String birthDay;
-        private String address;
+        private String phone;
+        private LocalDate birth;
+        private Boolean certified;
+        private Long point;
+        private String picture;
     }
 
     @Getter
