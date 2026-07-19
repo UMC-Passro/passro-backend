@@ -12,6 +12,7 @@ import com.passro.passrobackend.review.exception.ReviewException;
 import com.passro.passrobackend.review.exception.code.ReviewErrorCode;
 import com.passro.passrobackend.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,10 @@ public class ReviewService {
 
     @Transactional
     public void createReview(Account account, ReviewCreateRequestDto request) {
+        if (request.getDeliveryId() == null) {
+            throw new ReviewException(ReviewErrorCode.INVALID_REVIEW_DELIVERY_ID);
+        }
+
         if (request.getRating() == null || request.getRating() < 1 || request.getRating() > 5) {
             throw new ReviewException(ReviewErrorCode.INVALID_REVIEW_RATING);
         }
@@ -51,7 +56,11 @@ public class ReviewService {
                 .content(request.getContent())
                 .build();
 
-        reviewRepository.save(review);
+        try {
+            reviewRepository.save(review);
+        } catch (DataIntegrityViolationException e) {
+            throw new ReviewException(ReviewErrorCode.REVIEW_ALREADY_EXISTS);
+        }
     }
 
     public ReviewAverageResponseDto getAverageRating(Long userId) {
