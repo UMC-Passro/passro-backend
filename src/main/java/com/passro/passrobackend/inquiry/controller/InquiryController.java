@@ -6,6 +6,7 @@ import com.passro.passrobackend.inquiry.code.InquirySuccessCode;
 import com.passro.passrobackend.inquiry.dto.InquiryCreateRequestDto;
 import com.passro.passrobackend.inquiry.dto.InquiryResponseDto;
 import com.passro.passrobackend.inquiry.service.InquiryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,7 +28,7 @@ public class InquiryController {
     // 문의 작성
     @PostMapping
     public APIResponse<InquiryResponseDto> createInquiry(@AuthenticationPrincipal Account account,
-                                                         @RequestBody InquiryCreateRequestDto request) {
+                                                         @Valid @RequestBody InquiryCreateRequestDto request) {
         return APIResponse.onSuccess(InquirySuccessCode.CREATED, inquiryService.createInquiry(account, request));
     }
 

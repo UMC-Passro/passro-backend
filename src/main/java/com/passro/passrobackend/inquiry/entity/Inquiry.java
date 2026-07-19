@@ -20,11 +20,11 @@ public class Inquiry extends BaseEntity {
     private Long id;
 
     // 문의가 달린 배송 (ERD: delivery_id)
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Delivery delivery;
 
     // 문의자 (ERD: account_id)
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Account account;
 
     @Enumerated(EnumType.STRING)
