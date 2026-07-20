@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +27,6 @@ public class AccountService {
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender javaMailSender;
     private final StringRedisTemplate stringRedisTemplate;
-    private final Random random;
 
     private static final String CODE_PREFIX = "email:verify:code:";
     private static final String VERIFIED_PREFIX = "email:verify:done:";
@@ -68,8 +68,8 @@ public class AccountService {
     }
 
     private String generateCode(){
-        int code = 100000 + random.nextInt(900000);
-        return String.valueOf(code); // 100000 ~ 999999 return
+        int code = 100000 + ThreadLocalRandom.current().nextInt(900000);
+        return String.valueOf(code);
     }
 
     public void signup(AuthDTO.Signup dto){

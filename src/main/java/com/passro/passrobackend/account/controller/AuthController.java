@@ -32,4 +32,11 @@ public class AuthController {
         accountService.confirmCode(dto);
         return APIResponse.onSuccess(code, null);
     }
+
+    @PostMapping("/signup")
+    public APIResponse<Void> signup(@Valid @RequestBody AuthDTO.Signup dto){
+        BaseSuccessCode code = AccountSuccessCode.OK;
+        accountService.signup(dto);
+        return APIResponse.onSuccess(code, null);
+    }
 }
