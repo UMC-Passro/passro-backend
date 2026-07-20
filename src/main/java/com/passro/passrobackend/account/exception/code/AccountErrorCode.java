@@ -22,6 +22,19 @@ public enum AccountErrorCode implements BaseErrorCode {
             "ACCOUNT400_2",
             "인증 코드가 일치하지 않습니다."),
 
+    MAIL_NOT_CONFIRM(HttpStatus.BAD_REQUEST,
+            "ACCOUNT400_3",
+            "인증되지 않은 이메일입니다."),
+
+    DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST,
+            "ACCOUNT400_4",
+            "사용 중인 이메일입니다."),
+
+    DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST,
+            "ACCOUNT400_4",
+            "사용 중인 닉네임입니다..")
+
+
     ;
 
 

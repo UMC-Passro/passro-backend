@@ -17,8 +17,6 @@ public class AuthDTO {
 
     @Getter
     public static class Signup{
-        private Long id;
-
         private String email;
         private String password;
         private String nickname;
@@ -28,7 +26,6 @@ public class AuthDTO {
         private String name;
         private String phone;
         private LocalDate birth;
-        private Boolean certified;
         private Long point;
         private String picture;
     }

@@ -2,9 +2,11 @@ package com.passro.passrobackend.account.service;
 
 import com.passro.passrobackend.account.dto.AuthDTO;
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.account.enums.AccountRole;
 import com.passro.passrobackend.account.exception.AccountException;
 import com.passro.passrobackend.account.exception.code.AccountErrorCode;
 import com.passro.passrobackend.account.repository.AccountRepository;
+import com.passro.passrobackend.place.entity.Place;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
@@ -13,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.Random;
 
 @Service
@@ -26,11 +29,9 @@ public class AccountService {
     private final Random random;
 
     private static final String CODE_PREFIX = "email:verify:code:";
+    private static final String VERIFIED_PREFIX = "email:verify:done:";
     private static final Duration CODE_TTL = Duration.ofMinutes(5);
-
-    public void signup(AuthDTO.Signup dto){
-
-    }
+    private static final Duration VERIFIED_TTL = Duration.ofMinutes(30);
 
     public void sendMailMessage(AuthDTO.SendMail dto) {
         String mail = dto.getMail();
@@ -63,11 +64,42 @@ public class AccountService {
             throw new AccountException(AccountErrorCode.MAIL_CODE_MISMATCH);
 
         stringRedisTemplate.delete(CODE_PREFIX + mail);
-        stringRedisTemplate.opsForValue().set(CODE_PREFIX + mail, "true", CODE_TTL);
+        stringRedisTemplate.opsForValue().set(VERIFIED_PREFIX + mail, "true", VERIFIED_TTL);
     }
 
     private String generateCode(){
         int code = 100000 + random.nextInt(900000);
         return String.valueOf(code); // 100000 ~ 999999 return
+    }
+
+    public void signup(AuthDTO.Signup dto){
+        String isConfirm = stringRedisTemplate.opsForValue().get(VERIFIED_PREFIX+dto.getEmail());
+
+        if(isConfirm==null || !isConfirm.equals("true"))
+            throw new AccountException(AccountErrorCode.MAIL_NOT_CONFIRM);
+
+        if(accountRepository.existsByEmail(dto.getEmail()))
+            throw new AccountException(AccountErrorCode.DUPLICATE_EMAIL);
+
+        if(accountRepository.existsByNickname(dto.getNickname()))
+            throw new AccountException(AccountErrorCode.DUPLICATE_NICKNAME);
+
+        String password = passwordEncoder.encode(dto.getPassword());
+
+        accountRepository.save(Account.builder()
+                .email(dto.getEmail())
+                .password(password)
+                .nickname(dto.getNickname())
+                .place_id(dto.getPlace_id())
+                .name(dto.getName())
+                .phone(dto.getPhone())
+                .birth(dto.getBirth())
+                .certified(true)
+                .point(0L)
+                .picture(dto.getPicture())
+                .role(AccountRole.USER)
+                .build());
+
+        stringRedisTemplate.delete(VERIFIED_PREFIX + dto.getEmail());
     }
 }
