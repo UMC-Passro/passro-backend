@@ -6,6 +6,7 @@ import com.passro.passrobackend.account.enums.AccountRole;
 import com.passro.passrobackend.account.exception.AccountException;
 import com.passro.passrobackend.account.exception.code.AccountErrorCode;
 import com.passro.passrobackend.account.repository.AccountRepository;
+import com.passro.passrobackend.account.repository.UniversityRepository;
 import com.passro.passrobackend.place.entity.Place;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -24,6 +25,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class AccountService {
 
     private final AccountRepository accountRepository;
+    private final UniversityRepository universityRepository;
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender javaMailSender;
     private final StringRedisTemplate stringRedisTemplate;
@@ -35,6 +37,9 @@ public class AccountService {
 
     public void sendMailMessage(AuthDTO.SendMail dto) {
         String mail = dto.getMail();
+
+        validateUniversityEmail(mail);
+
         String code = generateCode();
 
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
@@ -52,6 +57,21 @@ public class AccountService {
 
     }
 
+    private void validateUniversityEmail(String email){
+        int atIndex = email.indexOf("@");
+        if(atIndex == -1 || atIndex == email.length()-1)
+            throw new AccountException(AccountErrorCode.INVALID_EMAIL_DOMAIN);
+
+        String domain = email.substring(atIndex+1);
+        if(!universityRepository.existsByEmailDomain(domain))
+            throw new AccountException(AccountErrorCode.INVALID_EMAIL_DOMAIN);
+    }
+
+    private String generateCode(){
+        int code = 100000 + ThreadLocalRandom.current().nextInt(900000);
+        return String.valueOf(code);
+    }
+
     public void confirmCode(AuthDTO.ConfirmCode dto){
         String mail = dto.getMail();
         String code = dto.getCode();
@@ -65,11 +85,6 @@ public class AccountService {
 
         stringRedisTemplate.delete(CODE_PREFIX + mail);
         stringRedisTemplate.opsForValue().set(VERIFIED_PREFIX + mail, "true", VERIFIED_TTL);
-    }
-
-    private String generateCode(){
-        int code = 100000 + ThreadLocalRandom.current().nextInt(900000);
-        return String.valueOf(code);
     }
 
     public void signup(AuthDTO.Signup dto){
