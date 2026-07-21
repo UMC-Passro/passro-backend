@@ -31,11 +31,11 @@ public enum AccountErrorCode implements BaseErrorCode {
             "사용 중인 이메일입니다."),
 
     DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST,
-            "ACCOUNT400_4",
+            "ACCOUNT400_5",
             "사용 중인 닉네임입니다.."),
 
     INVALID_EMAIL_DOMAIN(HttpStatus.BAD_REQUEST,
-            "Account400_5",
+            "Account400_6",
             "학생용 이메일이 아닙니다.")
 
 
