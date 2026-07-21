@@ -90,9 +90,10 @@ public class AccountService {
 
         if(savedCode==null)
             throw new AccountException(AccountErrorCode.MAIL_CODE_EXPIRED);
-        if(!savedCode.equals(code))
+        if(!savedCode.equals(code)) {
+            stringRedisTemplate.delete(CODE_PREFIX + mail);
             throw new AccountException(AccountErrorCode.MAIL_CODE_MISMATCH);
-
+        }
         stringRedisTemplate.delete(CODE_PREFIX + mail);
         stringRedisTemplate.opsForValue().set(VERIFIED_PREFIX + mail, "true", VERIFIED_TTL);
     }
