@@ -36,8 +36,11 @@ public enum AccountErrorCode implements BaseErrorCode {
 
     INVALID_EMAIL_DOMAIN(HttpStatus.BAD_REQUEST,
             "Account400_6",
-            "학생용 이메일이 아닙니다.")
+            "학생용 이메일이 아닙니다."),
 
+    MAIL_RESEND_TOO_FAST(HttpStatus.TOO_MANY_REQUESTS,
+            "Account400_7",
+            "잠시 후 다시 시도해주세요."),
 
     ;
 

@@ -34,18 +34,26 @@ public class AccountService {
     private static final String VERIFIED_PREFIX = "email:verify:done:";
     private static final Duration CODE_TTL = Duration.ofMinutes(5);
     private static final Duration VERIFIED_TTL = Duration.ofMinutes(30);
+    private static final Duration RESEND_COOLDOWN = Duration.ofSeconds(60);
+    private static final String COOLDOWN_PREFIX = "email:verify:cooldown:";
 
     public void sendMailMessage(AuthDTO.SendMail dto) {
         String mail = dto.getMail();
 
+        if (accountRepository.existsByEmail(mail))
+            throw new AccountException(AccountErrorCode.DUPLICATE_EMAIL);
+
         validateUniversityEmail(mail);
+
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(COOLDOWN_PREFIX + mail)))
+            throw new AccountException(AccountErrorCode.MAIL_RESEND_TOO_FAST);
 
         String code = generateCode();
 
-        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
-
         stringRedisTemplate.opsForValue().set(CODE_PREFIX + mail, code, CODE_TTL);
+        stringRedisTemplate.opsForValue().set(COOLDOWN_PREFIX + mail, "true", RESEND_COOLDOWN);
 
+        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
         // 메일을 받을 수신자 설정
         simpleMailMessage.setTo(mail);
         // 메일의 제목 설정
