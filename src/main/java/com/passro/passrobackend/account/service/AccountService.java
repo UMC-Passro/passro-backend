@@ -15,6 +15,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Random;
@@ -36,6 +37,7 @@ public class AccountService {
     private static final Duration VERIFIED_TTL = Duration.ofMinutes(30);
     private static final Duration RESEND_COOLDOWN = Duration.ofSeconds(60);
     private static final String COOLDOWN_PREFIX = "email:verify:cooldown:";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     public void sendMailMessage(AuthDTO.SendMail dto) {
         String mail = dto.getMail();
@@ -76,7 +78,7 @@ public class AccountService {
     }
 
     private String generateCode(){
-        int code = 100000 + ThreadLocalRandom.current().nextInt(900000);
+        int code = 100000 + SECURE_RANDOM.nextInt(900000);
         return String.valueOf(code);
     }
 
