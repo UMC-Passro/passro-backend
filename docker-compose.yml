@@ -66,6 +66,7 @@ services:
       REDIS_PASSWORD: "${REDIS_PASSWORD}"
       SMTP_USER_NAME: "${SMTP_USER_NAME}"
       SMTP_PASSWORD: "${SMTP_PASSWORD}"
+      JWT_SECRET: "${JWT_SECRET}"
       JAVA_OPTS: "${JAVA_OPTS}"
     ports:
       - "8080:8080"
