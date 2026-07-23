@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum ShipperSuccessCode implements BaseSuccessCode {
     OK(HttpStatus.OK,
-            "ACCOUNT200_1",
+            "SHIPPER200_1",
             "요청 성공.");
 
     private final HttpStatus status;

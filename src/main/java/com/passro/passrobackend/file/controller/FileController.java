@@ -21,6 +21,7 @@ import java.net.URL;
 
 import static com.passro.passrobackend.global.configuration.SwaggerErrorExamples.FILE_NOT_FOUND;
 import static com.passro.passrobackend.global.configuration.SwaggerErrorExamples.FILE_UPLOAD_FAILED;
+import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.FILE_URL;
 
 @RequestMapping("/file")
 @AllArgsConstructor
@@ -32,7 +33,8 @@ public class FileController {
     @GetMapping("{fileName}/upload")
     @Operation(summary = "파일 업로드 URL 발급", description = "파일을 직접 업로드할 수 있는 10분 유효한 사전 서명 URL을 발급합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "업로드 URL 발급 성공", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "200", description = "업로드 URL 발급 성공", useReturnTypeSchema = true,
+                    content = @Content(examples = @ExampleObject(name = "FILE200_1", summary = "업로드 URL 발급 성공", value = FILE_URL))),
             @ApiResponse(responseCode = "500", description = "업로드 URL 발급 실패",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
                             examples = @ExampleObject(name = "FILE500_1", summary = "업로드 URL 발급 실패", value = FILE_UPLOAD_FAILED)))
@@ -46,7 +48,8 @@ public class FileController {
     @GetMapping("{fileName}/download")
     @Operation(summary = "파일 다운로드 URL 발급", description = "파일을 직접 다운로드할 수 있는 10분 유효한 사전 서명 URL을 발급합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "다운로드 URL 발급 성공", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "200", description = "다운로드 URL 발급 성공", useReturnTypeSchema = true,
+                    content = @Content(examples = @ExampleObject(name = "FILE200_1", summary = "다운로드 URL 발급 성공", value = FILE_URL))),
             @ApiResponse(responseCode = "404", description = "파일을 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
                             examples = @ExampleObject(name = "FILE404_1", summary = "파일 정보 없음", value = FILE_NOT_FOUND)))
