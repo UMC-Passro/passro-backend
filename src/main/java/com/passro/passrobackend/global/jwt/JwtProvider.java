@@ -14,7 +14,7 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class JwtProvider {
 
-    private final JWTProperties jwtProperties;
+    private final JwtProperties jwtProperties;
 
     private SecretKey getSigninKey(){
         return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
@@ -48,7 +48,6 @@ public class JwtProvider {
         return Long.parseLong(parseClaims(token).getSubject());
     }
 
-    /** 토큰에서 role 추출 */
     public String getRole(String token) {
         return parseClaims(token).get("role", String.class);
     }

@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 @Configuration
 @ConfigurationProperties(prefix = "jwt")
-public class JWTProperties {
+public class JwtProperties {
     private String secret;
     private long accessTokenExpiration;
     private long refreshTokenExpiration;

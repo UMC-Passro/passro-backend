@@ -1,4 +1,4 @@
-package com.passro.passrobackend.global.configuration;
+package com.passro.passrobackend.global.configuration.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
