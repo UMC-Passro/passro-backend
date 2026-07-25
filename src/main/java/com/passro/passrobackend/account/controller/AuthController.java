@@ -1,13 +1,18 @@
 package com.passro.passrobackend.account.controller;
 
 import com.passro.passrobackend.account.dto.AuthReqDTO;
+import com.passro.passrobackend.account.dto.AuthResDTO;
 import com.passro.passrobackend.account.exception.code.AccountSuccessCode;
 import com.passro.passrobackend.account.service.AccountService;
 import com.passro.passrobackend.global.code.BaseSuccessCode;
+import com.passro.passrobackend.global.configuration.security.CustomUserDetails;
 import com.passro.passrobackend.global.response.APIResponse;
 import jakarta.validation.Valid;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import tools.jackson.core.ObjectReadContext;
 
 @RestController
 @RequiredArgsConstructor
@@ -39,6 +44,22 @@ public class AuthController {
         return APIResponse.onSuccess(code, null);
     }
 
-    @PostMapping("/sginin")
-    public APIResponse<Void>
+    @PostMapping("/login")
+    public APIResponse<AuthResDTO.TokenResponse> login(@Valid @RequestBody AuthReqDTO.Login dto){
+        BaseSuccessCode code = AccountSuccessCode.OK;
+        return APIResponse.onSuccess(code, accountService.login(dto));
+    }
+
+    @GetMapping("/logout")
+    public APIResponse<Void> logout(@AuthenticationPrincipal CustomUserDetails userDetails){
+        BaseSuccessCode code = AccountSuccessCode.OK;
+        accountService.logout(userDetails.getAccountId());
+        return APIResponse.onSuccess(code, null);
+    }
+
+    @GetMapping("/reissue")
+    public APIResponse<AuthResDTO.TokenResponse> reissue(@RequestHeader("Refresh-Token") String refreshToken){
+        BaseSuccessCode code = AccountSuccessCode.OK;
+        return APIResponse.onSuccess(code, accountService.reissueToken(refreshToken));
+    }
 }
