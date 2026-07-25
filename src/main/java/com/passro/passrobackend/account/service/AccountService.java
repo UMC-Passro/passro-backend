@@ -129,7 +129,6 @@ public class AccountService {
                 .email(dto.getEmail())
                 .password(password)
                 .nickname(dto.getNickname())
-                .place_id(dto.getPlace_id())
                 .name(dto.getName())
                 .phone(dto.getPhone())
                 .birth(dto.getBirth())

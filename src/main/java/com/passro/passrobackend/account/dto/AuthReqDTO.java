@@ -16,9 +16,6 @@ public class AuthReqDTO {
         private String email;
         private String password;
         private String nickname;
-
-        private Place place_id;
-
         private String name;
         private String phone;
         private LocalDate birth;

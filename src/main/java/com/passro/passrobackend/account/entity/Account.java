@@ -27,9 +27,6 @@ public class Account extends BaseEntity {
     @Column(nullable = false)
     private String nickname;
 
-    @ManyToOne
-    private Place place_id;
-
     private String name;
     private String phone;
     private LocalDate birth;
