@@ -9,6 +9,9 @@ import com.passro.passrobackend.global.configuration.security.CustomUserDetails;
 import com.passro.passrobackend.global.response.APIResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,8 +21,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AccountService accountService;
-
-
 
     @PostMapping("/mail/send")
     public APIResponse<Void> mailSend(@Valid @RequestBody AuthReqDTO.SendMail dto){
@@ -43,21 +44,25 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public APIResponse<AuthResDTO.TokenResponse> login(@Valid @RequestBody AuthReqDTO.Login dto){
+    public ResponseEntity<APIResponse<AuthResDTO.TokenResponse>> login(@Valid @RequestBody AuthReqDTO.Login dto){
         BaseSuccessCode code = AccountSuccessCode.OK;
-        return APIResponse.onSuccess(code, accountService.login(dto));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().getHeaderValue())
+                .body(APIResponse.onSuccess(code, accountService.login(dto)));
     }
 
-    @GetMapping("/logout")
+    @DeleteMapping("/logout")
     public APIResponse<Void> logout(@AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
         accountService.logout(userDetails.getAccountId());
         return APIResponse.onSuccess(code, null);
     }
 
-    @GetMapping("/reissue")
-    public APIResponse<AuthResDTO.TokenResponse> reissue(@RequestHeader("Refresh-Token") String refreshToken){
+    @PostMapping("/reissue")
+    public ResponseEntity<APIResponse<AuthResDTO.TokenResponse>> reissue(@Valid @RequestBody AuthReqDTO.ReIssue dto){
         BaseSuccessCode code = AccountSuccessCode.OK;
-        return APIResponse.onSuccess(code, accountService.reissueToken(refreshToken));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().getHeaderValue())
+                .body(APIResponse.onSuccess(code, accountService.reissueToken(dto)));
     }
 }

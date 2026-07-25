@@ -155,7 +155,9 @@ public class AccountService {
         stringRedisTemplate.delete(REFRESH_PREFIX + accountId);
     }
 
-    public AuthResDTO.TokenResponse reissueToken(String refreshToken){
+    public AuthResDTO.TokenResponse reissueToken(AuthReqDTO.ReIssue dto){
+        String refreshToken = dto.getRefreshToken();
+
         if(!jwtProvider.validateToken(refreshToken))
             throw new AccountException(AccountErrorCode.INVALID_REFRESH_TOKEN);
 

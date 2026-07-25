@@ -47,4 +47,11 @@ public class AuthReqDTO {
         @NotBlank(message = "비밀번호를 입력하세요.")
         private String password;
     }
+
+    @Getter
+    public static class ReIssue{
+
+        @NotBlank
+        private String refreshToken;
+    }
 }
