@@ -1,11 +1,9 @@
-package com.passro.passrobackend.account.dto;
+package com.passro.passrobackend.account.dto.authDTO;
 
-import com.passro.passrobackend.place.entity.Place;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
-import org.hibernate.sql.ast.spi.ExpressionReplacementWalker;
 
 import java.time.LocalDate;
 

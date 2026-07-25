@@ -1,4 +1,4 @@
-package com.passro.passrobackend.account.dto;
+package com.passro.passrobackend.account.dto.authDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

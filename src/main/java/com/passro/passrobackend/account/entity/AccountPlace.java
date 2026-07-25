@@ -16,11 +16,11 @@ public class AccountPlace {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToMany
+    @ManyToOne
     @JoinColumn(name = "account_id")
     private Account account;
 
-    @ManyToMany
+    @ManyToOne
     @JoinColumn(name = "place_id")
     private Place place;
 

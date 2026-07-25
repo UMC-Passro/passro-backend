@@ -1,7 +1,7 @@
 package com.passro.passrobackend.account.service;
 
-import com.passro.passrobackend.account.dto.AuthReqDTO;
-import com.passro.passrobackend.account.dto.AuthResDTO;
+import com.passro.passrobackend.account.dto.authDTO.AuthReqDTO;
+import com.passro.passrobackend.account.dto.authDTO.AuthResDTO;
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.account.enums.AccountRole;
 import com.passro.passrobackend.account.exception.AccountException;
