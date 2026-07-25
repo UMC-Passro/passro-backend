@@ -1,13 +1,12 @@
 package com.passro.passrobackend.account.service;
 
-import com.passro.passrobackend.account.dto.AuthDTO;
+import com.passro.passrobackend.account.dto.AuthReqDTO;
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.account.enums.AccountRole;
 import com.passro.passrobackend.account.exception.AccountException;
 import com.passro.passrobackend.account.exception.code.AccountErrorCode;
 import com.passro.passrobackend.account.repository.AccountRepository;
 import com.passro.passrobackend.account.repository.UniversityRepository;
-import com.passro.passrobackend.place.entity.Place;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
@@ -17,9 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.Duration;
-import java.time.LocalDate;
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +35,7 @@ public class AccountService {
     private static final String COOLDOWN_PREFIX = "email:verify:cooldown:";
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-    public void sendMailMessage(AuthDTO.SendMail dto) {
+    public void sendMailMessage(AuthReqDTO.SendMail dto) {
         String mail = dto.getMail();
 
         if (accountRepository.existsByEmail(mail))
@@ -82,7 +78,7 @@ public class AccountService {
         return String.valueOf(code);
     }
 
-    public void confirmCode(AuthDTO.ConfirmCode dto){
+    public void confirmCode(AuthReqDTO.ConfirmCode dto){
         String mail = dto.getMail();
         String code = dto.getCode();
 
@@ -98,7 +94,7 @@ public class AccountService {
         stringRedisTemplate.opsForValue().set(VERIFIED_PREFIX + mail, "true", VERIFIED_TTL);
     }
 
-    public void signup(AuthDTO.Signup dto){
+    public void signup(AuthReqDTO.Signup dto){
         String isConfirm = stringRedisTemplate.opsForValue().get(VERIFIED_PREFIX+dto.getEmail());
 
         if(isConfirm==null || !isConfirm.equals("true"))
