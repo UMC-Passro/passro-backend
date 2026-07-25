@@ -75,11 +75,18 @@ public class AccountService {
 
     private void validateUniversityEmail(String email){
         int atIndex = email.indexOf("@");
-        if(atIndex == -1 || atIndex == email.length()-1)
+        if (atIndex == -1 || atIndex == email.length() - 1)
             throw new AccountException(AccountErrorCode.INVALID_EMAIL_DOMAIN);
 
-        String domain = email.substring(atIndex+1);
-        if(!universityRepository.existsByEmailDomain(domain))
+        String domain = email.substring(atIndex + 1).toLowerCase();
+
+        boolean allowed = universityRepository.findAll().stream()
+                .anyMatch(university -> {
+                    String registered = university.getEmailDomain().toLowerCase();
+                    return domain.equals(registered) || domain.endsWith("." + registered);
+                });
+
+        if (!allowed)
             throw new AccountException(AccountErrorCode.INVALID_EMAIL_DOMAIN);
     }
 
