@@ -1,12 +1,15 @@
 package com.passro.passrobackend.account.service;
 
 import com.passro.passrobackend.account.dto.AuthReqDTO;
+import com.passro.passrobackend.account.dto.AuthResDTO;
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.account.enums.AccountRole;
 import com.passro.passrobackend.account.exception.AccountException;
 import com.passro.passrobackend.account.exception.code.AccountErrorCode;
 import com.passro.passrobackend.account.repository.AccountRepository;
 import com.passro.passrobackend.account.repository.UniversityRepository;
+import com.passro.passrobackend.global.jwt.JwtProperties;
+import com.passro.passrobackend.global.jwt.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
@@ -27,21 +30,28 @@ public class AccountService {
     private final JavaMailSender javaMailSender;
     private final StringRedisTemplate stringRedisTemplate;
 
+    private final JwtProvider jwtProvider;
+    private final JwtProperties jwtProperties;
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private static final String CODE_PREFIX = "email:verify:code:";
     private static final String VERIFIED_PREFIX = "email:verify:done:";
+    private static final String COOLDOWN_PREFIX = "email:verify:cooldown:";
+    private static final String REFRESH_PREFIX = "refresh:token:";
     private static final Duration CODE_TTL = Duration.ofMinutes(5);
     private static final Duration VERIFIED_TTL = Duration.ofMinutes(30);
     private static final Duration RESEND_COOLDOWN = Duration.ofSeconds(60);
-    private static final String COOLDOWN_PREFIX = "email:verify:cooldown:";
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+
 
     public void sendMailMessage(AuthReqDTO.SendMail dto) {
         String mail = dto.getMail();
 
+        validateUniversityEmail(mail);
+
         if (accountRepository.existsByEmail(mail))
             throw new AccountException(AccountErrorCode.DUPLICATE_EMAIL);
-
-        validateUniversityEmail(mail);
 
         if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(COOLDOWN_PREFIX + mail)))
             throw new AccountException(AccountErrorCode.MAIL_RESEND_TOO_FAST);
@@ -123,5 +133,45 @@ public class AccountService {
                 .build());
 
         stringRedisTemplate.delete(VERIFIED_PREFIX + dto.getEmail());
+    }
+
+    public AuthResDTO.TokenResponse login(AuthReqDTO.Login dto){
+        Account account = accountRepository.findByEmail(dto.getEmail())
+                .orElseThrow(()->new AccountException(AccountErrorCode.INVALID_CREDENTIALS));
+
+        if(!passwordEncoder.matches(dto.getPassword(), account.getPassword()))
+            throw new AccountException(AccountErrorCode.INVALID_CREDENTIALS);
+
+        return issueTokens(account);
+    }
+
+    public void logout(Long accountId) {
+        stringRedisTemplate.delete(REFRESH_PREFIX + accountId);
+    }
+
+    public AuthResDTO.TokenResponse reissueToken(String refreshToken){
+        if(!jwtProvider.validateToken(refreshToken))
+            throw new AccountException(AccountErrorCode.INVALID_REFRESH_TOKEN);
+
+        Long accountId = jwtProvider.getAccountId(refreshToken);
+        String savedToken = stringRedisTemplate.opsForValue().get(REFRESH_PREFIX + accountId);
+
+        if(savedToken == null || !savedToken.equals(refreshToken))
+            throw new AccountException(AccountErrorCode.INVALID_REFRESH_TOKEN);
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
+
+        return issueTokens(account);
+    }
+
+    private AuthResDTO.TokenResponse issueTokens(Account account){
+        String accessToken = jwtProvider.createAccessToken(account.getId(), account.getRole().name());
+        String refreshToken = jwtProvider.createRefreshToken(account.getId());
+
+        stringRedisTemplate.opsForValue().set(REFRESH_PREFIX + account.getId(), refreshToken,
+                Duration.ofMillis(jwtProperties.getRefreshTokenExpiration()));
+
+        return new AuthResDTO.TokenResponse(accessToken, refreshToken);
     }
 }

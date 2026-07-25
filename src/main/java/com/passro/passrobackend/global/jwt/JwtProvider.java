@@ -20,11 +20,11 @@ public class JwtProvider {
         return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
     }
 
-    private String createAccessToken(Long accountId, String role){
+    public String createAccessToken(Long accountId, String role){
         return createToken(accountId, role, jwtProperties.getAccessTokenExpiration());
     }
 
-    private String createRefreshToken(Long accountId, String role){
+    public String createRefreshToken(Long accountId){
         return createToken(accountId, null, jwtProperties.getRefreshTokenExpiration());
     }
 
