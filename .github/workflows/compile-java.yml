@@ -1,4 +1,4 @@
-name: Compile Java
+name: Compile and Test Java
 
 on:
   push:
@@ -34,3 +34,6 @@ jobs:
 
       - name: Compile Java
         run: ./gradlew compileJava --no-daemon
+
+      - name: Run tests
+        run: ./gradlew test --no-daemon
