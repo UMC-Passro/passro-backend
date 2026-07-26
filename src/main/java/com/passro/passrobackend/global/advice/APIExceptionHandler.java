@@ -4,6 +4,7 @@ import com.passro.passrobackend.global.advice.code.CommonErrorCode;
 import com.passro.passrobackend.global.code.BaseErrorCode;
 import com.passro.passrobackend.global.exception.APIException;
 import com.passro.passrobackend.global.response.APIResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -51,6 +52,12 @@ public class APIExceptionHandler {
         }
 
         return errorResponse(CommonErrorCode.INVALID_REQUEST, errors);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<APIResponse<Void>> handleConstraintViolationException(ConstraintViolationException e) {
+        log.warn("요청 파라미터 검증 실패: {}", e.getMessage());
+        return errorResponse(CommonErrorCode.INVALID_REQUEST, null);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

@@ -56,7 +56,7 @@ public class InquiryController {
                             examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND)))
     })
     public APIResponse<InquiryResponseDto> createInquiry(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Valid @RequestBody InquiryCreateRequestDto request) {
         return APIResponse.onSuccess(InquirySuccessCode.CREATED, inquiryService.createInquiry(account, request));
     }
@@ -72,7 +72,7 @@ public class InquiryController {
                             examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND)))
     })
     public APIResponse<List<InquiryResponseDto>> getInquiriesByDelivery(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 ID", example = "1") @PathVariable Long deliveryId) {
         return APIResponse.onSuccess(InquirySuccessCode.OK, inquiryService.getInquiriesByDelivery(deliveryId));
     }
