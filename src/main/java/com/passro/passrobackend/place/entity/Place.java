@@ -14,12 +14,8 @@ import lombok.experimental.SuperBuilder;
 public class Place extends BaseEntity {
 
     @Id
-    @Column(name = "subway_station_id", length = 20)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id;
 
-    @Column(nullable = false, length = 50)
-    private String stationName;
-
-    @Column(nullable = false, length = 30)
-    private String routeName;
+    private String address;
 }
