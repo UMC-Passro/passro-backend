@@ -22,7 +22,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Validated
 @RequestMapping("/subway")
-@Hidden
 public class AccountController {
 
     private final AccountService accountService;
