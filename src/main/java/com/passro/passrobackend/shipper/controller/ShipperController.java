@@ -37,7 +37,7 @@ public class ShipperController {
     @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
             content = @Content(examples = @ExampleObject(name = "SHIPPER200_1", summary = "매칭 대기 배송 조회 성공", value = SHIPPER_LIST)))
     public APIResponse<List<ShipperDeliveryDto>> listMatched(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account) {
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
         return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperService.listMatchRequested().stream().map(ShipperDeliveryDto::fromDelivery).toList());
     }
 
@@ -47,7 +47,7 @@ public class ShipperController {
     @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
             content = @Content(examples = @ExampleObject(name = "SHIPPER200_1", summary = "내 배송 목록 조회 성공", value = SHIPPER_LIST)))
     public APIResponse<List<ShipperDeliveryDto>> listDelivery(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account) {
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
          return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperService.listAllByShipper(account).stream().map(ShipperDeliveryDto::fromDelivery).toList());
     }
 
@@ -62,7 +62,7 @@ public class ShipperController {
                             examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND)))
     })
     public APIResponse<ShipperDeliveryDto> getDelivery(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 ID", example = "1") @PathVariable("deliveryId") Long deliveryId) {
         Delivery delivery = shipperService.getDeliveryById(account, deliveryId);
 
@@ -80,7 +80,7 @@ public class ShipperController {
                             examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND)))
     })
     public APIResponse<Void> matchAccept(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 ID", example = "1") @PathVariable("deliveryId") Long deliveryId) {
         shipperService.matchAccept(account, deliveryId);
         return APIResponse.onSuccess(ShipperSuccessCode.OK, null);
@@ -97,7 +97,7 @@ public class ShipperController {
                             examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND)))
     })
     public APIResponse<Void> acquireAccept(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 ID", example = "1") @PathVariable("deliveryId") Long deliveryId) {
         shipperService.acquireAccept(account, deliveryId);
         return APIResponse.onSuccess(ShipperSuccessCode.OK, null);
@@ -114,7 +114,7 @@ public class ShipperController {
                             examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND)))
     })
     public APIResponse<Void> acquireConfirm(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 ID", example = "1") @PathVariable("deliveryId") Long deliveryId) {
         shipperService.acquireConfirm(account, deliveryId);
         return APIResponse.onSuccess(ShipperSuccessCode.OK, null);
