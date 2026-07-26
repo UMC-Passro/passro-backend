@@ -10,10 +10,20 @@ import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
+import com.passro.passrobackend.delivery.exception.DeliveryException;
+import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
+import com.passro.passrobackend.shipper.service.ShipperService;
 import com.passro.passrobackend.support.IntegrationTestSupport;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -21,6 +31,9 @@ class ShipperDeliveryIntegrationTest extends IntegrationTestSupport {
 
     @Autowired
     private DeliveryLogRepository deliveryLogRepository;
+
+    @Autowired
+    private ShipperService shipperService;
 
     @Test
     void shipperCanProgressAssignedDeliveryThroughEveryState() throws Exception {
@@ -112,6 +125,73 @@ class ShipperDeliveryIntegrationTest extends IntegrationTestSupport {
                         .header("Authorization", bearer(strangerToken)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("DELIVERY400_3"));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void onlyOneShipperCanMatchTheSameDeliveryConcurrently() throws Exception {
+        Account sender = createAccount("concurrent-sender");
+        Account firstShipper = createAccount("concurrent-shipper-a");
+        Account secondShipper = createAccount("concurrent-shipper-b");
+        Delivery delivery = deliveryRepository.saveAndFlush(Delivery.builder()
+                .sender(sender)
+                .status(DeliveryState.WAIT)
+                .terms(true)
+                .matched(false)
+                .build());
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+
+        try {
+            Future<Boolean> firstResult = executor.submit(
+                    () -> attemptMatch(firstShipper, delivery.getId(), ready, start));
+            Future<Boolean> secondResult = executor.submit(
+                    () -> attemptMatch(secondShipper, delivery.getId(), ready, start));
+
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+
+            assertThat(List.of(
+                    firstResult.get(10, TimeUnit.SECONDS),
+                    secondResult.get(10, TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder(true, false);
+
+            Delivery matchedDelivery = deliveryRepository.findById(delivery.getId()).orElseThrow();
+            assertThat(matchedDelivery.getStatus()).isEqualTo(DeliveryState.MATCHED);
+            assertThat(matchedDelivery.getShipper().getId())
+                    .isIn(firstShipper.getId(), secondShipper.getId());
+            assertThat(deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(matchedDelivery))
+                    .extracting(log -> log.getType())
+                    .containsExactly(DeliveryLogType.MATCHED);
+        } finally {
+            executor.shutdownNow();
+            Delivery persistedDelivery = deliveryRepository.findById(delivery.getId()).orElse(null);
+            if (persistedDelivery != null) {
+                deliveryLogRepository.deleteAll(
+                        deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(persistedDelivery));
+                deliveryRepository.delete(persistedDelivery);
+            }
+            accountRepository.deleteAllById(
+                    List.of(sender.getId(), firstShipper.getId(), secondShipper.getId()));
+        }
+    }
+
+    private boolean attemptMatch(
+            Account shipper,
+            Long deliveryId,
+            CountDownLatch ready,
+            CountDownLatch start) throws InterruptedException {
+        ready.countDown();
+        start.await();
+        try {
+            shipperService.matchAccept(shipper, deliveryId);
+            return true;
+        } catch (DeliveryException exception) {
+            assertThat(exception.getCode()).isEqualTo(DeliveryErrorCode.INVALID_STATUS_TRANSITION);
+            return false;
+        }
     }
 
     private void patchAsShipper(long deliveryId, String action, String token) throws Exception {

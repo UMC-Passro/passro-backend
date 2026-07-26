@@ -38,7 +38,7 @@ public class ShipperService {
 
     @Transactional
     public void matchAccept(Account shipper, Long id) {
-        Delivery delivery = getDelivery(id);
+        Delivery delivery = getDeliveryForUpdate(id);
         validateStatus(delivery, DeliveryState.WAIT);
         if (delivery.getShipper() != null) {
             throw new DeliveryException(DeliveryErrorCode.INVALID_STATUS_TRANSITION);
@@ -52,7 +52,7 @@ public class ShipperService {
 
     @Transactional
     public void acquireAccept(Account shipper, Long id) {
-        Delivery delivery = getDelivery(id);
+        Delivery delivery = getDeliveryForUpdate(id);
         validateAssignedShipper(delivery, shipper);
         validateStatus(delivery, DeliveryState.MATCHED);
 
@@ -63,7 +63,7 @@ public class ShipperService {
 
     @Transactional
     public void acquireConfirm(Account shipper, Long id) {
-        Delivery delivery = getDelivery(id);
+        Delivery delivery = getDeliveryForUpdate(id);
         validateAssignedShipper(delivery, shipper);
         validateStatus(delivery, DeliveryState.DELIVERING);
 
@@ -74,6 +74,11 @@ public class ShipperService {
 
     private Delivery getDelivery(Long id) {
         return deliveryRepository.findById(id)
+                .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.NOT_FOUND));
+    }
+
+    private Delivery getDeliveryForUpdate(Long id) {
+        return deliveryRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.NOT_FOUND));
     }
 
