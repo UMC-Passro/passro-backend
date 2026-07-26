@@ -14,6 +14,10 @@ public enum AccountErrorCode implements BaseErrorCode {
             "ACCOUNT404_1",
             "해당 계정을 찾을 수 없습니다."),
 
+    NOT_FOUND_SUBWAY(HttpStatus.BAD_REQUEST,
+            "Account404_2",
+            "지하철을 찾을 수 없습니다."),
+
     MAIL_CODE_EXPIRED(HttpStatus.BAD_REQUEST,
             "ACCOUNT400_1",
             "인증 코드가 만료되었거나 존재하지 않습니다."),
@@ -41,6 +45,18 @@ public enum AccountErrorCode implements BaseErrorCode {
     MAIL_RESEND_TOO_FAST(HttpStatus.TOO_MANY_REQUESTS,
             "ACCOUNT429_1",
             "잠시 후 다시 시도해주세요."),
+
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED,
+            "ACCOUNT401_1",
+            "이메일 또는 비밀번호가 일치하지 않습니다."),
+
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED,
+            "ACCOUNT401_2",
+            "유효하지 않은 리프레시 토큰입니다."),
+
+    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED,
+            "ACCOUNT401_3",
+            "토큰이 만료되었습니다."),
 
     ;
 
