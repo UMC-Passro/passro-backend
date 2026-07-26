@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.LinkedHashMap;
@@ -27,14 +28,18 @@ import java.util.Map;
 @RestControllerAdvice
 public class APIExceptionHandler {
 
+    private final View error;
+
+    public APIExceptionHandler(View error) {
+        this.error = error;
+    }
+
     @ExceptionHandler(APIException.class)
     public ResponseEntity<APIResponse<Void>> handleAPIException(APIException e) {
         BaseErrorCode code = e.getCode();
         log.warn("APIException 발생: code={}, message={}", code.getCode(), code.getMessage());
 
-        return ResponseEntity
-                .status(code.getStatus())
-                .body(APIResponse.onFailure(code, null));
+        return errorResponse(code, null);
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class,
@@ -99,7 +104,7 @@ public class APIExceptionHandler {
         return errorResponse(CommonErrorCode.INTERNAL_SERVER_ERROR, null);
     }
 
-    private <T> ResponseEntity<APIResponse<T>> errorResponse(CommonErrorCode code, T result) {
+    private <T> ResponseEntity<APIResponse<T>> errorResponse(BaseErrorCode code, T result) {
         return ResponseEntity
                 .status(code.getStatus())
                 .body(APIResponse.onFailure(code, result));
