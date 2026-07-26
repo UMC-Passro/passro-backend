@@ -1,6 +1,8 @@
 package com.passro.passrobackend.account.service;
 
 import com.passro.passrobackend.account.dto.SubwayApiResDTO;
+import com.passro.passrobackend.account.exception.AccountException;
+import com.passro.passrobackend.account.exception.code.AccountErrorCode;
 import com.passro.passrobackend.place.repository.PlaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,9 +36,9 @@ public class SubwayApiService {
 
         if (response == null || response.getResponse() == null
                 || response.getResponse().getBody() == null
-                || response.getResponse().getBody().getItems() == null) {
-            return List.of();
-        }
+                || response.getResponse().getBody().getItems() == null)
+            throw new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY);
+
         return response.getResponse().getBody().getItems().getItem();
     }
 }

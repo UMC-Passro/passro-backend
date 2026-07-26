@@ -14,6 +14,10 @@ public enum AccountErrorCode implements BaseErrorCode {
             "ACCOUNT404_1",
             "해당 계정을 찾을 수 없습니다."),
 
+    NOT_FOUND_SUBWAY(HttpStatus.BAD_REQUEST,
+            "Account404_2",
+            "지하철을 찾을 수 없습니다."),
+
     MAIL_CODE_EXPIRED(HttpStatus.BAD_REQUEST,
             "ACCOUNT400_1",
             "인증 코드가 만료되었거나 존재하지 않습니다."),
