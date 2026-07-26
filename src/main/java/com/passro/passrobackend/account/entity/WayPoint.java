@@ -3,6 +3,7 @@ package com.passro.passrobackend.account.entity;
 import com.passro.passrobackend.place.entity.Place;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Table(name = "waypoint")
 public class WayPoint {
     @Id
@@ -17,8 +19,8 @@ public class WayPoint {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "account_id")
-    private Account account;
+    @JoinColumn(name = "account_place_id")
+    private AccountPlace accountPlace;
 
     @ManyToOne
     @JoinColumn(name = "place_id")
