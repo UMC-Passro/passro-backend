@@ -3,6 +3,7 @@ package com.passro.passrobackend.global.response;
 import com.passro.passrobackend.global.code.BaseErrorCode;
 import com.passro.passrobackend.global.code.BaseSuccessCode;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -20,7 +21,7 @@ public class APIResponse<T> {
     private final String message;
 
     @Schema(description = "응답 데이터")
-    private T result;
+    private @Nullable T result;
 
     public static <T> APIResponse<T> onSuccess(BaseSuccessCode code, T result){
         return new APIResponse<>(true, code.getCode(), code.getMessage(), result);
