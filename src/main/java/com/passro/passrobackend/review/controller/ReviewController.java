@@ -52,7 +52,7 @@ public class ReviewController {
                             examples = @ExampleObject(name = "REVIEW404_1", summary = "배송 정보 없음", value = REVIEW_DELIVERY_NOT_FOUND)))
     })
     public APIResponse<String> createReview(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @RequestBody ReviewCreateRequestDto request
     ) {
         reviewService.createReview(account, request);
