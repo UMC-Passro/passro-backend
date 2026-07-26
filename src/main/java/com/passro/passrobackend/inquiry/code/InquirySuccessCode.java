@@ -1,4 +1,4 @@
-package com.passro.passrobackend.shipper.code;
+package com.passro.passrobackend.inquiry.code;
 
 import com.passro.passrobackend.global.code.BaseSuccessCode;
 import lombok.AllArgsConstructor;
@@ -7,10 +7,15 @@ import org.springframework.http.HttpStatus;
 
 @AllArgsConstructor
 @Getter
-public enum ShipperSuccessCode implements BaseSuccessCode {
+public enum InquirySuccessCode implements BaseSuccessCode {
+
     OK(HttpStatus.OK,
-            "SHIPPER200_1",
-            "요청 성공.");
+            "INQUIRY200_1",
+            "문의 조회 성공."),
+
+    CREATED(HttpStatus.CREATED,
+            "INQUIRY201_1",
+            "문의 등록 성공.");
 
     private final HttpStatus status;
     private final String code;

@@ -14,6 +14,6 @@ public enum AccountSuccessCode implements BaseSuccessCode {
             "요청 성공.");
 
     private final HttpStatus status;
-    private final String message;
     private final String code;
+    private final String message;
 }

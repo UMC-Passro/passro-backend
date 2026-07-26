@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum FileSuccessCode implements BaseSuccessCode {
     OK(HttpStatus.OK,
-            "ACCOUNT200_1",
+            "FILE200_1",
             "요청 성공.");
 
     private final HttpStatus status;

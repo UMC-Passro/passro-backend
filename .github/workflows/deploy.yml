@@ -1,31 +1,43 @@
 name: Continuous Deploy
+
 on:
-    workflow_dispatch:
-    push:
-        branches:
-        - deploy
+  workflow_dispatch:
+  push:
+    branches:
+      - deploy
+
 jobs:
-    deploy:
-        runs-on: ubuntu-latest
-        environment: publish
-        steps:
-            - name: Deploy
-              uses: appleboy/ssh-action@master
-              with:
-                  host: ${{ secrets.REMOTE_IP }}
-                  username: ${{ secrets.REMOTE_SSH_ID }}
-                  key: ${{ secrets.REMOTE_SSH_KEY }}
-                  port: ${{ secrets.REMOTE_SSH_PORT }}
-                  script: |
-                    cd passro-backend
-                    git pull
-                    rm -f .env
-                    echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> .env
-                    echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env
-                    echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env
-                    echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env
-                    echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
-                    echo "JAVA_OPTS=-Xms256m -Xmx512m" >> .env
-                    docker build -t passro-backend:latest .
-                    docker compose down
-                    docker compose up -d
+  deploy:
+    runs-on: ubuntu-latest
+    environment: publish
+
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.REMOTE_IP }}
+          username: ${{ secrets.REMOTE_SSH_ID }}
+          key: ${{ secrets.REMOTE_SSH_KEY }}
+          port: ${{ secrets.REMOTE_SSH_PORT }}
+          script: |
+            set -e
+
+            rm -rf passro-backend
+            git clone --branch deploy --single-branch \
+              https://github.com/UMC-Passro/passro-backend.git \
+              passro-backend
+
+            cd passro-backend
+
+            cat > .env << 'EOF'
+            MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
+            MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
+            MYSQL_USER=${{ secrets.MYSQL_USER }}
+            MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            JAVA_OPTS=-Xms256m -Xmx512m
+            EOF
+
+            docker build -t passro-backend:latest .
+            docker compose down
+            docker compose up -d
