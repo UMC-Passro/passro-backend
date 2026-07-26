@@ -48,7 +48,7 @@ public class SenderController {
     @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
             content = @Content(examples = @ExampleObject(name = "SENDER200_1", summary = "배송 목록 조회 성공", value = SENDER_LIST)))
     public APIResponse<List<SenderDeliveryListDto>> getSenders(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account) {
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
         return APIResponse.onSuccess(SenderSuccessCode.OK, senderQueryService.getSenders(account));
     }
 
@@ -66,7 +66,7 @@ public class SenderController {
                             examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND)))
     })
     public APIResponse<SenderDeliveryDetailDto> getSenderById(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 ID", example = "1") @PathVariable Long deliveryId) {
         return APIResponse.onSuccess(SenderSuccessCode.OK, senderQueryService.getDeliveryDetail(account, deliveryId));
     }
@@ -85,7 +85,7 @@ public class SenderController {
                             examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 또는 결제 정보 없음", value = DELIVERY_NOT_FOUND)))
     })
     public APIResponse<SenderPaymentAmountDto> getPaymentAmount(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 ID", example = "1") @PathVariable Long deliveryId) {
         return APIResponse.onSuccess(SenderSuccessCode.OK, senderQueryService.getPaymentAmount(account, deliveryId));
     }
@@ -97,7 +97,7 @@ public class SenderController {
     @ApiResponse(responseCode = "201", description = "배송 요청 생성 성공", useReturnTypeSchema = true,
             content = @Content(examples = @ExampleObject(name = "SENDER201_1", summary = "배송 요청 생성 성공", value = SENDER_CREATED)))
     public APIResponse<String> createDelivery(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @RequestBody SenderDeliveryCreateRequestDto request) {
         Long deliveryId = senderCommandService.createDelivery(account, request);
         return APIResponse.onSuccess(SenderSuccessCode.CREATED, deliveryId.toString());
@@ -120,7 +120,7 @@ public class SenderController {
                             examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND)))
     })
     public APIResponse<Void> completeDelivery(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 ID", example = "1") @PathVariable Long deliveryId) {
         senderCommandService.completeDelivery(account, deliveryId);
         return APIResponse.onSuccess(SenderSuccessCode.OK, null);
@@ -140,7 +140,7 @@ public class SenderController {
                             examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND)))
     })
     public APIResponse<Void> agreeTerms(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 ID", example = "1") @PathVariable Long deliveryId) {
         senderCommandService.agreeTerms(account, deliveryId);
         return APIResponse.onSuccess(SenderSuccessCode.OK, null);
@@ -163,7 +163,7 @@ public class SenderController {
                             examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND)))
     })
     public APIResponse<Void> cancelDelivery(
-            @Parameter(hidden = true) @AuthenticationPrincipal Account account,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 ID", example = "1") @PathVariable Long deliveryId) {
         senderCommandService.cancelDelivery(account, deliveryId);
         return APIResponse.onSuccess(SenderSuccessCode.OK, null);
