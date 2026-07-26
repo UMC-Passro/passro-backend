@@ -48,7 +48,10 @@ public class AccountService {
     public void sendMailMessage(AuthReqDTO.SendMail dto) {
         String mail = dto.getMail();
 
-        validateUniversityEmail(mail);
+        System.out.print(dto.isStudent());
+
+        if(dto.isStudent())
+            validateUniversityEmail(mail);
 
         if (accountRepository.existsByEmail(mail))
             throw new AccountException(AccountErrorCode.DUPLICATE_EMAIL);
@@ -101,14 +104,29 @@ public class AccountService {
 
         String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX+mail);
 
-        if(savedCode==null)
-            throw new AccountException(AccountErrorCode.MAIL_CODE_EXPIRED);
-        if(!savedCode.equals(code)) {
-            stringRedisTemplate.delete(CODE_PREFIX + mail);
-            throw new AccountException(AccountErrorCode.MAIL_CODE_MISMATCH);
-        }
+        savedCodeConfirm(mail, code, savedCode);
+
         stringRedisTemplate.delete(CODE_PREFIX + mail);
         stringRedisTemplate.opsForValue().set(VERIFIED_PREFIX + mail, "true", VERIFIED_TTL);
+
+    }
+
+    public void confirmUniversityCode(AuthReqDTO.ConfirmCode dto, Long accountId){
+        String mail = dto.getMail();
+        String code = dto.getCode();
+
+        String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX+mail);
+
+        savedCodeConfirm(mail, code, savedCode);
+
+        stringRedisTemplate.delete(CODE_PREFIX + mail);
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
+
+        account.certify();
+        accountRepository.save(account);
+
     }
 
     public void signup(AuthReqDTO.Signup dto){
@@ -132,7 +150,7 @@ public class AccountService {
                 .name(dto.getName())
                 .phone(dto.getPhone())
                 .birth(dto.getBirth())
-                .certified(true)
+                .certified(false)
                 .point(0L)
                 .picture(dto.getPicture())
                 .role(AccountRole.USER)
@@ -181,5 +199,14 @@ public class AccountService {
                 Duration.ofMillis(jwtProperties.getRefreshTokenExpiration()));
 
         return new AuthResDTO.TokenResponse(accessToken, refreshToken);
+    }
+
+    private void savedCodeConfirm(String mail, String code, String savedCode){
+        if(savedCode==null)
+            throw new AccountException(AccountErrorCode.MAIL_CODE_EXPIRED);
+        if(!savedCode.equals(code)) {
+            stringRedisTemplate.delete(CODE_PREFIX + mail);
+            throw new AccountException(AccountErrorCode.MAIL_CODE_MISMATCH);
+        }
     }
 }
