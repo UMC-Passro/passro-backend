@@ -9,6 +9,4 @@ import java.util.Optional;
 
 @Repository
 public interface PlaceRepository extends JpaRepository<Place, String> {
-
-    List<Place> findByStationNameContaining(String stationName);
 }
