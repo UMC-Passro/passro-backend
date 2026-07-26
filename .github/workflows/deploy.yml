@@ -35,6 +35,11 @@ jobs:
             MYSQL_USER=${{ secrets.MYSQL_USER }}
             MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
             DATABASE_URL=${{ secrets.DATABASE_URL }}
+            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+            SMTP_USER_NAME=${{ secrets.SMTP_USER_NAME }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            SUBWAY_API_KEY=${{ secrets.SUBWAY_API_KEY }}
             JAVA_OPTS=-Xms256m -Xmx512m
             EOF
 
