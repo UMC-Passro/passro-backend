@@ -34,5 +34,6 @@ public class SubwayApiResDTO {
     public static class Item{
         private String subwayStationId;
         private String subwayStationName;
-        private String subwayRouteName;}
+        private String subwayRouteName;
+    }
 }
