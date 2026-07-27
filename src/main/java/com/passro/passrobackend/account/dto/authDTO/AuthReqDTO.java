@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public class AuthReqDTO {
 
@@ -19,7 +20,19 @@ public class AuthReqDTO {
         private LocalDate birth;
         private Long point;
         private String picture;
+        private String startStationName;
+        private String startRouteName;
+        private String destinationStationName;
+        private String destinationRouteName;
+        private List<WayPoint> wayPoints;
     }
+
+    @Getter
+    public static class WayPoint{
+        private String stationName;
+        private String routeName;
+    }
+
 
     @Getter
     public static class SendMail{

@@ -17,5 +17,9 @@ public class Place extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String address;
+    private String subwayRouteName;
+
+    private String subwayStationName;
+
+
 }

@@ -40,7 +40,6 @@ public class Account extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private AccountRole role;
 
-
     public void certify() {
         this.certified = true;
     }

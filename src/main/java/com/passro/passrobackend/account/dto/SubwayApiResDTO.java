@@ -1,7 +1,10 @@
 package com.passro.passrobackend.account.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
 
@@ -30,9 +33,9 @@ public class SubwayApiResDTO {
         private List<Item> item;
     }
     @Getter
+    @AllArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Item{
-        private String subwayStationId;
         private String subwayStationName;
         private String subwayRouteName;
     }

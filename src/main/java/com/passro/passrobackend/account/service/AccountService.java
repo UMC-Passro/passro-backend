@@ -3,13 +3,20 @@ package com.passro.passrobackend.account.service;
 import com.passro.passrobackend.account.dto.authDTO.AuthReqDTO;
 import com.passro.passrobackend.account.dto.authDTO.AuthResDTO;
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.account.entity.AccountPlace;
+import com.passro.passrobackend.account.entity.WayPoint;
 import com.passro.passrobackend.account.enums.AccountRole;
 import com.passro.passrobackend.account.exception.AccountException;
 import com.passro.passrobackend.account.exception.code.AccountErrorCode;
+import com.passro.passrobackend.account.repository.AccountPlaceRepository;
 import com.passro.passrobackend.account.repository.AccountRepository;
 import com.passro.passrobackend.account.repository.UniversityRepository;
+import com.passro.passrobackend.account.repository.WayPointRepository;
 import com.passro.passrobackend.global.jwt.JwtProperties;
 import com.passro.passrobackend.global.jwt.JwtProvider;
+import com.passro.passrobackend.place.entity.Place;
+import com.passro.passrobackend.place.repository.PlaceRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
@@ -26,6 +33,9 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final UniversityRepository universityRepository;
+    private final AccountPlaceRepository accountPlaceRepository;
+    private final WayPointRepository wayPointRepository;
+    private final PlaceRepository placeRepository;
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender javaMailSender;
     private final StringRedisTemplate stringRedisTemplate;
@@ -47,8 +57,6 @@ public class AccountService {
 
     public void sendMailMessage(AuthReqDTO.SendMail dto) {
         String mail = dto.getMail();
-
-        System.out.print(dto.isStudent());
 
         if(dto.isStudent())
             validateUniversityEmail(mail);
@@ -129,6 +137,7 @@ public class AccountService {
 
     }
 
+    @Transactional
     public void signup(AuthReqDTO.Signup dto){
         String isConfirm = stringRedisTemplate.opsForValue().get(VERIFIED_PREFIX+dto.getEmail());
 
@@ -143,19 +152,47 @@ public class AccountService {
 
         String password = passwordEncoder.encode(dto.getPassword());
 
-        accountRepository.save(Account.builder()
+        Place startPlace = placeRepository.findBySubwayRouteNameAndSubwayStationName(dto.getStartRouteName(), dto.getStartStationName())
+                        .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
+        Place destinationPlace = placeRepository.findBySubwayRouteNameAndSubwayStationName(dto.getDestinationRouteName(), dto.getDestinationStationName())
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
+
+
+        Account account = accountRepository.save(Account.builder()
                 .email(dto.getEmail())
                 .password(password)
                 .nickname(dto.getNickname())
                 .name(dto.getName())
                 .phone(dto.getPhone())
                 .birth(dto.getBirth())
-                .certified(false)
+                .certified(true)
                 .point(0L)
                 .picture(dto.getPicture())
                 .role(AccountRole.USER)
                 .build());
 
+        AccountPlace accountPlace = accountPlaceRepository.save(AccountPlace.builder()
+                .account(account)
+                .startPlace(startPlace)
+                .destinationPlace(destinationPlace)
+                .build());
+
+
+        if (dto.getWayPoints() != null) {
+            for (int i = 0; i < dto.getWayPoints().size(); i++) {
+                AuthReqDTO.WayPoint wp = dto.getWayPoints().get(i);
+
+                Place wayPointPlace = placeRepository.findBySubwayRouteNameAndSubwayStationName(
+                                wp.getRouteName(), wp.getStationName())
+                        .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
+
+                wayPointRepository.save(WayPoint.builder()
+                        .accountPlace(accountPlace)
+                        .place(wayPointPlace)
+                        .visitOrder(i)
+                        .build());
+            }
+        }
         stringRedisTemplate.delete(VERIFIED_PREFIX + dto.getEmail());
     }
 

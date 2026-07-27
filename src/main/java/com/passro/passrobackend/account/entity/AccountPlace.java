@@ -1,17 +1,18 @@
 package com.passro.passrobackend.account.entity;
 
+
 import com.passro.passrobackend.place.entity.Place;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
+@Table(name = "account_place")
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Table(name = "AccountPlace")
+@Builder
 public class AccountPlace {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,8 +22,10 @@ public class AccountPlace {
     private Account account;
 
     @ManyToOne
-    @JoinColumn(name = "place_id")
-    private Place place;
+    @JoinColumn(name = "start_place_id")
+    private Place startPlace;
 
-    private Integer visitOrder;
+    @ManyToOne
+    @JoinColumn(name = "destination_place_id")
+    private Place destinationPlace;
 }

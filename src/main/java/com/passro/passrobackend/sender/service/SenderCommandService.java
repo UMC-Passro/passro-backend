@@ -51,8 +51,8 @@ public class SenderCommandService {
     public Long createDelivery(Account sender, SenderDeliveryCreateRequestDto request) {
         // 출발지 및 도착지 Place 엔티티 생성/저장
         // TODO: 주소 정책 확정 전까지 임시 생성 로직을 사용합니다. (2026-07-14 기준)
-        Place origin = Place.builder().address(request.getOriginAddress()).build();
-        Place dest = Place.builder().address(request.getDestAddress()).build();
+        Place origin = Place.builder().subwayStationName(request.getOriginAddress()).build();
+        Place dest = Place.builder().subwayStationName(request.getDestAddress()).build();
         placeRepository.save(origin);
         placeRepository.save(dest);
 
