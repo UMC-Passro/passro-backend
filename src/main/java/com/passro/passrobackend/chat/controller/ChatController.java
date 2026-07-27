@@ -1,7 +1,6 @@
 package com.passro.passrobackend.chat.controller;
 
 import com.passro.passrobackend.account.entity.Account;
-import com.passro.passrobackend.account.repository.AccountRepository;
 import com.passro.passrobackend.chat.code.ChatSuccessCode;
 import com.passro.passrobackend.chat.dto.ChatMessageRequestDto;
 import com.passro.passrobackend.chat.dto.ChatMessageResponseDto;
@@ -13,16 +12,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// TODO: 인증 구현 후 아래 작업 필요
-//  1. @RequestParam Long accountId 파라미터 전부 제거
-//  2. 각 메서드 파라미터에 @AuthenticationPrincipal Account account 추가
-//  3. accountRepository.findById(accountId) 호출 전부 제거
-//  4. AccountRepository 의존성 제거 (필드 및 import)
-//  5. SecurityConfiguration에서 "/chat/**" permitAll 제거
 @Tag(name = "Chat", description = "채팅 API - delivery의 sender/shipper 간 1:1 채팅. WAIT·CANCEL 상태의 배송건은 접근 불가.")
 @RestController
 @RequestMapping("/chat/{deliveryId}")
@@ -30,8 +24,6 @@ import java.util.List;
 public class ChatController {
 
     private final ChatService chatService;
-    // TODO: 인증 구현 후 제거
-    private final AccountRepository accountRepository;
 
     @Operation(
             summary = "메시지 조회",
@@ -42,9 +34,8 @@ public class ChatController {
             @PathVariable Long deliveryId,
             @Parameter(description = "마지막으로 받은 메시지 id. 없으면 전체 조회, 있으면 해당 id 이후 메시지만 반환")
             @RequestParam(required = false) Long afterId,
-            @Parameter(description = "TODO: 인증 구현 후 제거") @RequestParam Long accountId
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account
     ) {
-        Account account = accountRepository.findById(accountId).orElseThrow(); // TODO: 인증 구현 후 제거
         List<ChatMessageResponseDto> messages = (afterId == null)
                 ? chatService.getMessages(deliveryId, account)
                 : chatService.getMessagesAfter(deliveryId, afterId, account);
@@ -59,10 +50,9 @@ public class ChatController {
     @PostMapping("/messages")
     public APIResponse<ChatMessageResponseDto> sendMessage(
             @PathVariable Long deliveryId,
-            @Parameter(description = "TODO: 인증 구현 후 제거") @RequestParam Long accountId,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Valid @RequestBody ChatMessageRequestDto request
     ) {
-        Account account = accountRepository.findById(accountId).orElseThrow(); // TODO: 인증 구현 후 제거
         return APIResponse.onSuccess(ChatSuccessCode.CREATED, chatService.sendMessage(deliveryId, request, account));
     }
 
@@ -73,9 +63,8 @@ public class ChatController {
     @GetMapping("/info")
     public APIResponse<ChatRoomInfoResponseDto> getChatRoomInfo(
             @PathVariable Long deliveryId,
-            @Parameter(description = "TODO: 인증 구현 후 제거") @RequestParam Long accountId
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account
     ) {
-        Account account = accountRepository.findById(accountId).orElseThrow(); // TODO: 인증 구현 후 제거
         return APIResponse.onSuccess(ChatSuccessCode.OK, chatService.getChatRoomInfo(deliveryId, account));
     }
 
@@ -86,9 +75,8 @@ public class ChatController {
     @GetMapping("/unread-count")
     public APIResponse<Long> getUnreadCount(
             @PathVariable Long deliveryId,
-            @Parameter(description = "TODO: 인증 구현 후 제거") @RequestParam Long accountId
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account
     ) {
-        Account account = accountRepository.findById(accountId).orElseThrow(); // TODO: 인증 구현 후 제거
         return APIResponse.onSuccess(ChatSuccessCode.OK, chatService.getUnreadCount(deliveryId, account));
     }
 }
