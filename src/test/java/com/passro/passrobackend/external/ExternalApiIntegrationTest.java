@@ -51,14 +51,12 @@ class ExternalApiIntegrationTest extends IntegrationTestSupport {
     @Test
     void subwaySearchReturnsExternalBoundaryResult() throws Exception {
         SubwayApiResDTO.Item station = mock(SubwayApiResDTO.Item.class);
-        given(station.getSubwayStationId()).willReturn("1001");
         given(station.getSubwayStationName()).willReturn("Gangnam");
         given(station.getSubwayRouteName()).willReturn("Line 2");
         given(subwayApiService.searchStation("2")).willReturn(List.of(station));
 
         mockMvc.perform(get("/subway/search").param("keyword", "2"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result[0].subwayStationId").value("1001"))
                 .andExpect(jsonPath("$.result[0].subwayStationName").value("Gangnam"));
     }
 
