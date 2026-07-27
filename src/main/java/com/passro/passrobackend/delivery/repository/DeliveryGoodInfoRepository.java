@@ -11,4 +11,6 @@ import java.util.Optional;
 @Repository
 public interface DeliveryGoodInfoRepository extends JpaRepository<DeliveryGoodInfo, Long> {
     List<DeliveryGoodInfo> findByDeliveryIn(List<Delivery> deliveries);
+
+    Optional<DeliveryGoodInfo> findByDelivery(Delivery delivery);
 }
