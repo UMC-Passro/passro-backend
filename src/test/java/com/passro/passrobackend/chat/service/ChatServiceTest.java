@@ -219,8 +219,8 @@ class ChatServiceTest {
         void senderRequest_partnerIsShipper() {
             Place origin = mock(Place.class);
             Place dest = mock(Place.class);
-            given(origin.getAddress()).willReturn("서울 강남구");
-            given(dest.getAddress()).willReturn("부산 해운대구");
+            given(origin.getSubwayStationName()).willReturn("서울 강남구");
+            given(dest.getSubwayStationName()).willReturn("부산 해운대구");
             given(delivery.getOrigin()).willReturn(origin);
             given(delivery.getDest()).willReturn(dest);
 
@@ -238,8 +238,8 @@ class ChatServiceTest {
         void shipperRequest_partnerIsSender() {
             Place origin = mock(Place.class);
             Place dest = mock(Place.class);
-            given(origin.getAddress()).willReturn("서울 강남구");
-            given(dest.getAddress()).willReturn("부산 해운대구");
+            given(origin.getSubwayStationName()).willReturn("서울 강남구");
+            given(dest.getSubwayStationName()).willReturn("부산 해운대구");
             given(delivery.getOrigin()).willReturn(origin);
             given(delivery.getDest()).willReturn(dest);
 
@@ -257,8 +257,8 @@ class ChatServiceTest {
         void withGoodInfo_returnsItemName() {
             Place origin = mock(Place.class);
             Place dest = mock(Place.class);
-            given(origin.getAddress()).willReturn("서울");
-            given(dest.getAddress()).willReturn("부산");
+            given(origin.getSubwayStationName()).willReturn("서울");
+            given(dest.getSubwayStationName()).willReturn("부산");
             given(delivery.getOrigin()).willReturn(origin);
             given(delivery.getDest()).willReturn(dest);
 
@@ -278,8 +278,8 @@ class ChatServiceTest {
         void withoutGoodInfo_itemNameIsNull() {
             Place origin = mock(Place.class);
             Place dest = mock(Place.class);
-            given(origin.getAddress()).willReturn("서울");
-            given(dest.getAddress()).willReturn("부산");
+            given(origin.getSubwayStationName()).willReturn("서울");
+            given(dest.getSubwayStationName()).willReturn("부산");
             given(delivery.getOrigin()).willReturn(origin);
             given(delivery.getDest()).willReturn(dest);
 

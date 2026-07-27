@@ -89,8 +89,8 @@ public class ChatService {
                 partner.getNickname(),
                 partner.getPicture(),
                 goodInfo != null ? goodInfo.getName() : null,
-                delivery.getOrigin() != null ? delivery.getOrigin().getAddress() : null,
-                delivery.getDest() != null ? delivery.getDest().getAddress() : null,
+                delivery.getOrigin() != null ? delivery.getOrigin().getSubwayStationName() : null,
+                delivery.getDest() != null ? delivery.getDest().getSubwayStationName() : null,
                 delivery.getStatus()
         );
     }
