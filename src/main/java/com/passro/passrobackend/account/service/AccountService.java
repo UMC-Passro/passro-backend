@@ -54,6 +54,7 @@ public class AccountService {
     private static final Duration RESEND_COOLDOWN = Duration.ofSeconds(60);
 
 
+
     public void sendMailMessage(AuthReqDTO.SendMail dto) {
         String mail = dto.getMail();
 
@@ -164,7 +165,7 @@ public class AccountService {
                 .name(dto.getName())
                 .phone(dto.getPhone())
                 .birth(dto.getBirth())
-                .certified(false)
+                .certified(true)
                 .point(0L)
                 .picture(dto.getPicture())
                 .role(AccountRole.USER)
