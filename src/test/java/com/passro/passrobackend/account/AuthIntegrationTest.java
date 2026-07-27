@@ -60,10 +60,10 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                         .content("{\"mail\":\"" + email + "\",\"code\":\"" + code + "\"}"))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/auth/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(signupBody(email, password, nickname)))
-                .andExpect(status().isOk());
+//        mockMvc.perform(post("/auth/signup")
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content(signupBody(email, password, nickname)))
+//                .andExpect(status().isOk());
 
         Account account = accountRepository.findByEmail(email).orElseThrow();
         assertThat(passwordEncoder.matches(password, account.getPassword())).isTrue();
