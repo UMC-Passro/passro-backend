@@ -1,5 +1,6 @@
 package com.passro.passrobackend.account.service;
 
+import com.passro.passrobackend.account.dto.accountDTO.AccountResDTO;
 import com.passro.passrobackend.account.dto.authDTO.AuthReqDTO;
 import com.passro.passrobackend.account.dto.authDTO.AuthResDTO;
 import com.passro.passrobackend.account.entity.Account;
@@ -252,7 +253,7 @@ public class AccountService {
         }
     }
 
-    public AuthResDTO.ShipperMyPage myShipperPage(Long accountId){
+    public AccountResDTO.ShipperMyPage myShipperPage(Long accountId){
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
 
@@ -266,10 +267,10 @@ public class AccountService {
             rating = ratingDTO.getAverageRating();
 
 
-        return new AuthResDTO.ShipperMyPage(nickname, deliveryCount, point, rating);
+        return new AccountResDTO.ShipperMyPage(nickname, deliveryCount, point, rating);
     }
 
-    public AuthResDTO.SenderMyPage mySenderPage(Long accountId){
+    public AccountResDTO.SenderMyPage mySenderPage(Long accountId){
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
 
@@ -277,6 +278,6 @@ public class AccountService {
         Long deliveryCount = deliveryRepository.countBySender(account);
         Long point = account.getPoint();
 
-        return new AuthResDTO.SenderMyPage(nickname, deliveryCount, point);
+        return new AccountResDTO.SenderMyPage(nickname, deliveryCount, point);
     }
 }

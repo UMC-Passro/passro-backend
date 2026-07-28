@@ -1,6 +1,7 @@
 package com.passro.passrobackend.account.controller;
 
 import com.passro.passrobackend.account.dto.SubwayApiResDTO;
+import com.passro.passrobackend.account.dto.accountDTO.AccountResDTO;
 import com.passro.passrobackend.account.dto.authDTO.AuthResDTO;
 import com.passro.passrobackend.account.exception.code.AccountSuccessCode;
 import com.passro.passrobackend.account.service.AccountService;
@@ -44,7 +45,7 @@ public class AccountController {
     }
 
     @GetMapping("/mypage/shipper")
-    public ResponseEntity<APIResponse<AuthResDTO.ShipperMyPage>> shipperPage(@AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<APIResponse<AccountResDTO.ShipperMyPage>> shipperPage(@AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
         return ResponseEntity.ok()
                 .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().getHeaderValue())
@@ -52,7 +53,7 @@ public class AccountController {
     }
 
     @GetMapping("/mypage/sender")
-    public ResponseEntity<APIResponse<AuthResDTO.SenderMyPage>> senderPage(@AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<APIResponse<AccountResDTO.SenderMyPage>> senderPage(@AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
         return ResponseEntity.ok()
                 .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().getHeaderValue())
