@@ -68,7 +68,7 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
 
         SubwayRouteResponseDto result = subwayService.findShortestRoute(origin, null, destination);
 
-        assertThat(result.getShortestDistance()).isEqualTo(3);
+        assertThat(result.getShortestDistance()).isEqualTo(5);
         assertThat(result.getTransferCount()).isEqualTo(1);
     }
 
@@ -86,7 +86,7 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
                         "수인분당|정자",
                         "신분당|정자",
                         "신분당|판교(판교테크노밸리)");
-        assertThat(result.getStations()).hasSize(result.getShortestDistance() + 1);
+        assertThat(result.getStations()).hasSize(4);
     }
 
     @Test
@@ -123,7 +123,7 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value("SUBWAY200_1"))
-                .andExpect(jsonPath("$.result.shortestDistance").value(3))
+                .andExpect(jsonPath("$.result.shortestDistance").value(5))
                 .andExpect(jsonPath("$.result.transferCount").value(1))
                 .andExpect(jsonPath("$.result.stations.length()").value(4))
                 .andExpect(jsonPath("$.result.stations[0].placeId").value(origin.getId()))
@@ -233,7 +233,7 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
 
         SubwayRouteResponseDto result = subwayService.findShortestRoute(origin, null, destination);
 
-        assertThat(result.getShortestDistance()).isEqualTo(3);
+        assertThat(result.getShortestDistance()).isEqualTo(5);
         assertThat(result.getTransferCount()).isEqualTo(1);
     }
 
@@ -246,7 +246,7 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
         SubwayRouteResponseDto result = subwayService.findShortestRoute(
                 origin, List.of(waypoint), destination);
 
-        assertThat(result.getShortestDistance()).isEqualTo(4);
+        assertThat(result.getShortestDistance()).isEqualTo(8);
         assertThat(result.getTransferCount()).isEqualTo(2);
     }
 
@@ -324,15 +324,16 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
             SubwayNode source = edge.getSource();
             SubwayNode target = edge.getTarget();
 
-            assertThat(edge.getCost()).isEqualTo(1);
             assertThat(source.getId()).isNotEqualTo(target.getId());
             assertThat(source.getEdges()).contains(edge);
 
             if (edge.isCrossroute()) {
+                assertThat(edge.getCost()).isEqualTo(3);
                 assertThat(source.getRegion()).isEqualTo(target.getRegion());
                 assertThat(source.getName()).isEqualTo(target.getName());
                 assertThat(source.getRoute()).isNotEqualTo(target.getRoute());
             } else {
+                assertThat(edge.getCost()).isEqualTo(1);
                 assertThat(source.getRoute()).isEqualTo(target.getRoute());
                 assertThat(source.getName()).isNotEqualTo(target.getName());
             }
