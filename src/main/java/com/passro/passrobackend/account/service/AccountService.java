@@ -268,4 +268,15 @@ public class AccountService {
 
         return new AuthResDTO.ShipperMyPage(nickname, deliveryCount, point, rating);
     }
+
+    public AuthResDTO.SenderMyPage mySenderPage(Long accountId){
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
+
+        String nickname = account.getNickname();
+        Long deliveryCount = deliveryRepository.countBySender(account);
+        Long point = account.getPoint();
+
+        return new AuthResDTO.SenderMyPage(nickname, deliveryCount, point);
+    }
 }

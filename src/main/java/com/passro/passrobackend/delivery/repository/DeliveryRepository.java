@@ -18,7 +18,6 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
     List<Delivery> findAllByStatus(DeliveryState status);
 
     List<Delivery> findAllByShipper(Account shipper);
-
     long countByShipper(Account shipper);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -33,4 +32,5 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
         WHERE d.sender = :sender
     """)
     List<Delivery> findAllBySender(@Param("sender") Account sender);
+    long countBySender(Account sender);
 }

@@ -50,4 +50,12 @@ public class AccountController {
                 .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().getHeaderValue())
                 .body(APIResponse.onSuccess(code, accountService.myShipperPage(userDetails.getAccountId())));
     }
+
+    @GetMapping("/mypage/sender")
+    public ResponseEntity<APIResponse<AuthResDTO.SenderMyPage>> senderPage(@AuthenticationPrincipal CustomUserDetails userDetails){
+        BaseSuccessCode code = AccountSuccessCode.OK;
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().getHeaderValue())
+                .body(APIResponse.onSuccess(code, accountService.mySenderPage(userDetails.getAccountId())));
+    }
 }

@@ -20,4 +20,11 @@ public class AuthResDTO {
         private Long point;
         private double rating;
     }
+
+    @AllArgsConstructor
+    public static class SenderMyPage{
+        private String nickname;
+        private Long deliveryCount;
+        private Long point;
+    }
 }
