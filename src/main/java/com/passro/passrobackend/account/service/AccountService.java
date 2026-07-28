@@ -16,6 +16,9 @@ import com.passro.passrobackend.global.jwt.JwtProperties;
 import com.passro.passrobackend.global.jwt.JwtProvider;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
+import com.passro.passrobackend.review.service.ReviewService;
+import com.passro.passrobackend.sender.service.SenderQueryService;
+import com.passro.passrobackend.shipper.service.ShipperService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -30,6 +33,9 @@ import java.time.Duration;
 @Service
 @RequiredArgsConstructor
 public class AccountService {
+
+    private final ShipperService shipperService;
+    private final ReviewService reviewService;
 
     private final AccountRepository accountRepository;
     private final UniversityRepository universityRepository;
@@ -247,6 +253,13 @@ public class AccountService {
     }
 
     public AuthResDTO.ShipperMyPage myShipperPage(Long accountId){
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
 
+        String nickname = account.getNickname();
+        Integer deliveryCount = shipperService.listAllByShipper(account).size();
+        double rating = reviewService.getAverageRating(accountId).getAverageRating();
+
+        return new AuthResDTO.ShipperMyPage(nickname, deliveryCount, rating);
     }
 }
