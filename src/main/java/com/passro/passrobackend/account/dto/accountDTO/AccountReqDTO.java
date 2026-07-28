@@ -8,7 +8,7 @@ import lombok.Getter;
 public class AccountReqDTO {
 
     @Getter
-    public static class Edit {
+    public static class EditNickname {
         @NotBlank(message = "변경할 닉네임을 입력하세요.")
         @Pattern(
                 regexp = "^[가-힣a-zA-Z0-9]+$",

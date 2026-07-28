@@ -1,6 +1,7 @@
 package com.passro.passrobackend.account.controller;
 
 import com.passro.passrobackend.account.dto.SubwayApiResDTO;
+import com.passro.passrobackend.account.dto.accountDTO.AccountReqDTO;
 import com.passro.passrobackend.account.dto.accountDTO.AccountResDTO;
 import com.passro.passrobackend.account.dto.authDTO.AuthResDTO;
 import com.passro.passrobackend.account.exception.code.AccountSuccessCode;
@@ -18,10 +19,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -58,5 +56,14 @@ public class AccountController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().getHeaderValue())
                 .body(APIResponse.onSuccess(code, accountService.mySenderPage(userDetails.getAccountId())));
+    }
+
+    @PostMapping("/mypage/edit/nickname")
+    public ResponseEntity<APIResponse<Void>> editNickname(@RequestBody AccountReqDTO.EditNickname dto, @AuthenticationPrincipal CustomUserDetails userDetails){
+        BaseSuccessCode code = AccountSuccessCode.OK;
+        accountService.editNickname(dto, userDetails.getAccountId());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().getHeaderValue())
+                .body(APIResponse.onSuccess(code, null));
     }
 }

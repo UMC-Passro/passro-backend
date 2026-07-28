@@ -43,4 +43,8 @@ public class Account extends BaseEntity {
     public void certify() {
         this.certified = true;
     }
+
+    public void editNickname(String nickname) {
+        this.nickname = nickname;
+    }
 }

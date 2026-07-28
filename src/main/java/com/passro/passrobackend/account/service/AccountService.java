@@ -1,5 +1,6 @@
 package com.passro.passrobackend.account.service;
 
+import com.passro.passrobackend.account.dto.accountDTO.AccountReqDTO;
 import com.passro.passrobackend.account.dto.accountDTO.AccountResDTO;
 import com.passro.passrobackend.account.dto.authDTO.AuthReqDTO;
 import com.passro.passrobackend.account.dto.authDTO.AuthResDTO;
@@ -279,5 +280,18 @@ public class AccountService {
         Long point = account.getPoint();
 
         return new AccountResDTO.SenderMyPage(nickname, deliveryCount, point);
+    }
+
+    public void editNickname(AccountReqDTO.EditNickname dto, Long accountId){
+
+        if(accountRepository.existsByNickname(dto.getNickname()))
+            throw new AccountException(AccountErrorCode.DUPLICATE_NICKNAME);
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
+
+        account.editNickname(dto.getNickname());
+
+        accountRepository.save(account);
     }
 }
