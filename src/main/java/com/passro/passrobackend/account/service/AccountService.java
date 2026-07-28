@@ -49,11 +49,12 @@ public class AccountService {
     private static final String VERIFIED_PREFIX = "email:verify:done:";
     private static final String COOLDOWN_PREFIX = "email:verify:cooldown:";
     private static final String REFRESH_PREFIX = "refresh:token:";
+    private static final String TEMP_PASSWORD_CHARACTERS =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    private static final int TEMP_PASSWORD_LENGTH = 12;
     private static final Duration CODE_TTL = Duration.ofMinutes(5);
     private static final Duration VERIFIED_TTL = Duration.ofMinutes(30);
     private static final Duration RESEND_COOLDOWN = Duration.ofSeconds(60);
-
-
 
     public void sendMailMessage(AuthReqDTO.SendMail dto) {
         String mail = dto.getMail();
@@ -152,9 +153,9 @@ public class AccountService {
 
         String password = passwordEncoder.encode(dto.getPassword());
 
-        Place startPlace = placeRepository.findBySubwayRouteNameAndSubwayStationName(dto.getStartRouteName(), dto.getStartStationName())
-                        .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
-        Place destinationPlace = placeRepository.findBySubwayRouteNameAndSubwayStationName(dto.getDestinationRouteName(), dto.getDestinationStationName())
+        Place startPlace = placeRepository.findById(dto.getSourceStationId())
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
+        Place destinationPlace = placeRepository.findById(dto.getDestinationStationId())
                 .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
 
 
@@ -180,10 +181,8 @@ public class AccountService {
 
         if (dto.getWayPoints() != null) {
             for (int i = 0; i < dto.getWayPoints().size(); i++) {
-                AuthReqDTO.WayPoint wp = dto.getWayPoints().get(i);
-
-                Place wayPointPlace = placeRepository.findBySubwayRouteNameAndSubwayStationName(
-                                wp.getRouteName(), wp.getStationName())
+                Long wayPointPlaceId = dto.getWayPoints().get(i);
+                Place wayPointPlace = placeRepository.findById(wayPointPlaceId)
                         .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
 
                 wayPointRepository.save(WayPoint.builder()
@@ -208,6 +207,35 @@ public class AccountService {
 
     public void logout(Long accountId) {
         stringRedisTemplate.delete(REFRESH_PREFIX + accountId);
+    }
+
+    public void findId(AuthReqDTO.FindId dto) {
+        accountRepository.findFirstByNameAndPhone(dto.getName(), dto.getPhone())
+                .ifPresent(account -> {
+                    SimpleMailMessage message = new SimpleMailMessage();
+                    message.setTo(account.getEmail());
+                    message.setSubject("[Passro] 아이디 찾기 안내");
+                    message.setText("가입된 아이디(이메일): " + account.getEmail());
+                    javaMailSender.send(message);
+                });
+    }
+
+    @Transactional
+    public void findPassword(AuthReqDTO.FindPassword dto) {
+        accountRepository.findFirstByNameAndPhoneAndEmail(
+                        dto.getName(), dto.getPhone(), dto.getEmail())
+                .ifPresent(account -> {
+                    String temporaryPassword = generateTemporaryPassword();
+                    account.setPassword(passwordEncoder.encode(temporaryPassword));
+                    accountRepository.save(account);
+
+                    SimpleMailMessage message = new SimpleMailMessage();
+                    message.setTo(account.getEmail());
+                    message.setSubject("[Passro] 임시 비밀번호 안내");
+                    message.setText("임시 비밀번호: " + temporaryPassword
+                            + "\n로그인 후 비밀번호를 변경해주세요.");
+                    javaMailSender.send(message);
+                });
     }
 
     public AuthResDTO.TokenResponse reissueToken(AuthReqDTO.ReIssue dto){
@@ -236,6 +264,15 @@ public class AccountService {
                 Duration.ofMillis(jwtProperties.getRefreshTokenExpiration()));
 
         return new AuthResDTO.TokenResponse(accessToken, refreshToken);
+    }
+
+    private String generateTemporaryPassword() {
+        StringBuilder password = new StringBuilder(TEMP_PASSWORD_LENGTH);
+        for (int index = 0; index < TEMP_PASSWORD_LENGTH; index++) {
+            password.append(TEMP_PASSWORD_CHARACTERS.charAt(
+                    SECURE_RANDOM.nextInt(TEMP_PASSWORD_CHARACTERS.length())));
+        }
+        return password.toString();
     }
 
     private void savedCodeConfirm(String mail, String code, String savedCode){

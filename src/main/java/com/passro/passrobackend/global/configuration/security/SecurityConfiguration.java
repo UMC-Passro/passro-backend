@@ -36,7 +36,7 @@ public class SecurityConfiguration {
                         .requestMatchers(
                                 "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/file/**",
                                 "/auth/login", "/auth/signup", "/auth/mail/**",
-                                "/auth/reissue",
+                                "/auth/reissue", "/auth/find/**",
                                 "/subway/**", "/subway/search"
                         )
                         .permitAll()
