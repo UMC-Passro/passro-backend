@@ -16,7 +16,8 @@ public class AuthResDTO {
     @AllArgsConstructor
     public static class ShipperMyPage{
         private String nickname;
-        private Integer deliveryCount;
+        private Long deliveryCount;
+        private Long point;
         private double rating;
     }
 }

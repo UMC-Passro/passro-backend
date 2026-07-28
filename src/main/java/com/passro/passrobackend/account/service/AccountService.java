@@ -12,13 +12,13 @@ import com.passro.passrobackend.account.repository.AccountPlaceRepository;
 import com.passro.passrobackend.account.repository.AccountRepository;
 import com.passro.passrobackend.account.repository.UniversityRepository;
 import com.passro.passrobackend.account.repository.WayPointRepository;
+import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.global.jwt.JwtProperties;
 import com.passro.passrobackend.global.jwt.JwtProvider;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
+import com.passro.passrobackend.review.dto.ReviewAverageResponseDto;
 import com.passro.passrobackend.review.service.ReviewService;
-import com.passro.passrobackend.sender.service.SenderQueryService;
-import com.passro.passrobackend.shipper.service.ShipperService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -34,7 +34,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class AccountService {
 
-    private final ShipperService shipperService;
+    private final DeliveryRepository deliveryRepository;
     private final ReviewService reviewService;
 
     private final AccountRepository accountRepository;
@@ -257,9 +257,15 @@ public class AccountService {
                 .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
 
         String nickname = account.getNickname();
-        Integer deliveryCount = shipperService.listAllByShipper(account).size();
-        double rating = reviewService.getAverageRating(accountId).getAverageRating();
+        Long deliveryCount = deliveryRepository.countByShipper(account);
+        Long point = account.getPoint();
 
-        return new AuthResDTO.ShipperMyPage(nickname, deliveryCount, rating);
+        double rating = 0.0;
+        ReviewAverageResponseDto ratingDTO = reviewService.getAverageRating(accountId);
+        if(ratingDTO != null)
+            rating = ratingDTO.getAverageRating();
+
+
+        return new AuthResDTO.ShipperMyPage(nickname, deliveryCount, point, rating);
     }
 }

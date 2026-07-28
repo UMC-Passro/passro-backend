@@ -19,6 +19,8 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
 
     List<Delivery> findAllByShipper(Account shipper);
 
+    long countByShipper(Account shipper);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT d FROM Delivery d WHERE d.id = :id")
     Optional<Delivery> findByIdForUpdate(@Param("id") Long id);

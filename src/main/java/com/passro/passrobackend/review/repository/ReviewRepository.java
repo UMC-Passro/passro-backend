@@ -1,5 +1,6 @@
 package com.passro.passrobackend.review.repository;
 
+import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.review.entity.Review;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
