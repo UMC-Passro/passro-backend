@@ -2,10 +2,12 @@ package com.passro.passrobackend.sender.service;
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
+import com.passro.passrobackend.delivery.entity.DeliveryPoint;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.event.DeliveryLogEvent;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
+import com.passro.passrobackend.delivery.repository.DeliveryPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
@@ -27,6 +29,7 @@ public class SenderCommandService {
     private final DeliveryRepository deliveryRepository;
     private final PlaceRepository placeRepository;
     private final DeliveryGoodInfoRepository deliveryGoodInfoRepository;
+    private final DeliveryPointRepository deliveryPointRepository;
     private final SenderDeliveryValidator senderDeliveryValidator;
 
     private final ApplicationEventPublisher eventPublisher;
@@ -50,11 +53,11 @@ public class SenderCommandService {
     // 배송 요청 생성
     public Long createDelivery(Account sender, SenderDeliveryCreateRequestDto request) {
         // 출발지 및 도착지 Place 엔티티 생성/저장
-        // TODO: 주소 정책 확정 전까지 임시 생성 로직을 사용합니다. (2026-07-14 기준)
-        Place origin = Place.builder().subwayStationName(request.getOriginAddress()).build();
-        Place dest = Place.builder().subwayStationName(request.getDestAddress()).build();
-        placeRepository.save(origin);
-        placeRepository.save(dest);
+        // Place 있는지 확인
+        Place origin = placeRepository.findById(request.getSourceStationId())
+                .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.PLACE_NOT_FOUND));
+        Place dest = placeRepository.findById(request.getDestinationStationId())
+                .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.PLACE_NOT_FOUND));
 
         // 배송 (Delivery) 엔티티 생성 및 저장
         Delivery delivery = Delivery.builder()
@@ -77,6 +80,14 @@ public class SenderCommandService {
                 .picture(request.getPicture())
                 .build();
         deliveryGoodInfoRepository.save(goodInfo);
+
+        DeliveryPoint pointInfo = DeliveryPoint.builder()
+                .delivery(delivery)
+                .base_point(request.getBasePoint())
+                .distance_point(request.getDistancePoint())
+                .weight_point(request.getWeightPoint())
+                .build();
+            deliveryPointRepository.save(pointInfo);
 
         // 배송 요청 로그 저장
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.SEND_REQUEST));
