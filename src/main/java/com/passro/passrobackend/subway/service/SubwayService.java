@@ -304,7 +304,8 @@ public class SubwayService {
                 for (int targetIndex = sourceIndex + 1; targetIndex < stationNodes.size(); targetIndex++) {
                     SubwayNode target = stationNodes.get(targetIndex);
                     if (!source.getRoute().equals(target.getRoute())) {
-                        connectBidirectionally(source, target, true);
+                        connectBidirectionally(source, target, true, 3);
+                        // 환승에 가중치 3 부여
                     }
                 }
             }
@@ -316,11 +317,27 @@ public class SubwayService {
         addDirectedEdge(second, first, crossroute);
     }
 
+    private void connectBidirectionally(SubwayNode first, SubwayNode second, boolean crossroute, int cost) {
+        addDirectedEdge(first, second, crossroute, cost);
+        addDirectedEdge(second, first, crossroute, cost);
+    }
+
     private void addDirectedEdge(SubwayNode source, SubwayNode target, boolean crossroute) {
         SubwayEdge edge = SubwayEdge.builder()
                 .source(source)
                 .target(target)
                 .cost(DEFAULT_EDGE_COST)
+                .crossroute(crossroute)
+                .build();
+        source.addEdge(edge);
+        edges.add(edge);
+    }
+
+    private void addDirectedEdge(SubwayNode source, SubwayNode target, boolean crossroute, int cost) {
+        SubwayEdge edge = SubwayEdge.builder()
+                .source(source)
+                .target(target)
+                .cost(cost)
                 .crossroute(crossroute)
                 .build();
         source.addEdge(edge);
