@@ -41,6 +41,12 @@ public class PlaceService {
         log.info("지하철역 초기 데이터 {}건을 저장했습니다.", places.size());
     }
 
+    public List<Place> searchByKeyword(String keyword) {
+        return placeRepository
+                .findAllBySubwayRouteNameContainingIgnoreCaseOrSubwayStationNameContainingIgnoreCase(
+                        keyword, keyword);
+    }
+
     private List<Place> readSubwayPlaces() {
         ClassPathResource resource = new ClassPathResource(SUBWAY_DATA_PATH);
 

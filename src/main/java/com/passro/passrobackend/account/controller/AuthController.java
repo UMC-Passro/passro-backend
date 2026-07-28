@@ -124,6 +124,20 @@ public class AuthController {
         return APIResponse.onSuccess(code, null);
     }
 
+    @PostMapping("/find/id")
+    public APIResponse<Void> findId(@Valid @RequestBody AuthReqDTO.FindId dto) {
+        BaseSuccessCode code = AccountSuccessCode.OK;
+        accountService.findId(dto);
+        return APIResponse.onSuccess(code, null);
+    }
+
+    @PostMapping("/find/password")
+    public APIResponse<Void> findPassword(@Valid @RequestBody AuthReqDTO.FindPassword dto) {
+        BaseSuccessCode code = AccountSuccessCode.OK;
+        accountService.findPassword(dto);
+        return APIResponse.onSuccess(code, null);
+    }
+
     @PostMapping("/reissue")
     public ResponseEntity<APIResponse<AuthResDTO.TokenResponse>> reissue(@Valid @RequestBody AuthReqDTO.ReIssue dto){
         BaseSuccessCode code = AccountSuccessCode.OK;

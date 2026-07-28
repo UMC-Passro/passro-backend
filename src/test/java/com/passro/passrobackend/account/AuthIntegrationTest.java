@@ -131,6 +131,52 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void signupRejectsMissingRequiredFields() throws Exception {
+        mockMvc.perform(post("/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON400"))
+                .andExpect(jsonPath("$.result.email").exists())
+                .andExpect(jsonPath("$.result.password").exists())
+                .andExpect(jsonPath("$.result.nickname").exists())
+                .andExpect(jsonPath("$.result.name").exists())
+                .andExpect(jsonPath("$.result.phone").exists())
+                .andExpect(jsonPath("$.result.birth").exists())
+                .andExpect(jsonPath("$.result.sourceStationId").exists())
+                .andExpect(jsonPath("$.result.destinationStationId").exists());
+    }
+
+    @Test
+    void signupRejectsInvalidFormatsAndPlaceIds() throws Exception {
+        String request = """
+                {
+                  "email":"invalid-email",
+                  "password":"short",
+                  "nickname":"tester",
+                  "name":"Integration User",
+                  "phone":"1234",
+                  "birth":"2999-01-01",
+                  "sourceStationId":0,
+                  "destinationStationId":-1,
+                  "wayPoints":[1, 0]
+                }
+                """;
+
+        mockMvc.perform(post("/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON400"))
+                .andExpect(jsonPath("$.result.email").exists())
+                .andExpect(jsonPath("$.result.password").exists())
+                .andExpect(jsonPath("$.result.phone").exists())
+                .andExpect(jsonPath("$.result.birth").exists())
+                .andExpect(jsonPath("$.result.sourceStationId").exists())
+                .andExpect(jsonPath("$.result.destinationStationId").exists());
+    }
+
     private void saveUniversityDomain() {
         universityRepository.saveAndFlush(University.builder()
                 .name("Passro University " + UUID.randomUUID())

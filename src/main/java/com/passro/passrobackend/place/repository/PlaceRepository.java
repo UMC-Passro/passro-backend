@@ -10,7 +10,10 @@ import java.util.Optional;
 
 @Repository
 public interface PlaceRepository extends JpaRepository<Place, Long> {
-    List<Place> findAllBySubwayStationName(String stationName);
+    List<Place> findAllBySubwayRouteNameContainingIgnoreCaseOrSubwayStationNameContainingIgnoreCase(
+            String routeName,
+            String stationName
+    );
 
     Optional <Place> findBySubwayRouteNameAndSubwayStationName(
             String subwayRouteName,
