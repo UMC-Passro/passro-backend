@@ -2,6 +2,8 @@ package com.passro.passrobackend.subway.service;
 
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
+import com.passro.passrobackend.subway.dto.SubwayRouteResponseDto;
+import com.passro.passrobackend.subway.dto.SubwayStationResponseDto;
 import com.passro.passrobackend.subway.graph.SubwayEdge;
 import com.passro.passrobackend.subway.graph.SubwayNode;
 import jakarta.annotation.PostConstruct;
@@ -12,11 +14,13 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.PriorityQueue;
 import java.util.TreeMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +45,9 @@ public class SubwayService {
 
     private final PlaceRepository placeRepository;
     private final Map<String, SubwayNode> nodesByRouteAndStation = new LinkedHashMap<>();
+    private final Map<Long, SubwayNode> nodesById = new HashMap<>();
     private final Map<String, List<SubwayNode>> nodesByStation = new HashMap<>();
+    private final Map<String, List<SubwayNode>> nodesByTransferStation = new HashMap<>();
     private final List<SubwayEdge> edges = new ArrayList<>();
 
     @PostConstruct
@@ -73,6 +79,68 @@ public class SubwayService {
         return List.copyOf(nodesByStation.getOrDefault(stationName, List.of()));
     }
 
+    public SubwayRouteResponseDto findShortestRoute(
+            Place origin,
+            List<Place> waypoints,
+            Place destination) {
+        RouteResult route = calculateRoute(origin, waypoints, destination);
+        List<SubwayStationResponseDto> stations = route.nodes().stream()
+                .map(SubwayStationResponseDto::from)
+                .toList();
+
+        return new SubwayRouteResponseDto(route.distance(), route.transferCount(), stations);
+    }
+
+    public SubwayRouteResponseDto findShortestRouteByPlaceIds(
+            Long originPlaceId,
+            List<Long> waypointPlaceIds,
+            Long destinationPlaceId) {
+        Place origin = placeReference(originPlaceId);
+        List<Place> waypoints = waypointPlaceIds == null
+                ? List.of()
+                : waypointPlaceIds.stream().map(this::placeReference).toList();
+        Place destination = placeReference(destinationPlaceId);
+
+        return findShortestRoute(origin, waypoints, destination);
+    }
+
+    private RouteResult calculateRoute(
+            Place origin,
+            List<Place> waypoints,
+            Place destination) {
+        List<Place> stops = new ArrayList<>();
+        stops.add(origin);
+        if (waypoints != null) {
+            stops.addAll(waypoints);
+        }
+        stops.add(destination);
+
+        int totalDistance = 0;
+        int totalTransferCount = 0;
+        List<SubwayNode> routeNodes = new ArrayList<>();
+        for (int index = 0; index < stops.size() - 1; index++) {
+            SubwayNode source = getRequiredNode(stops.get(index));
+            SubwayNode target = getRequiredNode(stops.get(index + 1));
+            RouteResult segment = dijkstra(source, target);
+            totalDistance = Math.addExact(totalDistance, segment.distance());
+            totalTransferCount = Math.addExact(totalTransferCount, segment.transferCount());
+            if (routeNodes.isEmpty()) {
+                routeNodes.addAll(segment.nodes());
+            } else {
+                routeNodes.addAll(segment.nodes().subList(1, segment.nodes().size()));
+            }
+        }
+
+        return new RouteResult(totalDistance, totalTransferCount, List.copyOf(routeNodes));
+    }
+
+    private Place placeReference(Long placeId) {
+        if (placeId == null) {
+            throw new IllegalArgumentException("Place ID가 null입니다.");
+        }
+        return Place.builder().id(placeId).build();
+    }
+
     private Map<String, Long> loadPlaceIds() {
         Map<String, Long> placeIds = new HashMap<>();
         for (Place place : placeRepository.findAll()) {
@@ -92,11 +160,112 @@ public class SubwayService {
 
             SubwayNode node = nodesByRouteAndStation.computeIfAbsent(key, ignored -> SubwayNode.builder()
                     .id(placeId)
+                    .region(record.regionName())
                     .route(record.routeName())
                     .name(record.stationName())
                     .build());
+            nodesById.putIfAbsent(node.getId(), node);
             nodesByStation.computeIfAbsent(node.getName(), ignored -> new ArrayList<>()).add(node);
+            nodesByTransferStation
+                    .computeIfAbsent(transferStationKey(node.getRegion(), node.getName()), ignored -> new ArrayList<>())
+                    .add(node);
         }
+    }
+
+    private RouteResult dijkstra(SubwayNode source, SubwayNode target) {
+        if (source.getId().equals(target.getId())) {
+            return new RouteResult(0, 0, List.of(source));
+        }
+
+        Map<Long, RouteScore> bestScores = new HashMap<>();
+        Map<Long, SubwayNode> previousNodes = new HashMap<>();
+        PriorityQueue<RouteCandidate> queue = new PriorityQueue<>(
+                Comparator.comparingInt(RouteCandidate::distance)
+                        .thenComparingInt(RouteCandidate::transferCount));
+
+        RouteScore initialScore = new RouteScore(0, 0);
+        bestScores.put(source.getId(), initialScore);
+        queue.offer(new RouteCandidate(source, 0, 0));
+
+        while (!queue.isEmpty()) {
+            RouteCandidate current = queue.poll();
+            RouteScore currentBest = bestScores.get(current.node().getId());
+            if (currentBest == null
+                    || current.distance() != currentBest.distance()
+                    || current.transferCount() != currentBest.transferCount()) {
+                continue;
+            }
+
+            if (current.node().getId().equals(target.getId())) {
+                return new RouteResult(
+                        currentBest.distance(),
+                        currentBest.transferCount(),
+                        reconstructPath(source, target, previousNodes));
+            }
+
+            for (SubwayEdge edge : current.node().getEdges()) {
+                int nextDistance = Math.addExact(current.distance(), edge.getCost());
+                int nextTransferCount = current.transferCount() + (edge.isCrossroute() ? 1 : 0);
+                RouteScore nextScore = new RouteScore(nextDistance, nextTransferCount);
+                Long targetId = edge.getTarget().getId();
+                RouteScore previousScore = bestScores.get(targetId);
+
+                if (previousScore == null || nextScore.isBetterThan(previousScore)) {
+                    bestScores.put(targetId, nextScore);
+                    previousNodes.put(targetId, current.node());
+                    queue.offer(new RouteCandidate(edge.getTarget(), nextDistance, nextTransferCount));
+                }
+            }
+        }
+
+        throw new IllegalStateException(
+                "지하철 경로를 찾을 수 없습니다: " + describeNode(source) + " -> " + describeNode(target));
+    }
+
+    private List<SubwayNode> reconstructPath(
+            SubwayNode source,
+            SubwayNode target,
+            Map<Long, SubwayNode> previousNodes) {
+        List<SubwayNode> reversedPath = new ArrayList<>();
+        SubwayNode current = target;
+        reversedPath.add(current);
+
+        while (!current.getId().equals(source.getId())) {
+            current = previousNodes.get(current.getId());
+            if (current == null) {
+                throw new IllegalStateException("지하철 최단 경로 복원에 실패했습니다.");
+            }
+            reversedPath.add(current);
+        }
+
+        Collections.reverse(reversedPath);
+        return List.copyOf(reversedPath);
+    }
+
+    private SubwayNode getRequiredNode(Place place) {
+        if (place == null) {
+            throw new IllegalArgumentException("출발지, 경유지 또는 목적지 Place가 null입니다.");
+        }
+
+        if (place.getId() != null) {
+            SubwayNode node = nodesById.get(place.getId());
+            if (node != null) {
+                return node;
+            }
+        }
+
+        if (place.getSubwayRouteName() != null && place.getSubwayStationName() != null) {
+            return findNode(place.getSubwayRouteName(), place.getSubwayStationName())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Place에 해당하는 지하철 Node가 없습니다: route="
+                                    + place.getSubwayRouteName() + ", station=" + place.getSubwayStationName()));
+        }
+
+        throw new IllegalArgumentException("Place에 지하철 노선명과 역명이 없습니다.");
+    }
+
+    private String describeNode(SubwayNode node) {
+        return node.getRoute() + " " + node.getName();
     }
 
     private void connectStationsOnSameRoute(List<StationRecord> records) {
@@ -129,7 +298,7 @@ public class SubwayService {
     }
 
     private void connectTransferStations() {
-        for (List<SubwayNode> stationNodes : nodesByStation.values()) {
+        for (List<SubwayNode> stationNodes : nodesByTransferStation.values()) {
             for (int sourceIndex = 0; sourceIndex < stationNodes.size(); sourceIndex++) {
                 SubwayNode source = stationNodes.get(sourceIndex);
                 for (int targetIndex = sourceIndex + 1; targetIndex < stationNodes.size(); targetIndex++) {
@@ -216,7 +385,7 @@ public class SubwayService {
                 }
 
                 records.add(new StationRecord(
-                        normalizeRouteName(regionName, originalRouteName), order, stationName));
+                        regionName, normalizeRouteName(regionName, originalRouteName), order, stationName));
             }
             return records;
         } catch (IOException exception) {
@@ -230,6 +399,10 @@ public class SubwayService {
 
     private String nodeKey(String routeName, String stationName) {
         return routeName + '\u0000' + stationName;
+    }
+
+    private String transferStationKey(String regionName, String stationName) {
+        return regionName + '\u0000' + stationName;
     }
 
     private int findColumnIndex(List<String> headers, String columnName) {
@@ -275,6 +448,20 @@ public class SubwayService {
         return values;
     }
 
-    private record StationRecord(String routeName, int order, String stationName) {
+    private record StationRecord(String regionName, String routeName, int order, String stationName) {
+    }
+
+    private record RouteCandidate(SubwayNode node, int distance, int transferCount) {
+    }
+
+    private record RouteScore(int distance, int transferCount) {
+
+        private boolean isBetterThan(RouteScore other) {
+            return distance < other.distance
+                    || (distance == other.distance && transferCount < other.transferCount);
+        }
+    }
+
+    private record RouteResult(int distance, int transferCount, List<SubwayNode> nodes) {
     }
 }

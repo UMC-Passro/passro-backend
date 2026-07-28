@@ -10,6 +10,7 @@ import java.util.List;
 public class SubwayNode {
     // Related with Place entity
     private final Long id;
+    private final String region;
     private final String name;
     private final String route;
 
