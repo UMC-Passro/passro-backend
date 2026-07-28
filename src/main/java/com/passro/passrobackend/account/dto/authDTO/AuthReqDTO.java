@@ -28,6 +28,11 @@ public class AuthReqDTO {
     }
 
     @Getter
+    public static class mypage{
+
+    }
+
+    @Getter
     public static class WayPoint{
         private String stationName;
         private String routeName;

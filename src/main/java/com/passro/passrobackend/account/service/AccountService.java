@@ -245,4 +245,8 @@ public class AccountService {
             throw new AccountException(AccountErrorCode.MAIL_CODE_MISMATCH);
         }
     }
+
+    public AuthResDTO.ShipperMyPage myShipperPage(Long accountId){
+
+    }
 }

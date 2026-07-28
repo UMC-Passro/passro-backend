@@ -21,6 +21,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import software.amazon.awssdk.core.internal.http.pipeline.stages.ApplyUserAgentStage;
 
 import static com.passro.passrobackend.global.configuration.SwaggerErrorExamples.*;
 import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.ACCOUNT_OK;
@@ -131,4 +132,6 @@ public class AuthController {
                 .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().getHeaderValue())
                 .body(APIResponse.onSuccess(code, accountService.reissueToken(dto)));
     }
+
+
 }
