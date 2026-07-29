@@ -65,7 +65,7 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                         .content(signupBody(email, password, nickname)))
                 .andExpect(status().isOk());
 
-        Account account = accountRepository.findByEmail(email).orElseThrow();
+        Account account = accountRepository.findByMail(email).orElseThrow();
         assertThat(passwordEncoder.matches(password, account.getPassword())).isTrue();
 
         MvcResult loginResult = mockMvc.perform(post("/auth/login")
@@ -114,7 +114,7 @@ class AuthIntegrationTest extends IntegrationTestSupport {
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginBody(account.getEmail(), "wrong-password")))
+                        .content(loginBody(account.getMail(), "wrong-password")))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("ACCOUNT401_1"));
 

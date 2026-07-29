@@ -12,7 +12,7 @@ public class AuthReqDTO {
 
     @Getter
     public static class Signup{
-        private String email;
+        private String mail;
         private String password;
         private String nickname;
         private String name;
@@ -25,11 +25,6 @@ public class AuthReqDTO {
         private String destinationStationName;
         private String destinationRouteName;
         private List<WayPoint> wayPoints;
-    }
-
-    @Getter
-    public static class mypage{
-
     }
 
     @Getter
@@ -62,9 +57,13 @@ public class AuthReqDTO {
 
         @NotBlank(message = "이메일을 입력하세요.")
         @Email(message = "올바른 이메일 형식이 아닙니다.")
-        private String email;
+        private String mail;
 
         @NotBlank(message = "비밀번호를 입력하세요.")
+        @Pattern(
+                regexp = "^[a-zA-Z0-9]+$",
+                message = "비밀번호는 영문, 숫자만 입력 가능합니다."
+        )
         private String password;
     }
 

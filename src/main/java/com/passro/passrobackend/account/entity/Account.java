@@ -21,7 +21,7 @@ public class Account extends BaseEntity {
     private Long id;
 
     @Column(nullable = false)
-    private String email;
+    private String mail;
     @Column(nullable = false)
     private String password;
     @Column(nullable = false)
@@ -44,7 +44,11 @@ public class Account extends BaseEntity {
         this.certified = true;
     }
 
-    public void editNickname(String nickname) {
+    public void changeNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    public void changePassword(String password){
+        this.password = password;
     }
 }

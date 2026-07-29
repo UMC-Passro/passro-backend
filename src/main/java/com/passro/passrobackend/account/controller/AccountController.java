@@ -3,16 +3,14 @@ package com.passro.passrobackend.account.controller;
 import com.passro.passrobackend.account.dto.SubwayApiResDTO;
 import com.passro.passrobackend.account.dto.accountDTO.AccountReqDTO;
 import com.passro.passrobackend.account.dto.accountDTO.AccountResDTO;
-import com.passro.passrobackend.account.dto.authDTO.AuthResDTO;
 import com.passro.passrobackend.account.exception.code.AccountSuccessCode;
 import com.passro.passrobackend.account.service.AccountService;
 import com.passro.passrobackend.account.service.SubwayApiService;
 import com.passro.passrobackend.global.code.BaseSuccessCode;
 import com.passro.passrobackend.global.configuration.security.CustomUserDetails;
 import com.passro.passrobackend.global.response.APIResponse;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
-import lombok.Getter;
-import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
@@ -65,5 +63,19 @@ public class AccountController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().getHeaderValue())
                 .body(APIResponse.onSuccess(code, null));
+    }
+
+    @PostMapping("/mypage/edit/password/mail")
+    public APIResponse<Void> sendPasswordEditMail(@AuthenticationPrincipal CustomUserDetails userDetails){
+        BaseSuccessCode code = AccountSuccessCode.OK;
+        accountService.sendMailMessageAndEditPassword(userDetails.getAccountId());
+        return APIResponse.onSuccess(code, null);
+    }
+
+    @PostMapping("/mypage/edit/password")
+    public APIResponse<Void> editPassword(@Valid @RequestBody AccountReqDTO.EditPassword dto, @AuthenticationPrincipal CustomUserDetails userDetails){
+        BaseSuccessCode code = AccountSuccessCode.OK;
+        accountService.codeCodeConfirmAndEditPassword(dto, userDetails.getAccountId());
+        return APIResponse.onSuccess(code, null);
     }
 }
