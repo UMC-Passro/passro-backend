@@ -36,9 +36,7 @@ public class ShipperMatchingService {
     private final WayPointRepository wayPointRepository;
     private final SubwayService subwayService;
 
-    /**
-     * 배송기사의 동선과 권역을 기반으로 5단계 우선순위 정렬 및 권역 필터링이 적용된 매칭 대기 배송 목록 조회
-     */
+    // 배송기사의 동선과 권역을 기반으로 5단계 우선순위 정렬 및 권역 필터링이 적용된 매칭 대기 배송 목록 조회
     public List<Delivery> listMatchRequestedWithPriority(Account shipper) {
         Optional<AccountPlace> accountPlaceOpt = accountPlaceRepository.findByAccount(shipper);
         if (accountPlaceOpt.isEmpty()) {
@@ -98,10 +96,7 @@ public class ShipperMatchingService {
                 .toList();
     }
 
-    /**
-     * 배송건 1건에 대한 예외 안전 평가 메서드
-     * SubwayService 연산 시 예외가 발생하면 해당 배송건을 건너뛰도록 null 반환
-     */
+    // SubwayService 연산 시 예외가 발생하면 해당 배송건을 건너뛰도록 null 반환
     private EvaluatedDelivery evaluateDeliverySafely(Delivery delivery, Long shipperStartId, Long shipperDestId, Set<Long> passThroughPlaceIds, String shipperRegion) {
         if (delivery == null || delivery.getOrigin() == null || delivery.getDest() == null) {
             return null;
@@ -130,9 +125,7 @@ public class ShipperMatchingService {
         }
     }
 
-    /**
-     * 우선순위 5단계 판별 로직
-     */
+    // 우선순위 5단계 판별 로직
     private MatchingPriority evaluatePriority(Delivery delivery, Long shipperStartId, Long shipperDestId, Set<Long> passThroughPlaceIds) {
         Long originId = delivery.getOrigin().getId();
         Long destId = delivery.getDest().getId();
