@@ -24,21 +24,24 @@ import static com.passro.passrobackend.global.configuration.SwaggerSuccessExampl
 import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.SHIPPER_LIST;
 import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.SHIPPER_OK;
 
+import com.passro.passrobackend.shipper.service.ShipperMatchingService;
+
 @RestController
 @RequestMapping("/shipper")
 @RequiredArgsConstructor
 @Tag(name = "배송기사", description = "배송기사의 배송 조회 및 배송 상태 변경 API")
 public class ShipperController {
     private final ShipperService shipperService;
+    private final ShipperMatchingService shipperMatchingService;
 
     @GetMapping("/matched")
     @ResponseBody
-    @Operation(summary = "매칭 대기 배송 목록 조회", description = "현재 배송기사를 기다리는 배송 요청 목록을 조회합니다.")
+    @Operation(summary = "매칭 대기 배송 목록 조회", description = "로그인한 배송기사의 권역 및 동선을 기반으로 우선순위 정렬된 배송 요청 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
             content = @Content(examples = @ExampleObject(name = "SHIPPER200_1", summary = "매칭 대기 배송 조회 성공", value = SHIPPER_LIST)))
     public APIResponse<List<ShipperDeliveryListDto>> listMatched(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
-        return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperService.listMatchRequested().stream().map(ShipperDeliveryListDto::fromDelivery).toList());
+        return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperMatchingService.listMatchRequestedWithPriority(account).stream().map(ShipperDeliveryListDto::fromDelivery).toList());
     }
 
     @GetMapping("/")
