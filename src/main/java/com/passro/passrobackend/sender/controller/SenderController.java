@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -109,7 +110,7 @@ public class SenderController {
     })
     public APIResponse<String> createDelivery(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
-            @RequestBody SenderDeliveryCreateRequestDto request) {
+            @Valid @RequestBody SenderDeliveryCreateRequestDto request) {
         Long deliveryId = senderCommandService.createDelivery(account, request);
         return APIResponse.onSuccess(SenderSuccessCode.CREATED, deliveryId.toString());
     }

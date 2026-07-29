@@ -96,18 +96,21 @@ public abstract class IntegrationTestSupport {
         return "Bearer " + token;
     }
 
-    protected long createDelivery(String token, String goodName, String origin, String destination) throws Exception {
+    protected long createDelivery(String token, String goodName, long sourceStationId, long destinationStationId) throws Exception {
         String body = """
                 {
-                  "originAddress":"%s",
-                  "destAddress":"%s",
+                  "sourceStationId":%d,
+                  "destinationStationId":%d,
                   "name":"%s",
                   "price":100000,
                   "size":"MEDIUM",
                   "picture":"good.png",
-                  "memo":"Handle with care"
+                  "memo":"Handle with care",
+                  "basePoint":1000,
+                  "distancePoint":500,
+                  "weightPoint":300
                 }
-                """.formatted(origin, destination, goodName);
+                """.formatted(sourceStationId, destinationStationId, goodName);
 
         MvcResult result = mockMvc.perform(post("/sender")
                         .header("Authorization", bearer(token))
@@ -116,5 +119,9 @@ public abstract class IntegrationTestSupport {
                 .andExpect(status().isCreated())
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString()).at("/result").asLong();
+    }
+
+    protected long createDelivery(String token, String goodName, String origin, String destination) throws Exception {
+        return createDelivery(token, goodName, 1L, 2L);
     }
 }

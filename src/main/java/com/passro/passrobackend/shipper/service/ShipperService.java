@@ -45,12 +45,14 @@ public class ShipperService {
     public void matchAccept(Account shipper, Long id) {
         Delivery delivery = getDeliveryForUpdate(id);
         validateStatus(delivery, DeliveryState.WAIT);
-        if (delivery.getShipper() != null) {
+        if (delivery.getShipper() != null || Boolean.TRUE.equals(delivery.getMatched())) {
             throw new DeliveryException(DeliveryErrorCode.INVALID_STATUS_TRANSITION);
         }
 
+        // 매칭된 상태로 변경
         delivery.setShipper(shipper);
         delivery.setStatus(DeliveryState.MATCHED);
+        delivery.setMatched(true);
         deliveryRepository.save(delivery);
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.MATCHED));
     }

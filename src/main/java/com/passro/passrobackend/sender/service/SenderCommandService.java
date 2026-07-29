@@ -98,7 +98,7 @@ public class SenderCommandService {
                 .distance_point(request.getDistancePoint())
                 .weight_point(request.getWeightPoint())
                 .build();
-            deliveryPointRepository.save(pointInfo);
+        deliveryPointRepository.save(pointInfo);
 
         // 배송 요청 로그 저장
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.SEND_REQUEST));

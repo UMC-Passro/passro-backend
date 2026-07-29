@@ -160,6 +160,7 @@ class ShipperDeliveryIntegrationTest extends IntegrationTestSupport {
 
             Delivery matchedDelivery = deliveryRepository.findById(delivery.getId()).orElseThrow();
             assertThat(matchedDelivery.getStatus()).isEqualTo(DeliveryState.MATCHED);
+            assertThat(matchedDelivery.getMatched()).isTrue();
             assertThat(matchedDelivery.getShipper().getId())
                     .isIn(firstShipper.getId(), secondShipper.getId());
             assertThat(deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(matchedDelivery))
