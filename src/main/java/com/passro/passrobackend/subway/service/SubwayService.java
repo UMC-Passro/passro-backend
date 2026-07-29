@@ -79,6 +79,14 @@ public class SubwayService {
         return List.copyOf(nodesByStation.getOrDefault(stationName, List.of()));
     }
 
+    public String getRegionByPlaceId(Long placeId) {
+        if (placeId == null) {
+            return null;
+        }
+        SubwayNode node = nodesById.get(placeId);
+        return node != null ? node.getRegion() : null;
+    }
+
     public SubwayRouteResponseDto findShortestRoute(
             Place origin,
             List<Place> waypoints,
