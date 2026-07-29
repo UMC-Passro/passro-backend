@@ -1,10 +1,10 @@
 package com.passro.passrobackend.shipper.controller;
 
 import com.passro.passrobackend.account.entity.Account;
-import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.global.response.APIResponse;
 import com.passro.passrobackend.shipper.code.ShipperSuccessCode;
-import com.passro.passrobackend.shipper.dto.ShipperDeliveryDto;
+import com.passro.passrobackend.shipper.dto.ShipperDeliveryDetailDto;
+import com.passro.passrobackend.shipper.dto.ShipperDeliveryListDto;
 import com.passro.passrobackend.shipper.service.ShipperService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -39,9 +39,9 @@ public class ShipperController {
     @Operation(summary = "매칭 대기 배송 목록 조회", description = "로그인한 배송기사의 권역 및 동선을 기반으로 우선순위 정렬된 배송 요청 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
             content = @Content(examples = @ExampleObject(name = "SHIPPER200_1", summary = "매칭 대기 배송 조회 성공", value = SHIPPER_LIST)))
-    public APIResponse<List<ShipperDeliveryDto>> listMatched(
+    public APIResponse<List<ShipperDeliveryListDto>> listMatched(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
-        return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperMatchingService.listMatchRequestedWithPriority(account).stream().map(ShipperDeliveryDto::fromDelivery).toList());
+        return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperMatchingService.listMatchRequestedWithPriority(account).stream().map(ShipperDeliveryListDto::fromDelivery).toList());
     }
 
     @GetMapping("/")
@@ -49,9 +49,9 @@ public class ShipperController {
     @Operation(summary = "내 배송 목록 조회", description = "로그인한 배송기사에게 배정된 배송 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
             content = @Content(examples = @ExampleObject(name = "SHIPPER200_1", summary = "내 배송 목록 조회 성공", value = SHIPPER_LIST)))
-    public APIResponse<List<ShipperDeliveryDto>> listDelivery(
+    public APIResponse<List<ShipperDeliveryListDto>> listDelivery(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
-         return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperService.listAllByShipper(account).stream().map(ShipperDeliveryDto::fromDelivery).toList());
+         return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperService.listAllByShipper(account).stream().map(ShipperDeliveryListDto::fromDelivery).toList());
     }
 
     @GetMapping("/{deliveryId}/")
@@ -64,12 +64,10 @@ public class ShipperController {
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
                             examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND)))
     })
-    public APIResponse<ShipperDeliveryDto> getDelivery(
+    public APIResponse<ShipperDeliveryDetailDto> getDelivery(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 ID", example = "1") @PathVariable("deliveryId") Long deliveryId) {
-        Delivery delivery = shipperService.getDeliveryById(account, deliveryId);
-
-        return APIResponse.onSuccess(ShipperSuccessCode.OK, ShipperDeliveryDto.fromDelivery(delivery));
+        return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperService.getDeliveryById(account, deliveryId));
     }
 
     @PatchMapping("/{deliveryId}/matched")
