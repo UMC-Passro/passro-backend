@@ -181,4 +181,27 @@ class ShipperMatchingServiceTest {
         assertThat(result).hasSize(2);
         assertThat(result).containsExactly(delivery1, delivery2);
     }
+
+    @Test
+    @DisplayName("배송기사의 출발역 권역 조회 시 예외가 발생하거나 null이면 매칭 대기 목록을 빈 리스트로 반환한다")
+    void shouldReturnEmptyListWhenShipperRegionLookupFails() {
+        // Given
+        Account shipper = Account.builder().id(1L).build();
+        Place startPlace = Place.builder().id(10L).build();
+
+        AccountPlace accountPlace = AccountPlace.builder()
+                .account(shipper)
+                .startPlace(startPlace)
+                .build();
+
+        given(accountPlaceRepository.findByAccount(shipper)).willReturn(Optional.of(accountPlace));
+        given(wayPointRepository.findAllByAccountPlaceOrderByVisitOrderAsc(accountPlace)).willReturn(List.of());
+        given(subwayService.getRegionByPlaceId(10L)).willThrow(new IllegalStateException("출발역 권역 정보 없음"));
+
+        // When
+        List<Delivery> result = shipperMatchingService.listMatchRequestedWithPriority(shipper);
+
+        // Then
+        assertThat(result).isEmpty();
+    }
 }

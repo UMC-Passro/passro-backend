@@ -61,6 +61,11 @@ public class ShipperMatchingService {
             }
         }
 
+        if (shipperRegion == null) {
+            log.warn("배송기사 출발역 권역을 확인할 수 없어 매칭 대기 목록을 비웁니다: shipperId={}", shipper.getId());
+            return Collections.emptyList();
+        }
+
         // 배송기사 통과 역 경로 Place ID Set 산출 (예외 발생 시 빈 Set으로 폴백)
         Set<Long> passThroughPlaceIds = Collections.emptySet();
         if (accountPlace.getStartPlace() != null && accountPlace.getDestinationPlace() != null) {
