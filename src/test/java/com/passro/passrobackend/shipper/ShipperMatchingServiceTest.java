@@ -170,8 +170,8 @@ class ShipperMatchingServiceTest {
         Account shipper = Account.builder().id(1L).build();
         given(accountPlaceRepository.findByAccount(shipper)).willReturn(Optional.empty());
 
-        Delivery delivery1 = Delivery.builder().id(1L).status(DeliveryState.WAIT).build();
-        Delivery delivery2 = Delivery.builder().id(2L).status(DeliveryState.WAIT).build();
+        Delivery delivery1 = Delivery.builder().id(1L).status(DeliveryState.WAIT).terms(true).build();
+        Delivery delivery2 = Delivery.builder().id(2L).status(DeliveryState.WAIT).terms(true).build();
         given(deliveryRepository.findAllByStatus(DeliveryState.WAIT)).willReturn(List.of(delivery1, delivery2));
 
         // When
