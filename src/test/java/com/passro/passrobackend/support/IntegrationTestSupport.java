@@ -120,8 +120,4 @@ public abstract class IntegrationTestSupport {
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString()).at("/result").asLong();
     }
-
-    protected long createDelivery(String token, String goodName, String origin, String destination) throws Exception {
-        return createDelivery(token, goodName, 1L, 2L);
-    }
 }

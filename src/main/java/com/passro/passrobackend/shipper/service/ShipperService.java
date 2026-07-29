@@ -45,7 +45,7 @@ public class ShipperService {
     public void matchAccept(Account shipper, Long id) {
         Delivery delivery = getDeliveryForUpdate(id);
         validateStatus(delivery, DeliveryState.WAIT);
-        if (delivery.getShipper() != null || Boolean.TRUE.equals(delivery.getMatched())) {
+        if (delivery.getShipper() != null || Boolean.TRUE.equals(delivery.getMatched()) || !Boolean.TRUE.equals(delivery.getTerms())) {
             throw new DeliveryException(DeliveryErrorCode.INVALID_STATUS_TRANSITION);
         }
 

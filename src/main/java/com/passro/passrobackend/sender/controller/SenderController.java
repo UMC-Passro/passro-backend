@@ -101,9 +101,12 @@ public class SenderController {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "배송 요청 생성 성공", useReturnTypeSchema = true,
                     content = @Content(examples = @ExampleObject(name = "SENDER201_1", summary = "배송 요청 생성 성공", value = SENDER_CREATED))),
-            @ApiResponse(responseCode = "400", description = "출발역과 도착역이 동일함",
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패 또는 출발역과 도착역이 동일함",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
-                            examples = @ExampleObject(name = "DELIVERY400_4", summary = "출발역과 도착역 동일 불가능", value = DELIVERY_SAME_ORIGIN_DEST))),
+                            examples = {
+                                    @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION),
+                                    @ExampleObject(name = "DELIVERY400_4", summary = "출발역과 도착역 동일 불가능", value = DELIVERY_SAME_ORIGIN_DEST)
+                            })),
             @ApiResponse(responseCode = "404", description = "해당 출발역/도착역 장소를 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
                             examples = @ExampleObject(name = "DELIVERY404_2", summary = "장소 정보 없음", value = DELIVERY_PLACE_NOT_FOUND)))

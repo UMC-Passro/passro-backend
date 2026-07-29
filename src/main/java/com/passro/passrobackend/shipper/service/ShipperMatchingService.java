@@ -40,8 +40,10 @@ public class ShipperMatchingService {
     public List<Delivery> listMatchRequestedWithPriority(Account shipper) {
         Optional<AccountPlace> accountPlaceOpt = accountPlaceRepository.findByAccount(shipper);
         if (accountPlaceOpt.isEmpty()) {
-            // 동선 정보가 등록되지 않은 배송기사인 경우 전체 대기 목록 반환
-            return deliveryRepository.findAllByStatus(DeliveryState.WAIT);
+            // 동선 정보가 등록되지 않은 배송기사인 경우 전체 대기 목록 반환 (약관 동의 건만)
+            return deliveryRepository.findAllByStatus(DeliveryState.WAIT).stream()
+                    .filter(delivery -> Boolean.TRUE.equals(delivery.getTerms()))
+                    .toList();
         }
 
         AccountPlace accountPlace = accountPlaceOpt.get();
