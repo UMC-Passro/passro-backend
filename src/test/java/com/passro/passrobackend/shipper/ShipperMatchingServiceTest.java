@@ -87,19 +87,19 @@ class ShipperMatchingServiceTest {
 
         // 배송 대기 목록 생성
         // 1순위: 출발(10L), 목적(20L) 둘 다 같음
-        Delivery rank1 = Delivery.builder().id(1L).origin(startPlace).dest(destPlace).status(DeliveryState.WAIT).createdAt(LocalDateTime.now()).build();
+        Delivery rank1 = Delivery.builder().id(1L).origin(startPlace).dest(destPlace).status(DeliveryState.WAIT).terms(true).createdAt(LocalDateTime.now()).build();
         // 2순위: 출발(10L)만 같음
-        Delivery rank2 = Delivery.builder().id(2L).origin(startPlace).dest(outsidePlace1).status(DeliveryState.WAIT).createdAt(LocalDateTime.now()).build();
+        Delivery rank2 = Delivery.builder().id(2L).origin(startPlace).dest(outsidePlace1).status(DeliveryState.WAIT).terms(true).createdAt(LocalDateTime.now()).build();
         // 3순위: 통과역(11L), 통과역(12L) 둘 다 경로 내에 있음
-        Delivery rank3 = Delivery.builder().id(3L).origin(passThroughPlace1).dest(passThroughPlace2).status(DeliveryState.WAIT).createdAt(LocalDateTime.now()).build();
+        Delivery rank3 = Delivery.builder().id(3L).origin(passThroughPlace1).dest(passThroughPlace2).status(DeliveryState.WAIT).terms(true).createdAt(LocalDateTime.now()).build();
         // 4순위: 통과역(11L) 1개만 경로 내에 있음
-        Delivery rank4 = Delivery.builder().id(4L).origin(passThroughPlace1).dest(outsidePlace1).status(DeliveryState.WAIT).createdAt(LocalDateTime.now()).build();
+        Delivery rank4 = Delivery.builder().id(4L).origin(passThroughPlace1).dest(outsidePlace1).status(DeliveryState.WAIT).terms(true).createdAt(LocalDateTime.now()).build();
         // 5순위(거리 15): 둘 다 경로에 없음
-        Delivery rank5Far = Delivery.builder().id(5L).origin(outsidePlace1).dest(outsidePlace2).status(DeliveryState.WAIT).createdAt(LocalDateTime.now()).build();
+        Delivery rank5Far = Delivery.builder().id(5L).origin(outsidePlace1).dest(outsidePlace2).status(DeliveryState.WAIT).terms(true).createdAt(LocalDateTime.now()).build();
         // 5순위(거리 5): 둘 다 경로에 없음 (거리 더 가까움)
-        Delivery rank5Near = Delivery.builder().id(6L).origin(outsidePlace3).dest(outsidePlace2).status(DeliveryState.WAIT).createdAt(LocalDateTime.now()).build();
+        Delivery rank5Near = Delivery.builder().id(6L).origin(outsidePlace3).dest(outsidePlace2).status(DeliveryState.WAIT).terms(true).createdAt(LocalDateTime.now()).build();
         // 부산 권역: 필터링되어 제외되어야 함
-        Delivery busanDelivery = Delivery.builder().id(7L).origin(busanPlace).dest(outsidePlace1).status(DeliveryState.WAIT).createdAt(LocalDateTime.now()).build();
+        Delivery busanDelivery = Delivery.builder().id(7L).origin(busanPlace).dest(outsidePlace1).status(DeliveryState.WAIT).terms(true).createdAt(LocalDateTime.now()).build();
 
         given(deliveryRepository.findAllByStatus(DeliveryState.WAIT))
                 .willReturn(List.of(rank5Far, busanDelivery, rank4, rank1, rank3, rank5Near, rank2));
@@ -149,8 +149,8 @@ class ShipperMatchingServiceTest {
         ));
         given(subwayService.findShortestRoute(startPlace, List.of(), destPlace)).willReturn(shipperRoute);
 
-        Delivery validDelivery = Delivery.builder().id(1L).origin(startPlace).dest(destPlace).status(DeliveryState.WAIT).build();
-        Delivery errorDelivery = Delivery.builder().id(2L).origin(errorPlace).dest(destPlace).status(DeliveryState.WAIT).build();
+        Delivery validDelivery = Delivery.builder().id(1L).origin(startPlace).dest(destPlace).status(DeliveryState.WAIT).terms(true).build();
+        Delivery errorDelivery = Delivery.builder().id(2L).origin(errorPlace).dest(destPlace).status(DeliveryState.WAIT).terms(true).build();
 
         given(deliveryRepository.findAllByStatus(DeliveryState.WAIT)).willReturn(List.of(errorDelivery, validDelivery));
 

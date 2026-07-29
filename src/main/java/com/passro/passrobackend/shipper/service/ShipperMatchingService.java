@@ -103,7 +103,7 @@ public class ShipperMatchingService {
 
     // SubwayService 연산 시 예외가 발생하면 해당 배송건을 건너뛰도록 null 반환
     private EvaluatedDelivery evaluateDeliverySafely(Delivery delivery, Long shipperStartId, Long shipperDestId, Set<Long> passThroughPlaceIds, String shipperRegion) {
-        if (delivery == null || delivery.getOrigin() == null || delivery.getDest() == null) {
+        if (delivery == null || delivery.getOrigin() == null || delivery.getDest() == null || !Boolean.TRUE.equals(delivery.getTerms())) {
             return null;
         }
 
