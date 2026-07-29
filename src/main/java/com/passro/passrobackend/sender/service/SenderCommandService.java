@@ -15,6 +15,7 @@ import com.passro.passrobackend.delivery.repository.DeliveryGoodInfoRepository;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
 import com.passro.passrobackend.sender.dto.SenderDeliveryCreateRequestDto;
+import com.passro.passrobackend.subway.service.SubwayService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -31,12 +32,13 @@ public class SenderCommandService {
     private final DeliveryGoodInfoRepository deliveryGoodInfoRepository;
     private final DeliveryPointRepository deliveryPointRepository;
     private final SenderDeliveryValidator senderDeliveryValidator;
+    private final SubwayService subwayService;
 
     private final ApplicationEventPublisher eventPublisher;
 
     // 발송 완료 처리
     public void completeDelivery(Account sender, Long deliveryId) {
-        Delivery delivery = senderDeliveryValidator.getDeliveryAndValidateOwnership(deliveryId, sender);
+        Delivery delivery = senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(deliveryId, sender);
 
         // '검수 요청' 상태에서만 배송 완료 처리 가능
         if (delivery.getStatus() != DeliveryState.CONFIRM_REQUESTED) {
@@ -52,12 +54,21 @@ public class SenderCommandService {
 
     // 배송 요청 생성
     public Long createDelivery(Account sender, SenderDeliveryCreateRequestDto request) {
-        // 출발지 및 도착지 Place 엔티티 생성/저장
-        // Place 있는지 확인
+        // 출발역과 도착역이 동일한 경우 예외 처리
+        if (request.getSourceStationId().equals(request.getDestinationStationId())) {
+            throw new DeliveryException(DeliveryErrorCode.SAME_ORIGIN_DESTINATION_NOT_ALLOWED);
+        }
+
+        // 출발지 및 도착지 Place 엔티티 존재 확인
         Place origin = placeRepository.findById(request.getSourceStationId())
                 .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.PLACE_NOT_FOUND));
         Place dest = placeRepository.findById(request.getDestinationStationId())
                 .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.PLACE_NOT_FOUND));
+
+        // 지하철 데이터베이스/그래프에 등록된 유효한 지하철역 노드인지 검증
+        if (subwayService.getRegionByPlaceId(origin.getId()) == null || subwayService.getRegionByPlaceId(dest.getId()) == null) {
+            throw new DeliveryException(DeliveryErrorCode.PLACE_NOT_FOUND);
+        }
 
         // 배송 (Delivery) 엔티티 생성 및 저장
         Delivery delivery = Delivery.builder()
@@ -87,7 +98,7 @@ public class SenderCommandService {
                 .distance_point(request.getDistancePoint())
                 .weight_point(request.getWeightPoint())
                 .build();
-            deliveryPointRepository.save(pointInfo);
+        deliveryPointRepository.save(pointInfo);
 
         // 배송 요청 로그 저장
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.SEND_REQUEST));
@@ -98,7 +109,7 @@ public class SenderCommandService {
 
     // 발송 약관 동의
     public void agreeTerms(Account sender, Long deliveryId) {
-        Delivery delivery = senderDeliveryValidator.getDeliveryAndValidateOwnership(deliveryId, sender);
+        Delivery delivery = senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(deliveryId, sender);
 
         delivery.setTerms(true);
         deliveryRepository.save(delivery);
@@ -106,7 +117,7 @@ public class SenderCommandService {
 
     // 발송 요청 취소 처리
     public void cancelDelivery(Account sender, Long deliveryId) {
-        Delivery delivery = senderDeliveryValidator.getDeliveryAndValidateOwnership(deliveryId, sender);
+        Delivery delivery = senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(deliveryId, sender);
 
         // 매칭이 되었다면, 취소 할 수 없음.
         if (delivery.getStatus() != DeliveryState.WAIT) {

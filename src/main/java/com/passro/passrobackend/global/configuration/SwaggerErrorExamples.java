@@ -25,12 +25,18 @@ public final class SwaggerErrorExamples {
 
     public static final String DELIVERY_NOT_FOUND =
             "{\"success\":false,\"code\":\"DELIVERY404_1\",\"message\":\"해당 배송을 찾을 수 없습니다.\",\"result\":null}";
+    public static final String DELIVERY_PLACE_NOT_FOUND =
+            "{\"success\":false,\"code\":\"DELIVERY404_2\",\"message\":\"해당 장소를 찾을 수 없습니다.\",\"result\":null}";
+    public static final String DELIVERY_POINT_NOT_FOUND =
+            "{\"success\":false,\"code\":\"DELIVERY404_3\",\"message\":\"해당 배송의 결제 포인트 정보를 찾을 수 없습니다.\",\"result\":null}";
     public static final String DELIVERY_FORBIDDEN =
             "{\"success\":false,\"code\":\"DELIVERY403_1\",\"message\":\"해당 배송에 대한 접근 권한이 없습니다.\",\"result\":null}";
     public static final String DELIVERY_CANNOT_CANCEL =
             "{\"success\":false,\"code\":\"DELIVERY400_1\",\"message\":\"매칭이 진행된 배송은 취소할 수 없습니다.\",\"result\":null}";
     public static final String DELIVERY_INVALID_COMPLETION_STATUS =
-            "{\"success\":false,\"code\":\"DELIVERY400_2\",\"message\":\"배송 완료 처리할 수 없는 상태입니다.\",\"result\":null}";
+            "{\"success\":false,\"code\":\"DELIVERY400_2\",\"message\":\"배송 완료 처리를 할 수 없는 상태입니다.\",\"result\":null}";
+    public static final String DELIVERY_SAME_ORIGIN_DEST =
+            "{\"success\":false,\"code\":\"DELIVERY400_4\",\"message\":\"출발역과 도착역은 같을 수 없습니다.\",\"result\":null}";
 
     public static final String FILE_NOT_FOUND =
             "{\"success\":false,\"code\":\"FILE404_1\",\"message\":\"파일을 찾을 수 없습니다.\",\"result\":null}";

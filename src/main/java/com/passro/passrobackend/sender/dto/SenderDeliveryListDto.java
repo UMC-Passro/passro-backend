@@ -1,6 +1,7 @@
 package com.passro.passrobackend.sender.dto;
 
 import com.passro.passrobackend.delivery.enums.DeliveryState;
+import com.passro.passrobackend.place.entity.Place;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,7 +14,7 @@ import lombok.NoArgsConstructor;
 public class SenderDeliveryListDto {
     private Long deliveryId;
     private String goodName;
-    private String originAddress;
-    private String destAddress;
+    private Place originPlace;
+    private Place destPlace;
     private DeliveryState status;
 }

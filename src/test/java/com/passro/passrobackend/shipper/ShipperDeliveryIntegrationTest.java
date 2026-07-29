@@ -41,7 +41,7 @@ class ShipperDeliveryIntegrationTest extends IntegrationTestSupport {
         Account shipper = createAccount("flow-shipper");
         String senderToken = accessToken(sender);
         String shipperToken = accessToken(shipper);
-        long deliveryId = createDelivery(senderToken, "Monitor", "Seoul", "Daejeon");
+        long deliveryId = createDelivery(senderToken, "Monitor", 1L, 2L);
 
         mockMvc.perform(get("/shipper/matched").header("Authorization", bearer(shipperToken)))
                 .andExpect(status().isOk())
@@ -85,7 +85,7 @@ class ShipperDeliveryIntegrationTest extends IntegrationTestSupport {
     void shipperCannotSkipDeliveryStates() throws Exception {
         Account sender = createAccount("state-sender");
         Account shipper = createAccount("state-shipper");
-        long deliveryId = createDelivery(accessToken(sender), "Keyboard", "A", "B");
+        long deliveryId = createDelivery(accessToken(sender), "Keyboard", 1L, 2L);
         String shipperToken = accessToken(shipper);
 
         patchAsShipper(deliveryId, "matched", shipperToken);
@@ -107,7 +107,7 @@ class ShipperDeliveryIntegrationTest extends IntegrationTestSupport {
         Account sender = createAccount("owner-sender");
         Account assigned = createAccount("assigned-shipper");
         Account stranger = createAccount("stranger-shipper");
-        long deliveryId = createDelivery(accessToken(sender), "Tablet", "A", "B");
+        long deliveryId = createDelivery(accessToken(sender), "Tablet", 1L, 2L);
         patchAsShipper(deliveryId, "matched", accessToken(assigned));
         String strangerToken = accessToken(stranger);
 
@@ -160,6 +160,7 @@ class ShipperDeliveryIntegrationTest extends IntegrationTestSupport {
 
             Delivery matchedDelivery = deliveryRepository.findById(delivery.getId()).orElseThrow();
             assertThat(matchedDelivery.getStatus()).isEqualTo(DeliveryState.MATCHED);
+            assertThat(matchedDelivery.getMatched()).isTrue();
             assertThat(matchedDelivery.getShipper().getId())
                     .isIn(firstShipper.getId(), secondShipper.getId());
             assertThat(deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(matchedDelivery))

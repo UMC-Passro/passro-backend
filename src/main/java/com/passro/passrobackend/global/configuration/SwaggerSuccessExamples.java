@@ -18,7 +18,7 @@ public final class SwaggerSuccessExamples {
     public static final String REVIEW_AVERAGE =
             "{\"success\":true,\"code\":\"REVIEW200_1\",\"message\":\"평균 평점 조회 성공\",\"result\":{\"averageRating\":4.5}}";
     public static final String SENDER_LIST =
-            "{\"success\":true,\"code\":\"SENDER200_1\",\"message\":\"요청 성공.\",\"result\":[{\"deliveryId\":1,\"goodName\":\"노트북\",\"originAddress\":\"서울시 강남구\",\"destAddress\":\"서울시 마포구\",\"status\":\"WAIT\"}]}";
+            "{\"success\":true,\"code\":\"SENDER200_1\",\"message\":\"요청 성공.\",\"result\":[{\"deliveryId\":1,\"goodName\":\"노트북\",\"originPlace\":{\"id\":1,\"subwayRouteName\":\"2호선\",\"subwayStationName\":\"강남\"},\"destPlace\":{\"id\":2,\"subwayRouteName\":\"2호선\",\"subwayStationName\":\"홍대입구\"},\"status\":\"WAIT\"}]}";
     public static final String SENDER_DETAIL =
             "{\"success\":true,\"code\":\"SENDER200_1\",\"message\":\"요청 성공.\",\"result\":{\"id\":1,\"status\":\"DELIVERING\",\"shipperInfo\":{\"name\":\"홍길동\",\"picture\":\"https://example.com/profile.png\",\"place\":{\"id\":1,\"address\":\"서울시 강남구\"}},\"deliveryTimeLine\":[]}}";
     public static final String SENDER_PAYMENT =

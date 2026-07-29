@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -80,9 +81,12 @@ public class SenderController {
             @ApiResponse(responseCode = "403", description = "해당 배송에 접근할 권한이 없음",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
                             examples = @ExampleObject(name = "DELIVERY403_1", summary = "배송 접근 권한 없음", value = DELIVERY_FORBIDDEN))),
-            @ApiResponse(responseCode = "404", description = "배송 또는 결제 정보를 찾을 수 없음",
+            @ApiResponse(responseCode = "404", description = "배송 또는 결제 포인트 정보를 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
-                            examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 또는 결제 정보 없음", value = DELIVERY_NOT_FOUND)))
+                            examples = {
+                                    @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND),
+                                    @ExampleObject(name = "DELIVERY404_3", summary = "결제 포인트 정보 없음", value = DELIVERY_POINT_NOT_FOUND)
+                            }))
     })
     public APIResponse<SenderPaymentAmountDto> getPaymentAmount(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
@@ -94,11 +98,22 @@ public class SenderController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "배송 요청 생성", description = "출발지, 도착지, 물품 정보를 입력해 새 배송을 요청합니다. 응답 result는 생성된 배송 ID입니다.")
-    @ApiResponse(responseCode = "201", description = "배송 요청 생성 성공", useReturnTypeSchema = true,
-            content = @Content(examples = @ExampleObject(name = "SENDER201_1", summary = "배송 요청 생성 성공", value = SENDER_CREATED)))
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "배송 요청 생성 성공", useReturnTypeSchema = true,
+                    content = @Content(examples = @ExampleObject(name = "SENDER201_1", summary = "배송 요청 생성 성공", value = SENDER_CREATED))),
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패 또는 출발역과 도착역이 동일함",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = {
+                                    @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION),
+                                    @ExampleObject(name = "DELIVERY400_4", summary = "출발역과 도착역 동일 불가능", value = DELIVERY_SAME_ORIGIN_DEST)
+                            })),
+            @ApiResponse(responseCode = "404", description = "해당 출발역/도착역 장소를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(name = "DELIVERY404_2", summary = "장소 정보 없음", value = DELIVERY_PLACE_NOT_FOUND)))
+    })
     public APIResponse<String> createDelivery(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
-            @RequestBody SenderDeliveryCreateRequestDto request) {
+            @Valid @RequestBody SenderDeliveryCreateRequestDto request) {
         Long deliveryId = senderCommandService.createDelivery(account, request);
         return APIResponse.onSuccess(SenderSuccessCode.CREATED, deliveryId.toString());
     }

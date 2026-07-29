@@ -56,8 +56,8 @@ public class SenderQueryService {
             return SenderDeliveryListDto.builder()
                     .deliveryId(delivery.getId())
                     .goodName(goodName)
-                    .originAddress(delivery.getOrigin() != null ? delivery.getOrigin().getSubwayStationName() : "")
-                    .destAddress(delivery.getDest() != null ? delivery.getDest().getSubwayStationName() : "")
+                    .originPlace(delivery.getOrigin())
+                    .destPlace(delivery.getDest())
                     .status(delivery.getStatus())
                     .build();
         }).toList();
@@ -78,7 +78,7 @@ public class SenderQueryService {
         Delivery delivery = senderDeliveryValidator.getDeliveryAndValidateOwnership(deliveryId, sender);
 
         DeliveryPoint deliveryPoint = deliveryPointRepository.findByDelivery(delivery)
-                .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.DELIVERY_POINT_NOT_FOUND));
 
         return SenderPaymentAmountDto.fromEntity(deliveryPoint);
     }
