@@ -66,10 +66,10 @@ public class AccountService {
     private static final Duration RESEND_COOLDOWN_TTL = Duration.ofSeconds(60);
 
     //닉네임 변경 대기
-    private static final String EDIT_NICKNAME_COOLDOWN_PREFIX = "edit:verify:code";
+    private static final String EDIT_NICKNAME_COOLDOWN_PREFIX = "edit:nickname:verify:code";
 
     //비밀번호 변경 대기
-    private static final String EDIT_PASSWORD_COOLDOWN_PREFIX = "edit:verify:code";
+    private static final String EDIT_PASSWORD_COOLDOWN_PREFIX = "edit:password:verify:code";
 
     //내 정보 변경 시간
     private static final Duration EDIT_COOLDOWN_TTL = Duration.ofMinutes(5);
@@ -279,7 +279,7 @@ public class AccountService {
     @Transactional
     public void findPassword(AuthReqDTO.FindPassword dto) {
         accountRepository.findFirstByNameAndPhoneAndMail(
-                        dto.getName(), dto.getPhone(), dto.getEmail())
+                        dto.getName(), dto.getPhone(), dto.getMail())
                 .ifPresent(account -> {
                     String temporaryPassword = generateTemporaryPassword();
                     account.setPassword(passwordEncoder.encode(temporaryPassword));
@@ -392,9 +392,6 @@ public class AccountService {
             throw new AccountException(AccountErrorCode.SAME_PASSWORD);
 
         String editPassword = passwordEncoder.encode(dto.getPassword());
-
-        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId)))
-            throw new AccountException(AccountErrorCode.TOO_FAST);
 
         account.changePassword(editPassword);
         accountRepository.save(account);
