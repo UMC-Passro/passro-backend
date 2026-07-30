@@ -143,7 +143,7 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.result.password").exists())
                 .andExpect(jsonPath("$.result.nickname").exists())
                 .andExpect(jsonPath("$.result.name").exists())
-                .andExpect(jsonPath("$.result.phone").exists())
+                .andExpect(jsonPath("$.result.phoneNumber").exists())
                 .andExpect(jsonPath("$.result.birth").exists())
                 .andExpect(jsonPath("$.result.sourceStationId").exists())
                 .andExpect(jsonPath("$.result.destinationStationId").exists());
@@ -172,7 +172,7 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.code").value("COMMON400"))
                 .andExpect(jsonPath("$.result.mail").exists())
                 .andExpect(jsonPath("$.result.password").exists())
-                .andExpect(jsonPath("$.result.phone").exists())
+                .andExpect(jsonPath("$.result.phoneNumber").exists())
                 .andExpect(jsonPath("$.result.birth").exists())
                 .andExpect(jsonPath("$.result.sourceStationId").exists())
                 .andExpect(jsonPath("$.result.destinationStationId").exists());

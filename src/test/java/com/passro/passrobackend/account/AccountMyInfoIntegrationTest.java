@@ -115,7 +115,7 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("ACCOUNT400_5"));
+                .andExpect(jsonPath("$.code").value("ACCOUNT400_6"));
     }
 
     @Test
