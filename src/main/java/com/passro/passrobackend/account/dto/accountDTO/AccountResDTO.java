@@ -8,6 +8,7 @@ public class AccountResDTO {
     @Getter
     @AllArgsConstructor
     public static class ShipperMyPage{
+        private String picture;
         private String nickname;
         private Long deliveryCount;
         private Long point;
@@ -17,6 +18,7 @@ public class AccountResDTO {
     @Getter
     @AllArgsConstructor
     public static class SenderMyPage{
+        private String picture;
         private String nickname;
         private Long deliveryCount;
         private Long point;

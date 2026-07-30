@@ -7,13 +7,22 @@ import lombok.Getter;
 public class AccountReqDTO {
 
     @Getter
-    public static class EditNickname {
+    public static class EditMyInfo {
         @NotBlank(message = "변경할 닉네임을 입력하세요.")
         @Pattern(
                 regexp = "^[가-힣a-zA-Z0-9]+$",
                 message = "닉네임은 완성된 한글, 영문, 숫자만 입력 가능합니다."
         )
         private String nickname;
+
+        @NotBlank(message = "변경할 전화번호를 입력하세요.")
+        @Pattern(
+                regexp = "^01[0-9]-\\d{3,4}-\\d{4}$",
+                message = "전화번호 형식이 올바르지 않습니다. (예: 010-1234-5678)"
+        )
+        private String phoneNumber;
+
+
     }
 
     @Getter

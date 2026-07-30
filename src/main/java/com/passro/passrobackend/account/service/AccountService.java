@@ -15,6 +15,7 @@ import com.passro.passrobackend.account.repository.AccountRepository;
 import com.passro.passrobackend.account.repository.UniversityRepository;
 import com.passro.passrobackend.account.repository.WayPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
+import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.global.jwt.JwtProperties;
 import com.passro.passrobackend.global.jwt.JwtProvider;
 import com.passro.passrobackend.place.entity.Place;
@@ -38,6 +39,7 @@ public class AccountService {
 
     private final DeliveryRepository deliveryRepository;
     private final ReviewService reviewService;
+    private final S3Service s3Service;
 
     private final AccountRepository accountRepository;
     private final UniversityRepository universityRepository;
@@ -66,7 +68,7 @@ public class AccountService {
     private static final Duration RESEND_COOLDOWN_TTL = Duration.ofSeconds(60);
 
     //닉네임 변경 대기
-    private static final String EDIT_NICKNAME_COOLDOWN_PREFIX = "edit:nickname:verify:code";
+    private static final String EDIT_INFO_COOLDOWN_PREFIX = "edit:info:verify:code";
 
     //비밀번호 변경 대기
     private static final String EDIT_PASSWORD_COOLDOWN_PREFIX = "edit:password:verify:code";
@@ -218,7 +220,7 @@ public class AccountService {
                 .password(password)
                 .nickname(dto.getNickname())
                 .name(dto.getName())
-                .phone(dto.getPhone())
+                .phoneNumber(dto.getPhoneNumber())
                 .birth(dto.getBirth())
                 .certified(false)
                 .point(0L)
@@ -266,7 +268,7 @@ public class AccountService {
     }
 
     public void findId(AuthReqDTO.FindId dto) {
-        accountRepository.findFirstByNameAndPhone(dto.getName(), dto.getPhone())
+        accountRepository.findFirstByNameAndPhoneNumber(dto.getName(), dto.getPhoneNumber())
                 .ifPresent(account -> {
                     SimpleMailMessage message = new SimpleMailMessage();
                     message.setTo(account.getMail());
@@ -278,8 +280,8 @@ public class AccountService {
 
     @Transactional
     public void findPassword(AuthReqDTO.FindPassword dto) {
-        accountRepository.findFirstByNameAndPhoneAndMail(
-                        dto.getName(), dto.getPhone(), dto.getMail())
+        accountRepository.findFirstByNameAndPhoneNumberAndMail(
+                        dto.getName(), dto.getPhoneNumber(), dto.getMail())
                 .ifPresent(account -> {
                     String temporaryPassword = generateTemporaryPassword();
                     account.setPassword(passwordEncoder.encode(temporaryPassword));
@@ -333,6 +335,11 @@ public class AccountService {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
 
+        String picture = null;
+        if (account.getPicture() != null) {
+            picture = s3Service.getPresignedDownloadUrl(account.getPicture()).toString();
+        }
+
         String nickname = account.getNickname();
         Long deliveryCount = deliveryRepository.countByShipper(account);
         Long point = account.getPoint();
@@ -343,23 +350,28 @@ public class AccountService {
             rating = ratingDTO.getAverageRating();
 
 
-        return new AccountResDTO.ShipperMyPage(nickname, deliveryCount, point, rating);
+        return new AccountResDTO.ShipperMyPage(picture, nickname, deliveryCount, point, rating);
     }
 
     public AccountResDTO.SenderMyPage mySenderPage(Long accountId){
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
 
+        String picture = null;
+        if (account.getPicture() != null) {
+            picture = s3Service.getPresignedDownloadUrl(account.getPicture()).toString();
+        }
+
         String nickname = account.getNickname();
         Long deliveryCount = deliveryRepository.countBySender(account);
         Long point = account.getPoint();
 
-        return new AccountResDTO.SenderMyPage(nickname, deliveryCount, point);
+        return new AccountResDTO.SenderMyPage(picture, nickname, deliveryCount, point);
     }
 
-    public void editNickname(AccountReqDTO.EditNickname dto, Long accountId){
+    public void editMyInfo(AccountReqDTO.EditMyInfo dto, Long accountId){
 
-        if(Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_NICKNAME_COOLDOWN_PREFIX + accountId)))
+        if(Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_INFO_COOLDOWN_PREFIX + accountId)))
             throw new AccountException(AccountErrorCode.TOO_FAST);
 
         if(accountRepository.existsByNickname(dto.getNickname()))
@@ -372,8 +384,9 @@ public class AccountService {
 
         accountRepository.save(account);
 
-        stringRedisTemplate.opsForValue().set(EDIT_NICKNAME_COOLDOWN_PREFIX + accountId, "true", EDIT_COOLDOWN_TTL);
+        stringRedisTemplate.opsForValue().set(EDIT_INFO_COOLDOWN_PREFIX + accountId, "true", EDIT_COOLDOWN_TTL);
     }
+
 
     public void codeCodeConfirmAndEditPassword(AccountReqDTO.EditPassword dto, Long accountId) {
 

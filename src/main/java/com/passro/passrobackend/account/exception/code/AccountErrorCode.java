@@ -38,6 +38,10 @@ public enum AccountErrorCode implements BaseErrorCode {
             "ACCOUNT400_5",
             "사용 중인 닉네임입니다.."),
 
+    DUPLICATE_PHONE_NUMBER(HttpStatus.BAD_REQUEST,
+            "ACCOUNT400_5",
+            "사용 중인 전화번호입니다.."),
+
     INVALID_MAIL_DOMAIN(HttpStatus.BAD_REQUEST,
             "ACCOUNT400_6",
             "학생용 이메일이 아닙니다."),

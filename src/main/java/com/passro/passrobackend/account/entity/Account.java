@@ -31,7 +31,7 @@ public class Account extends BaseEntity {
     private Place place_id;
 
     private String name;
-    private String phone;
+    private String phoneNumber;
     private LocalDate birth;
     private Boolean certified;
     private Long point;
@@ -50,5 +50,9 @@ public class Account extends BaseEntity {
 
     public void changePassword(String password){
         this.password = password;
+    }
+
+    public void changePhoneNumber(String phoneNumber){
+        this.phoneNumber = phoneNumber;
     }
 }
