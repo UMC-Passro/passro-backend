@@ -38,7 +38,7 @@ public class AccountController {
     }
 
     @PostMapping("/mypage/edit/myInfo")
-    public ResponseEntity<APIResponse<Void>> editNickname(@RequestBody AccountReqDTO.EditMyInfo dto, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<APIResponse<Void>> editNickname(@Valid @RequestBody AccountReqDTO.EditMyInfo dto, @AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
         accountService.editMyInfo(dto, userDetails.getAccountId());
         return ResponseEntity.ok()
