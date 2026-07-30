@@ -35,19 +35,19 @@ public enum AccountErrorCode implements BaseErrorCode {
             "사용 중인 이메일입니다."),
 
     DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST,
-            "ACCOUNT400_5",
+            "ACCOUNT400_6",
             "사용 중인 닉네임입니다.."),
 
     DUPLICATE_PHONE_NUMBER(HttpStatus.BAD_REQUEST,
-            "ACCOUNT400_5",
+            "ACCOUNT400_7",
             "사용 중인 전화번호입니다.."),
 
     INVALID_MAIL_DOMAIN(HttpStatus.BAD_REQUEST,
-            "ACCOUNT400_6",
+            "ACCOUNT400_8",
             "학생용 이메일이 아닙니다."),
 
     SAME_PASSWORD(HttpStatus.BAD_REQUEST,
-            "ACCOUNT400_7",
+            "ACCOUNT400_9",
             "현재 비밀번호와 일치합니다."),
 
     TOO_FAST(HttpStatus.TOO_MANY_REQUESTS,
