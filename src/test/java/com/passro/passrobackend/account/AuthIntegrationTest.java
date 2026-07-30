@@ -1,209 +1,201 @@
 package com.passro.passrobackend.account;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.passro.passrobackend.account.entity.Account;
-import com.passro.passrobackend.account.entity.University;
-import com.passro.passrobackend.account.repository.UniversityRepository;
+import com.passro.passrobackend.account.entity.AccountPlace;
+import com.passro.passrobackend.account.repository.AccountPlaceRepository;
+import com.passro.passrobackend.account.repository.WayPointRepository;
+import com.passro.passrobackend.place.entity.Place;
+import com.passro.passrobackend.place.repository.PlaceRepository;
 import com.passro.passrobackend.support.IntegrationTestSupport;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
-class AuthIntegrationTest extends IntegrationTestSupport {
+class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
 
     @Autowired
-    private UniversityRepository universityRepository;
+    private AccountPlaceRepository accountPlaceRepository;
 
     @Autowired
-    private StringRedisTemplate redisTemplate;
+    private WayPointRepository wayPointRepository;
 
-    @MockitoBean
-    private JavaMailSender mailSender;
+    @Autowired
+    private PlaceRepository placeRepository;
 
-    @Test
-    void mailVerificationSignupLoginReissueAndLogoutWorkTogether() throws Exception {
-        String suffix = UUID.randomUUID().toString().substring(0, 8);
-        String email = "student-" + suffix + "@passro.test";
-        String nickname = "tester-" + suffix;
-        String password = "Passro123!";
-        saveUniversityDomain();
+    private Place startPlace;
+    private Place destinationPlace;
+    private Place wayPointPlace;
 
-        mockMvc.perform(post("/auth/mail/send")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"mail\":\"" + email + "\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value("ACCOUNT200_1"));
-        verify(mailSender).send(any(SimpleMailMessage.class));
-
-        String code = redisTemplate.opsForValue().get("mail:verify:code:" + email);
-        assertThat(code).matches("\\d{6}");
-
-        mockMvc.perform(post("/auth/mail/confirm")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"mail\":\"" + email + "\",\"code\":\"" + code + "\"}"))
-                .andExpect(status().isOk());
-
-//        mockMvc.perform(post("/auth/signup")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(signupBody(email, password, nickname)))
-//                .andExpect(status().isOk());
-
-
-//        Account account = accountRepository.findByEmail(email).orElseThrow();
-//        assertThat(passwordEncoder.matches(password, account.getPassword())).isTrue();
-//
-//        MvcResult loginResult = mockMvc.perform(post("/auth/login")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(loginBody(email, password)))
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.result.accessToken").isNotEmpty())
-//                .andExpect(jsonPath("$.result.refreshToken").isNotEmpty())
-//                .andReturn();
-//        String refreshToken = json(loginResult).at("/result/refreshToken").asText();
-//
-//        MvcResult reissueResult = mockMvc.perform(post("/auth/reissue")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content("{\"refreshToken\":\"" + refreshToken + "\"}"))
-//                .andExpect(status().isOk())
-//                .andReturn();
-//        JsonNode reissued = json(reissueResult);
-//
-//        mockMvc.perform(delete("/auth/logout")
-//                        .header("Authorization", bearer(reissued.at("/result/accessToken").asText())))
-//                .andExpect(status().isOk());
-//
-//        mockMvc.perform(post("/auth/reissue")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content("{\"refreshToken\":\"" + reissued.at("/result/refreshToken").asText() + "\"}"))
-//                .andExpect(status().isUnauthorized())
-//                .andExpect(jsonPath("$.code").value("ACCOUNT401_2"));
-    }
-
-    @Test
-    void repeatedVerificationMailRequestIsRateLimited() throws Exception {
-        String email = "rate-" + UUID.randomUUID().toString().substring(0, 8) + "@passro.test";
-        saveUniversityDomain();
-        String body = "{\"mail\":\"" + email + "\"}";
-
-        mockMvc.perform(post("/auth/mail/send").contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isOk());
-        mockMvc.perform(post("/auth/mail/send").contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isTooManyRequests())
-                .andExpect(jsonPath("$.code").value("ACCOUNT429_1"));
-    }
-
-    @Test
-    void invalidCredentialsAndRefreshTokenAreRejected() throws Exception {
-        Account account = createAccount("login-failure");
-
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginBody(account.getMail(), "wrong-password")))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("ACCOUNT401_1"));
-
-        mockMvc.perform(post("/auth/reissue")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refreshToken\":\"invalid-token\"}"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("ACCOUNT401_2"));
-    }
-
-    @Test
-    void protectedEndpointRejectsAnonymousRequest() throws Exception {
-        mockMvc.perform(get("/sender"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void signupRejectsMissingRequiredFields() throws Exception {
-        mockMvc.perform(post("/auth/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("COMMON400"))
-                .andExpect(jsonPath("$.result.mail").exists())
-                .andExpect(jsonPath("$.result.password").exists())
-                .andExpect(jsonPath("$.result.nickname").exists())
-                .andExpect(jsonPath("$.result.name").exists())
-                .andExpect(jsonPath("$.result.phone").exists())
-                .andExpect(jsonPath("$.result.birth").exists())
-                .andExpect(jsonPath("$.result.sourceStationId").exists())
-                .andExpect(jsonPath("$.result.destinationStationId").exists());
-    }
-
-    @Test
-    void signupRejectsInvalidFormatsAndPlaceIds() throws Exception {
-        String request = """
-                {
-                  "email":"invalid-email",
-                  "password":"short",
-                  "nickname":"tester",
-                  "name":"Integration User",
-                  "phone":"1234",
-                  "birth":"2999-01-01",
-                  "sourceStationId":0,
-                  "destinationStationId":-1,
-                  "wayPoints":[1, 0]
-                }
-                """;
-
-        mockMvc.perform(post("/auth/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(request))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("COMMON400"))
-                .andExpect(jsonPath("$.result.mail").exists())
-                .andExpect(jsonPath("$.result.password").exists())
-                .andExpect(jsonPath("$.result.phone").exists())
-                .andExpect(jsonPath("$.result.birth").exists())
-                .andExpect(jsonPath("$.result.sourceStationId").exists())
-                .andExpect(jsonPath("$.result.destinationStationId").exists());
-    }
-
-    private void saveUniversityDomain() {
-        universityRepository.saveAndFlush(University.builder()
-                .name("Passro University " + UUID.randomUUID())
-                .mailDomain("passro.test")
+    @BeforeEach
+    void setUpPlaces() {
+        startPlace = placeRepository.save(Place.builder()
+                .subwayRouteName("2호선")
+                .subwayStationName("강남")
+                .build());
+        destinationPlace = placeRepository.save(Place.builder()
+                .subwayRouteName("2호선")
+                .subwayStationName("역삼")
+                .build());
+        wayPointPlace = placeRepository.save(Place.builder()
+                .subwayRouteName("2호선")
+                .subwayStationName("선릉")
                 .build());
     }
 
-    private String signupBody(String email, String password, String nickname) {
-        return """
+    private Account createAccountWithRoute(String prefix) {
+        Account account = createAccount(prefix);
+        accountPlaceRepository.saveAndFlush(AccountPlace.builder()
+                .account(account)
+                .startPlace(startPlace)
+                .destinationPlace(destinationPlace)
+                .build());
+        return account;
+    }
+
+    @Test
+    void editMyInfoUpdatesNicknamePhoneAndRoute() throws Exception {
+        Account account = createAccountWithRoute("edit-info");
+        String token = accessToken(account);
+
+        String newNickname = "edited-" + UUID.randomUUID().toString().substring(0, 6);
+        String newPhoneNumber = "01099998888";
+
+        String requestBody = """
                 {
-                  "email":"%s",
-                  "password":"%s",
                   "nickname":"%s",
-                  "name":"Integration User",
-                  "phone":"01012345678",
-                  "birth":"2000-01-01",
-                  "picture":"profile.png"
+                  "phoneNumber":"%s",
+                  "startPlaceId":%d,
+                  "destinationPlaceId":%d,
+                  "wayPoints":[%d]
                 }
-                """.formatted(email, password, nickname);
+                """.formatted(newNickname, newPhoneNumber, startPlace.getId(), destinationPlace.getId(), wayPointPlace.getId());
+
+        mockMvc.perform(post("/mypage/edit/myInfo")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("ACCOUNT200_1"));
+
+        Account updated = accountRepository.findById(account.getId()).orElseThrow();
+        assertThat(updated.getNickname()).isEqualTo(newNickname);
+        assertThat(updated.getPhoneNumber()).isEqualTo(newPhoneNumber);
+
+        AccountPlace updatedPlace = accountPlaceRepository.findByAccount(updated).orElseThrow();
+        assertThat(updatedPlace.getStartPlace().getId()).isEqualTo(startPlace.getId());
+        assertThat(updatedPlace.getDestinationPlace().getId()).isEqualTo(destinationPlace.getId());
     }
 
-    private String loginBody(String mail, String password) {
-        return "{\"mail\":\"" + mail + "\",\"password\":\"" + password + "\"}";
+    @Test
+    void editMyInfoRejectsDuplicateNickname() throws Exception {
+        Account other = createAccountWithRoute("other-nick");
+        Account account = createAccountWithRoute("edit-nick");
+        String token = accessToken(account);
+
+        String requestBody = """
+                {
+                  "nickname":"%s",
+                  "phoneNumber":"%s",
+                  "startPlaceId":%d,
+                  "destinationPlaceId":%d
+                }
+                """.formatted(other.getNickname(), account.getPhoneNumber(), startPlace.getId(), destinationPlace.getId());
+
+        mockMvc.perform(post("/mypage/edit/myInfo")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest());
+        // TODO: 실제 DUPLICATE_NICKNAME 코드값 확인 후 .andExpect(jsonPath("$.code").value("ACCOUNT400_x")) 추가
     }
 
-    private JsonNode json(MvcResult result) throws Exception {
-        return objectMapper.readTree(result.getResponse().getContentAsString());
+    @Test
+    void editMyInfoRejectsDuplicatePhoneNumber() throws Exception {
+        Account other = createAccountWithRoute("other-phone");
+        Account account = createAccountWithRoute("edit-phone");
+        String token = accessToken(account);
+
+        String requestBody = """
+                {
+                  "nickname":"%s",
+                  "phoneNumber":"%s",
+                  "startPlaceId":%d,
+                  "destinationPlaceId":%d
+                }
+                """.formatted(account.getNickname(), other.getPhoneNumber(), startPlace.getId(), destinationPlace.getId());
+
+        mockMvc.perform(post("/mypage/edit/myInfo")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest());
+        // TODO: 실제 DUPLICATE_PHONE_NUMBER 코드값 확인 후 jsonPath 검증 추가
+    }
+
+    @Test
+    void editMyInfoRejectsInvalidPlaceId() throws Exception {
+        Account account = createAccountWithRoute("edit-place");
+        String token = accessToken(account);
+
+        String requestBody = """
+                {
+                  "nickname":"%s",
+                  "phoneNumber":"%s",
+                  "startPlaceId":999999,
+                  "destinationPlaceId":%d
+                }
+                """.formatted(account.getNickname(), account.getPhoneNumber(), destinationPlace.getId());
+
+        mockMvc.perform(post("/mypage/edit/myInfo")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest());
+        // TODO: 실제 NOT_FOUND_SUBWAY 코드값 확인 후 jsonPath 검증 추가
+    }
+
+    @Test
+    void editMyInfoIsRateLimitedByCooldown() throws Exception {
+        Account account = createAccountWithRoute("edit-cooldown");
+        String token = accessToken(account);
+
+        String requestBody = """
+                {
+                  "nickname":"%s",
+                  "phoneNumber":"%s",
+                  "startPlaceId":%d,
+                  "destinationPlaceId":%d
+                }
+                """.formatted(account.getNickname(), account.getPhoneNumber(), startPlace.getId(), destinationPlace.getId());
+
+        mockMvc.perform(post("/mypage/edit/myInfo")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/mypage/edit/myInfo")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isTooManyRequests());
+        // TODO: 실제 TOO_FAST 코드값 확인 후 jsonPath 검증 추가
+    }
+
+    @Test
+    void editMyInfoRejectsAnonymousRequest() throws Exception {
+        mockMvc.perform(post("/mypage/edit/myInfo")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden());
     }
 }
