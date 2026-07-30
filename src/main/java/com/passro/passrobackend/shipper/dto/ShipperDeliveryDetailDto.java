@@ -80,6 +80,7 @@ public class ShipperDeliveryDetailDto {
     public static class DeliveryLogInfo {
         private Long id;
         private DeliveryLogType type;
+        private String image;
         private LocalDateTime createdAt;
 
         public static DeliveryLogInfo fromEntity(DeliveryLog log) {
@@ -89,6 +90,7 @@ public class ShipperDeliveryDetailDto {
             return DeliveryLogInfo.builder()
                     .id(log.getId())
                     .type(log.getType())
+                    .image(log.getImage())
                     .createdAt(log.getCreatedAt())
                     .build();
         }

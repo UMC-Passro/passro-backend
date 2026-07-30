@@ -9,6 +9,7 @@ import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
+import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
 import com.passro.passrobackend.delivery.repository.DeliveryGoodInfoRepository;
@@ -37,9 +38,14 @@ public class SenderCommandService {
     private final PointService pointService;
 
     private final ApplicationEventPublisher eventPublisher;
+    private final S3Service s3Service;
 
     // 발송 완료 처리
     public void completeDelivery(Account sender, Long deliveryId) {
+        completeDelivery(sender, deliveryId, null);
+    }
+
+    public void completeDelivery(Account sender, Long deliveryId, String imageKey) {
         Delivery delivery = senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(deliveryId, sender);
 
         // '검수 요청' 상태에서만 배송 완료 처리 가능
@@ -53,11 +59,15 @@ public class SenderCommandService {
         long settlementPoint = getTotalPoint(delivery);
         pointService.settleDelivery(delivery.getShipper().getId(), delivery, settlementPoint);
 
+        String image = imageKey == null || imageKey.isBlank()
+                ? null
+                : validateUploadedImage(imageKey);
+
         delivery.setStatus(DeliveryState.DELIVERED);
         deliveryRepository.save(delivery);
 
         // 배송 프로세스 최종 완료 처리 로그에 저장
-        eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.DONE));
+        eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.DONE, image));
     }
 
     // 배송 요청 생성
@@ -157,6 +167,10 @@ public class SenderCommandService {
         long distancePoint = point.getDistance_point() == null ? 0L : point.getDistance_point();
         long weightPoint = point.getWeight_point() == null ? 0L : point.getWeight_point();
         return Math.addExact(Math.addExact(basePoint, distancePoint), weightPoint);
+    }
+
+    private String validateUploadedImage(String imageKey) {
+        return s3Service.finalizeUploadedImage(imageKey);
     }
 
 
