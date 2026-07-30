@@ -2,6 +2,7 @@ package com.passro.passrobackend.sender.controller;
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.global.response.APIResponse;
+import com.passro.passrobackend.delivery.dto.DeliveryStatusUpdateRequestDto;
 import com.passro.passrobackend.sender.code.SenderSuccessCode;
 import com.passro.passrobackend.sender.dto.SenderDeliveryCreateRequestDto;
 import com.passro.passrobackend.sender.dto.SenderDeliveryDetailDto;
@@ -136,8 +137,9 @@ public class SenderController {
     })
     public APIResponse<Void> completeDelivery(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
-            @Parameter(description = "배송 ID", example = "1") @PathVariable Long deliveryId) {
-        senderCommandService.completeDelivery(account, deliveryId);
+            @Parameter(description = "배송 ID", example = "1") @PathVariable Long deliveryId,
+            @RequestBody(required = false) DeliveryStatusUpdateRequestDto request) {
+        senderCommandService.completeDelivery(account, deliveryId, request == null ? null : request.getImageKey());
         return APIResponse.onSuccess(SenderSuccessCode.OK, null);
     }
 

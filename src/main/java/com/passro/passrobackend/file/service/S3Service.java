@@ -2,15 +2,24 @@ package com.passro.passrobackend.file.service;
 
 import com.passro.passrobackend.file.exception.FileException;
 import com.passro.passrobackend.file.exception.code.FileErrorCode;
+import com.passro.passrobackend.file.dto.ImageUploadResponseDto;
 import com.passro.passrobackend.global.configuration.S3Properties;
 import java.net.URL;
 import java.time.Duration;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Pattern;
 
 import com.passro.passrobackend.global.exception.APIException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -22,12 +31,22 @@ public class S3Service {
 
 	private static final Duration DEFAULT_SIGNATURE_DURATION = Duration.ofMinutes(10);
 	private static final Duration MAX_SIGNATURE_DURATION = Duration.ofDays(7);
+	private static final long MAX_IMAGE_SIZE = 10L * 1024 * 1024;
+	private static final Map<String, Set<String>> ALLOWED_IMAGE_TYPES = Map.of(
+			"image/jpeg", Set.of("jpg", "jpeg"),
+			"image/png", Set.of("png"),
+			"image/webp", Set.of("webp")
+	);
+	private static final Pattern IMAGE_KEY_PATTERN = Pattern.compile(
+			"images/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|jpeg|png|webp)");
 
 	private final S3Presigner s3Presigner;
+	private final S3Client s3Client;
 	private final S3Properties s3Properties;
 
-	public S3Service(S3Presigner s3Presigner, S3Properties s3Properties) {
+	public S3Service(S3Presigner s3Presigner, S3Client s3Client, S3Properties s3Properties) {
 		this.s3Presigner = s3Presigner;
+		this.s3Client = s3Client;
 		this.s3Properties = s3Properties;
 	}
 
@@ -35,11 +54,46 @@ public class S3Service {
 		return getPresignedUploadUrl(objectKey, DEFAULT_SIGNATURE_DURATION, null);
 	}
 
-	public URL getPresignedUploadUrl(String objectKey, Duration signatureDuration, String contentType) {
+	public ImageUploadResponseDto createImageUploadUrl(
+			String fileName,
+			String contentType,
+			long fileSize
+	) {
+		String normalizedContentType = contentType == null
+				? ""
+				: contentType.toLowerCase(Locale.ROOT);
+		String extension = validateAndGetImageExtension(fileName, normalizedContentType, fileSize);
+		String imageKey = "images/" + UUID.randomUUID() + "." + extension;
+		URL uploadUrl = getPresignedUploadUrl(imageKey, normalizedContentType, fileSize);
+		return new ImageUploadResponseDto(imageKey, uploadUrl.toString());
+	}
 
+	public URL getPresignedUploadUrl(String objectKey, String contentType, long contentLength) {
+		validate(objectKey, DEFAULT_SIGNATURE_DURATION);
+		if (contentLength <= 0) {
+			throw new IllegalArgumentException("contentLength must be positive");
+		}
+
+		try {
+			PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+					.bucket(s3Properties.getBucket())
+					.key(objectKey)
+					.contentType(contentType)
+					.contentLength(contentLength)
+					.build();
+			PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+					.signatureDuration(DEFAULT_SIGNATURE_DURATION)
+					.putObjectRequest(putObjectRequest)
+					.build();
+			return s3Presigner.presignPutObject(presignRequest).url();
+		} catch (Exception e) {
+			throw new FileException(FileErrorCode.FILE_UPLOAD_FAILED);
+		}
+	}
+
+	public URL getPresignedUploadUrl(String objectKey, Duration signatureDuration, String contentType) {
         try {
             validate(objectKey, signatureDuration);
-
             PutObjectRequest.Builder putObjectRequestBuilder = PutObjectRequest.builder()
                     .bucket(s3Properties.getBucket())
                     .key(objectKey);
@@ -58,6 +112,62 @@ public class S3Service {
         } catch (Exception e) {
             throw new FileException(FileErrorCode.FILE_UPLOAD_FAILED);
         }
+	}
+
+	public void validateUploadedImage(String objectKey) {
+		if (!StringUtils.hasText(objectKey) || !IMAGE_KEY_PATTERN.matcher(objectKey).matches()) {
+			throw new FileException(FileErrorCode.INVALID_FILE_NAME);
+		}
+		validateUploadedImage(objectKey, ALLOWED_IMAGE_TYPES.keySet(), MAX_IMAGE_SIZE);
+	}
+
+	private void validateUploadedImage(String objectKey, Set<String> allowedContentTypes, long maxSize) {
+		try {
+			validate(objectKey, DEFAULT_SIGNATURE_DURATION);
+			HeadObjectResponse response = s3Client.headObject(HeadObjectRequest.builder()
+					.bucket(s3Properties.getBucket())
+					.key(objectKey)
+					.build());
+			String contentType = response.contentType() == null
+					? ""
+					: response.contentType().toLowerCase(Locale.ROOT);
+			if (!allowedContentTypes.contains(contentType)) {
+				throw new FileException(FileErrorCode.INVALID_IMAGE_FORMAT);
+			}
+			if (response.contentLength() == null || response.contentLength() <= 0 || response.contentLength() > maxSize) {
+				throw new FileException(FileErrorCode.INVALID_FILE_SIZE);
+			}
+		} catch (FileException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new FileException(FileErrorCode.FILE_NOT_FOUND);
+		}
+	}
+
+	private String validateAndGetImageExtension(String fileName, String contentType, long fileSize) {
+		if (fileSize <= 0 || fileSize > MAX_IMAGE_SIZE) {
+			throw new FileException(FileErrorCode.INVALID_FILE_SIZE);
+		}
+
+		Set<String> extensions = ALLOWED_IMAGE_TYPES.get(contentType);
+		if (extensions == null) {
+			throw new FileException(FileErrorCode.INVALID_IMAGE_FORMAT);
+		}
+
+		if (!StringUtils.hasText(fileName)) {
+			throw new FileException(FileErrorCode.INVALID_FILE_NAME);
+		}
+		String normalizedFileName = fileName.trim().toLowerCase(Locale.ROOT);
+		int dotIndex = normalizedFileName.lastIndexOf('.');
+		if (dotIndex < 0 || dotIndex == normalizedFileName.length() - 1) {
+			throw new FileException(FileErrorCode.INVALID_FILE_NAME);
+		}
+
+		String extension = normalizedFileName.substring(dotIndex + 1);
+		if (!extensions.contains(extension)) {
+			throw new FileException(FileErrorCode.INVALID_IMAGE_FORMAT);
+		}
+		return extension;
 	}
 
 	public URL getPresignedDownloadUrl(String objectKey) {
@@ -103,5 +213,3 @@ public class S3Service {
 		}
 	}
 }
-
-

@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import com.passro.passrobackend.file.exception.FileException;
 import com.passro.passrobackend.file.service.S3Service;
@@ -38,6 +40,38 @@ class ExternalApiIntegrationTest extends IntegrationTestSupport {
                 .isInstanceOf(FileException.class);
         assertThatThrownBy(() -> s3Service.getPresignedDownloadUrl("profile.png", Duration.ofDays(8)))
                 .isInstanceOf(FileException.class);
+    }
+
+    @Test
+    void imageUploadUrlIsIssuedByFileApi() throws Exception {
+        mockMvc.perform(post("/file/image/upload-url")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "fileName": "proof.jpg",
+                                  "contentType": "image/jpeg",
+                                  "fileSize": 1024
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.imageKey", containsString("images/")))
+                .andExpect(jsonPath("$.result.imageKey", containsString(".jpg")))
+                .andExpect(jsonPath("$.result.uploadUrl", containsString("X-Amz-Signature")));
+    }
+
+    @Test
+    void imageUploadRejectsMismatchedExtensionAndContentType() throws Exception {
+        mockMvc.perform(post("/file/image/upload-url")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "fileName": "proof.png",
+                                  "contentType": "image/jpeg",
+                                  "fileSize": 1024
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("FILE400_1"));
     }
 
     @Test
