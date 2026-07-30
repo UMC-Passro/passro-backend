@@ -36,11 +36,7 @@ public class SecurityConfiguration {
                         .requestMatchers(
                                 "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/file/**",
                                 "/auth/login", "/auth/signup", "/auth/mail/**",
-<<<<<<< HEAD
-                                "/auth/reissue",
-=======
                                 "/auth/reissue", "/auth/find/**",
->>>>>>> main
                                 "/subway/**", "/subway/search"
                         )
                         .permitAll()
