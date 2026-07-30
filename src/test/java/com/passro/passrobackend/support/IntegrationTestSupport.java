@@ -76,7 +76,7 @@ public abstract class IntegrationTestSupport {
     protected Account createAccount(String prefix) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         return accountRepository.saveAndFlush(Account.builder()
-                .email(prefix + "-" + suffix + "@passro.test")
+                .mail(prefix + "-" + suffix + "@passro.test")
                 .password(passwordEncoder.encode("Passro123!"))
                 .nickname(prefix + "-" + suffix)
                 .name(prefix)

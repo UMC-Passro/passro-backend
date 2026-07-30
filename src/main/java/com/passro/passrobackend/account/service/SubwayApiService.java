@@ -26,48 +26,4 @@ public class SubwayApiService {
     private String baseUrl;
 
     SubwayApiResDTO dto;
-
-
-    public List<SubwayApiResDTO.Item> searchStation(String keyword){
-        List<Place> places = placeRepository.findAllBySubwayStationName(keyword);
-
-        if(!places.isEmpty())
-            {
-                return places.stream().map(place -> new SubwayApiResDTO.Item(
-                        place.getSubwayStationName(),
-                        place.getSubwayRouteName()
-                )).toList();
-            }
-
-
-
-        SubwayApiResDTO response = restClient.get()
-                .uri(baseUrl + "?serviceKey={apiKey}&subwayStationName={keyword}&_type=json",
-                        apiKey, keyword)
-                .retrieve()
-                .body(SubwayApiResDTO.class);
-
-        if (response == null || response.getResponse() == null
-                || response.getResponse().getBody() == null
-                || response.getResponse().getBody().getItems() == null)
-            throw new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY);
-
-        List<String> subwayRouteList = response
-                .getResponse()
-                .getBody()
-                .getItems()
-                .getItem()
-                .stream()
-                .map(SubwayApiResDTO.Item::getSubwayRouteName)
-                .toList();
-
-        subwayRouteList.forEach(subwayName->
-                placeRepository.save(
-                        Place.builder()
-                                .subwayStationName(keyword)
-                                .subwayRouteName(subwayName)
-                                .build()));
-
-        return response.getResponse().getBody().getItems().getItem();
-    }
 }

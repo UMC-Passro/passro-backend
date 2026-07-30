@@ -52,7 +52,7 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.code").value("ACCOUNT200_1"));
         verify(mailSender).send(any(SimpleMailMessage.class));
 
-        String code = redisTemplate.opsForValue().get("email:verify:code:" + email);
+        String code = redisTemplate.opsForValue().get("mail:verify:code:" + email);
         assertThat(code).matches("\\d{6}");
 
         mockMvc.perform(post("/auth/mail/confirm")
@@ -139,7 +139,7 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                         .content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COMMON400"))
-                .andExpect(jsonPath("$.result.email").exists())
+                .andExpect(jsonPath("$.result.mail").exists())
                 .andExpect(jsonPath("$.result.password").exists())
                 .andExpect(jsonPath("$.result.nickname").exists())
                 .andExpect(jsonPath("$.result.name").exists())
@@ -170,7 +170,7 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                         .content(request))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COMMON400"))
-                .andExpect(jsonPath("$.result.email").exists())
+                .andExpect(jsonPath("$.result.mail").exists())
                 .andExpect(jsonPath("$.result.password").exists())
                 .andExpect(jsonPath("$.result.phone").exists())
                 .andExpect(jsonPath("$.result.birth").exists())
@@ -199,8 +199,8 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                 """.formatted(email, password, nickname);
     }
 
-    private String loginBody(String email, String password) {
-        return "{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}";
+    private String loginBody(String mail, String password) {
+        return "{\"mail\":\"" + mail + "\",\"password\":\"" + password + "\"}";
     }
 
     private JsonNode json(MvcResult result) throws Exception {

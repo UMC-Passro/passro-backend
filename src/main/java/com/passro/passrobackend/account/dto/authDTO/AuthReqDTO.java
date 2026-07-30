@@ -89,10 +89,7 @@ public class AuthReqDTO {
         private String mail;
 
         @NotBlank(message = "비밀번호를 입력하세요.")
-        @Pattern(
-                regexp = "^[a-zA-Z0-9]+$",
-                message = "비밀번호는 영문, 숫자만 입력 가능합니다."
-        )
+        @Size(min = 6, max = 20, message = "비밀번호는 6자 이상 20자 이하여야 합니다.")
         private String password;
     }
 
