@@ -57,4 +57,9 @@ public final class SwaggerErrorExamples {
             "{\"success\":false,\"code\":\"REVIEW400_3\",\"message\":\"평점은 1점 이상 5점 이하로 입력해야 합니다.\",\"result\":null}";
     public static final String REVIEW_INVALID_DELIVERY_ID =
             "{\"success\":false,\"code\":\"REVIEW400_4\",\"message\":\"deliveryId는 필수입니다.\",\"result\":null}";
+
+    public static final String SUBWAY_PLACE_NOT_FOUND =
+            "{\"success\":false,\"code\":\"SUBWAY404_1\",\"message\":\"지하철역 Place를 찾을 수 없습니다.\",\"result\":null}";
+    public static final String SUBWAY_ROUTE_NOT_FOUND =
+            "{\"success\":false,\"code\":\"SUBWAY404_2\",\"message\":\"지하철 경로를 찾을 수 없습니다.\",\"result\":null}";
 }

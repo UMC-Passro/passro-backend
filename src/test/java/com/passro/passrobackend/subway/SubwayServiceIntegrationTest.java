@@ -2,6 +2,7 @@ package com.passro.passrobackend.subway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -160,6 +161,17 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value("SUBWAY404_1"));
+    }
+
+    @Test
+    void openApiDocumentsSubwayResourcesUnderOneTag() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/subway/stations'].get.tags[0]").value("지하철"))
+                .andExpect(jsonPath("$.paths['/subway/stations'].get.security").isEmpty())
+                .andExpect(jsonPath("$.paths['/subway/routes/shortest'].post.tags[0]").value("지하철"))
+                .andExpect(jsonPath("$.paths['/subway/routes/shortest'].post.security").isEmpty())
+                .andExpect(jsonPath("$.paths['/subway/search']").doesNotExist());
     }
 
     @Test
