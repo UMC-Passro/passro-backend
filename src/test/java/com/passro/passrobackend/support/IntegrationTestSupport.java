@@ -80,7 +80,7 @@ public abstract class IntegrationTestSupport {
                 .password(passwordEncoder.encode("Passro123!"))
                 .nickname(prefix + "-" + suffix)
                 .name(prefix)
-                .phone("01012345678")
+                .phoneNumber("01012345678")
                 .birth(LocalDate.of(2000, 1, 1))
                 .certified(true)
                 .point(0L)
