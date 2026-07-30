@@ -1,8 +1,12 @@
 package com.passro.passrobackend.account.dto.accountDTO;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import lombok.Getter;
+
+import java.util.List;
 
 public class AccountReqDTO {
 
@@ -22,7 +26,14 @@ public class AccountReqDTO {
         )
         private String phoneNumber;
 
+        @NotBlank(message = "변경할 출발지를 입력하세요.")
+        private Long startPlaceId;
 
+        @NotBlank(message = "변경할 도착지를 입력하세요.")
+        private Long destinationPlaceId;
+
+        private List<@NotNull(message = "경유역 Place ID는 null일 수 없습니다.")
+        @Positive(message = "경유역 Place ID는 양수여야 합니다.") Long> wayPoints;
     }
 
     @Getter

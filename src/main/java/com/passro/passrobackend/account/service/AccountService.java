@@ -369,24 +369,56 @@ public class AccountService {
         return new AccountResDTO.SenderMyPage(picture, nickname, deliveryCount, point);
     }
 
-    public void editMyInfo(AccountReqDTO.EditMyInfo dto, Long accountId){
+    @Transactional
+    public void editMyInfo(AccountReqDTO.EditMyInfo dto, Long accountId) {
 
-        if(Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_INFO_COOLDOWN_PREFIX + accountId)))
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_INFO_COOLDOWN_PREFIX + accountId)))
             throw new AccountException(AccountErrorCode.TOO_FAST);
 
-        if(accountRepository.existsByNickname(dto.getNickname()))
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
+
+        if (!account.getNickname().equals(dto.getNickname()) && accountRepository.existsByNickname(dto.getNickname()))
             throw new AccountException(AccountErrorCode.DUPLICATE_NICKNAME);
 
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
+        if (!account.getPhoneNumber().equals(dto.getPhoneNumber()) && accountRepository.existsByPhoneNumber(dto.getPhoneNumber()))
+            throw new AccountException(AccountErrorCode.DUPLICATE_PHONE_NUMBER);
 
-        account.changeNickname(dto.getNickname());
+        AccountPlace accountPlace = accountPlaceRepository.findByAccount(account)
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
 
-        accountRepository.save(account);
+        Place startPlace = placeRepository.findById(dto.getStartPlaceId())
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
+        Place destinationPlace = placeRepository.findById(dto.getDestinationPlaceId())
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
 
-        stringRedisTemplate.opsForValue().set(EDIT_INFO_COOLDOWN_PREFIX + accountId, "true", EDIT_COOLDOWN_TTL);
+        wayPointRepository.deleteAllByAccountPlace(accountPlace);
+
+        if (dto.getWayPoints() != null) {
+            for (int i = 0; i < dto.getWayPoints().size(); i++) {
+                Long wayPointPlaceId = dto.getWayPoints().get(i);
+                Place wayPointPlace = placeRepository.findById(wayPointPlaceId)
+                        .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
+
+                wayPointRepository.save(WayPoint.builder()
+                        .accountPlace(accountPlace)
+                        .place(wayPointPlace)
+                        .visitOrder(i)
+                        .build());
+
+            }
+        }
+
+            accountPlace.changePlace(startPlace, destinationPlace);
+
+            account.changeNickname(dto.getNickname());
+
+            account.changePhoneNumber(dto.getPhoneNumber());
+
+            accountRepository.save(account);
+
+            stringRedisTemplate.opsForValue().set(EDIT_INFO_COOLDOWN_PREFIX + accountId, "true", EDIT_COOLDOWN_TTL);
     }
-
 
     public void codeCodeConfirmAndEditPassword(AccountReqDTO.EditPassword dto, Long accountId) {
 
