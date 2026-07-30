@@ -2,15 +2,19 @@ package com.passro.passrobackend.shipper.dto;
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
+import com.passro.passrobackend.delivery.entity.DeliveryLog;
+import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.place.entity.Place;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.*;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Getter
-public class ShipperDeliveryDto {
+public class ShipperDeliveryDetailDto {
     private Long id;
 
     private SenderInfo senderInfo;
@@ -21,6 +25,8 @@ public class ShipperDeliveryDto {
 
     private DeliveryState deliveryState;
     private String memo;
+
+    private List<DeliveryLogInfo> deliveryTimeLine;
 
     @Getter
     @Builder
@@ -66,8 +72,29 @@ public class ShipperDeliveryDto {
         }
     }
 
-    public static ShipperDeliveryDto fromDelivery(Delivery delivery) {
-        return ShipperDeliveryDto.builder()
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DeliveryLogInfo {
+        private Long id;
+        private DeliveryLogType type;
+        private LocalDateTime createdAt;
+
+        public static DeliveryLogInfo fromEntity(DeliveryLog log) {
+            if (log == null) {
+                return null;
+            }
+            return DeliveryLogInfo.builder()
+                    .id(log.getId())
+                    .type(log.getType())
+                    .createdAt(log.getCreatedAt())
+                    .build();
+        }
+    }
+
+    public static ShipperDeliveryDetailDto fromDelivery(Delivery delivery, List<DeliveryLog> logs) {
+        return ShipperDeliveryDetailDto.builder()
                 .id(delivery.getId())
                 .senderInfo(SenderInfo.fromAccount(delivery.getSender()))
                 .shipperInfo(ShipperInfo.fromAccount(delivery.getShipper()))
@@ -75,6 +102,7 @@ public class ShipperDeliveryDto {
                 .destPlace(delivery.getDest())
                 .memo(delivery.getMemo())
                 .deliveryState(delivery.getStatus())
+                .deliveryTimeLine(logs != null ? logs.stream().map(DeliveryLogInfo::fromEntity).toList() : List.of())
                 .build();
-        }
+    }
 }

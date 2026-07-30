@@ -56,8 +56,8 @@ public class SenderQueryService {
             return SenderDeliveryListDto.builder()
                     .deliveryId(delivery.getId())
                     .goodName(goodName)
-                    .originAddress(delivery.getOrigin() != null ? delivery.getOrigin().getAddress() : "")
-                    .destAddress(delivery.getDest() != null ? delivery.getDest().getAddress() : "")
+                    .originAddress(delivery.getOrigin() != null ? delivery.getOrigin().getSubwayStationName() : "")
+                    .destAddress(delivery.getDest() != null ? delivery.getDest().getSubwayStationName() : "")
                     .status(delivery.getStatus())
                     .build();
         }).toList();

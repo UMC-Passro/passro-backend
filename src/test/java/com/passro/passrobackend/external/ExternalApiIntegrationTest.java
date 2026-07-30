@@ -2,30 +2,22 @@ package com.passro.passrobackend.external;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.passro.passrobackend.account.dto.SubwayApiResDTO;
-import com.passro.passrobackend.account.service.SubwayApiService;
 import com.passro.passrobackend.file.exception.FileException;
 import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.support.IntegrationTestSupport;
 import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class ExternalApiIntegrationTest extends IntegrationTestSupport {
 
     @Autowired
     private S3Service s3Service;
-
-    @MockitoBean
-    private SubwayApiService subwayApiService;
 
     @Test
     void uploadAndDownloadPresignedUrlsAreReturned() throws Exception {
@@ -49,17 +41,17 @@ class ExternalApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void subwaySearchReturnsExternalBoundaryResult() throws Exception {
-        SubwayApiResDTO.Item station = mock(SubwayApiResDTO.Item.class);
-        given(station.getSubwayStationId()).willReturn("1001");
-        given(station.getSubwayStationName()).willReturn("Gangnam");
-        given(station.getSubwayRouteName()).willReturn("Line 2");
-        given(subwayApiService.searchStation("2")).willReturn(List.of(station));
-
+    void subwaySearchFindsRouteNameContainingKeyword() throws Exception {
         mockMvc.perform(get("/subway/search").param("keyword", "2"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result[0].subwayStationId").value("1001"))
-                .andExpect(jsonPath("$.result[0].subwayStationName").value("Gangnam"));
+                .andExpect(jsonPath("$.result[*].subwayRouteName", hasItem("2호선")));
+    }
+
+    @Test
+    void subwaySearchFindsStationNameContainingKeyword() throws Exception {
+        mockMvc.perform(get("/subway/search").param("keyword", "강남"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result[*].subwayStationName", hasItem("강남")));
     }
 
     @Test

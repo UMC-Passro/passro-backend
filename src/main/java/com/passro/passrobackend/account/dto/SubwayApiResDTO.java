@@ -36,6 +36,7 @@ public class SubwayApiResDTO {
     @AllArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Item{
+        private Long id;
         private String subwayStationName;
         private String subwayRouteName;
     }

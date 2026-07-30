@@ -2,12 +2,15 @@ package com.passro.passrobackend.shipper.service;
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
+import com.passro.passrobackend.delivery.entity.DeliveryLog;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.event.DeliveryLogEvent;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
+import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
+import com.passro.passrobackend.shipper.dto.ShipperDeliveryDetailDto;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -20,16 +23,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class ShipperService {
 
     private final DeliveryRepository deliveryRepository;
+    private final DeliveryLogRepository deliveryLogRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public List<Delivery> listAllByShipper(Account account) {
         return deliveryRepository.findAllByShipper(account);
     }
 
-    public Delivery getDeliveryById(Account shipper, Long id) {
+    public ShipperDeliveryDetailDto getDeliveryById(Account shipper, Long id) {
         Delivery delivery = getDelivery(id);
         validateAssignedShipper(delivery, shipper);
-        return delivery;
+        List<DeliveryLog> logs = deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(delivery);
+        return ShipperDeliveryDetailDto.fromDelivery(delivery, logs);
     }
 
     public List<Delivery> listMatchRequested() {

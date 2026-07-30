@@ -15,8 +15,17 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DeliveryRepository extends JpaRepository<Delivery, Long>
 {
-    List<Delivery> findAllByStatus(DeliveryState status);
+    // 알고리즘 판단 및 매칭 대기 배송 목록 조회 메서드
+    @Query("""
+        SELECT d
+        FROM Delivery d
+        LEFT JOIN FETCH d.origin
+        LEFT JOIN FETCH d.dest
+        WHERE d.status = :status
+    """)
+    List<Delivery> findAllByStatus(@Param("status") DeliveryState status);
 
+    // 배송기사별 배정된 배송 목록 조회 메서드
     List<Delivery> findAllByShipper(Account shipper);
     long countByShipper(Account shipper);
 

@@ -55,9 +55,16 @@ public class APIExceptionHandler {
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<APIResponse<Void>> handleConstraintViolationException(ConstraintViolationException e) {
+    public ResponseEntity<APIResponse<Map<String, String>>> handleConstraintViolationException(
+            ConstraintViolationException e) {
         log.warn("요청 파라미터 검증 실패: {}", e.getMessage());
-        return errorResponse(CommonErrorCode.INVALID_REQUEST, null);
+
+        Map<String, String> errors = new LinkedHashMap<>();
+        e.getConstraintViolations().forEach(violation -> errors.putIfAbsent(
+                violation.getPropertyPath().toString(),
+                violation.getMessage()));
+
+        return errorResponse(CommonErrorCode.INVALID_REQUEST, errors);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

@@ -1,16 +1,17 @@
-package com.passro.passrobackend.account.controller;
+package com.passro.passrobackend.place.controller;
 
 import com.passro.passrobackend.account.dto.SubwayApiResDTO;
 import com.passro.passrobackend.account.dto.accountDTO.AccountReqDTO;
 import com.passro.passrobackend.account.dto.accountDTO.AccountResDTO;
 import com.passro.passrobackend.account.exception.code.AccountSuccessCode;
 import com.passro.passrobackend.account.service.AccountService;
-import com.passro.passrobackend.account.service.SubwayApiService;
 import com.passro.passrobackend.global.code.BaseSuccessCode;
 import com.passro.passrobackend.global.configuration.security.CustomUserDetails;
 import com.passro.passrobackend.global.response.APIResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
+import com.passro.passrobackend.place.service.PlaceService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
@@ -19,17 +20,14 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequiredArgsConstructor
 @Validated
 @RequestMapping("/subway")
-public class AccountController {
+public class PlaceController {
 
+    private final PlaceService placeService;
     private final AccountService accountService;
-    private final SubwayApiService subwayApiService;
-
 
     @GetMapping("/search")
     public APIResponse<List<SubwayApiResDTO.Item>> search(
@@ -37,7 +35,13 @@ public class AccountController {
             @Pattern(regexp = "^[가-힣0-9]+$", message = "검색어는 한글과 숫자만 입력 가능합니다.")
             String keyword) {
         BaseSuccessCode code = AccountSuccessCode.OK;
-        return APIResponse.onSuccess(code, subwayApiService.searchStation(keyword));
+        List<SubwayApiResDTO.Item> result = placeService.searchByKeyword(keyword).stream()
+                .map(place -> new SubwayApiResDTO.Item(
+                        place.getId(),
+                        place.getSubwayStationName(),
+                        place.getSubwayRouteName()))
+                .toList();
+        return APIResponse.onSuccess(code, result);
     }
 
     @GetMapping("/mypage/shipper")

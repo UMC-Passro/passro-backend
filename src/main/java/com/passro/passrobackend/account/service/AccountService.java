@@ -29,7 +29,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import javax.security.auth.login.AccountLockedException;
 import java.security.SecureRandom;
 import java.time.Duration;
 
@@ -75,6 +74,9 @@ public class AccountService {
     //내 정보 변경 시간
     private static final Duration EDIT_COOLDOWN_TTL = Duration.ofMinutes(5);
 
+    private static final String TEMP_PASSWORD_CHARACTERS =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    private static final int TEMP_PASSWORD_LENGTH = 12;
 
     private static final String REFRESH_PREFIX = "refresh:token:";
 
@@ -169,6 +171,7 @@ public class AccountService {
 
         stringRedisTemplate.delete(CODE_PREFIX + mail);
         stringRedisTemplate.opsForValue().set(VERIFIED_PREFIX + mail, "true", VERIFIED_TTL);
+
     }
 
     public void confirmUniversityCode(AuthReqDTO.ConfirmCode dto, Long accountId){
@@ -187,7 +190,6 @@ public class AccountService {
         accountRepository.save(account);
 
         stringRedisTemplate.delete(CODE_PREFIX + mail);
-
     }
 
     @Transactional
@@ -205,9 +207,9 @@ public class AccountService {
 
         String password = passwordEncoder.encode(dto.getPassword());
 
-        Place startPlace = placeRepository.findBySubwayRouteNameAndSubwayStationName(dto.getStartRouteName(), dto.getStartStationName())
-                        .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
-        Place destinationPlace = placeRepository.findBySubwayRouteNameAndSubwayStationName(dto.getDestinationRouteName(), dto.getDestinationStationName())
+        Place startPlace = placeRepository.findById(dto.getSourceStationId())
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
+        Place destinationPlace = placeRepository.findById(dto.getDestinationStationId())
                 .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
 
 
@@ -233,10 +235,8 @@ public class AccountService {
 
         if (dto.getWayPoints() != null) {
             for (int i = 0; i < dto.getWayPoints().size(); i++) {
-                AuthReqDTO.WayPoint wp = dto.getWayPoints().get(i);
-
-                Place wayPointPlace = placeRepository.findBySubwayRouteNameAndSubwayStationName(
-                                wp.getRouteName(), wp.getStationName())
+                Long wayPointPlaceId = dto.getWayPoints().get(i);
+                Place wayPointPlace = placeRepository.findById(wayPointPlaceId)
                         .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
 
                 wayPointRepository.save(WayPoint.builder()
@@ -263,6 +263,35 @@ public class AccountService {
 
     public void logout(Long accountId) {
         stringRedisTemplate.delete(REFRESH_PREFIX + accountId);
+    }
+
+    public void findId(AuthReqDTO.FindId dto) {
+        accountRepository.findFirstByNameAndPhone(dto.getName(), dto.getPhone())
+                .ifPresent(account -> {
+                    SimpleMailMessage message = new SimpleMailMessage();
+                    message.setTo(account.getMail());
+                    message.setSubject("[Passro] 아이디 찾기 안내");
+                    message.setText("가입된 아이디(이메일): " + account.getMail());
+                    javaMailSender.send(message);
+                });
+    }
+
+    @Transactional
+    public void findPassword(AuthReqDTO.FindPassword dto) {
+        accountRepository.findFirstByNameAndPhoneAndMail(
+                        dto.getName(), dto.getPhone(), dto.getEmail())
+                .ifPresent(account -> {
+                    String temporaryPassword = generateTemporaryPassword();
+                    account.setPassword(passwordEncoder.encode(temporaryPassword));
+                    accountRepository.save(account);
+
+                    SimpleMailMessage message = new SimpleMailMessage();
+                    message.setTo(account.getMail());
+                    message.setSubject("[Passro] 임시 비밀번호 안내");
+                    message.setText("임시 비밀번호: " + temporaryPassword
+                            + "\n로그인 후 비밀번호를 변경해주세요.");
+                    javaMailSender.send(message);
+                });
     }
 
     public AuthResDTO.TokenResponse reissueToken(AuthReqDTO.ReIssue dto){
@@ -346,16 +375,16 @@ public class AccountService {
         stringRedisTemplate.opsForValue().set(EDIT_NICKNAME_COOLDOWN_PREFIX + accountId, "true", EDIT_COOLDOWN_TTL);
     }
 
-    public void codeCodeConfirmAndEditPassword(AccountReqDTO.EditPassword dto, Long accountId){
+    public void codeCodeConfirmAndEditPassword(AccountReqDTO.EditPassword dto, Long accountId) {
 
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
 
         String mail = account.getMail();
 
         String code = dto.getCode();
 
-        String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX+mail);
+        String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX + mail);
 
         savedCodeConfirm(code, savedCode);
 
@@ -364,7 +393,7 @@ public class AccountService {
 
         String editPassword = passwordEncoder.encode(dto.getPassword());
 
-        if(Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId)))
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId)))
             throw new AccountException(AccountErrorCode.TOO_FAST);
 
         account.changePassword(editPassword);
@@ -373,5 +402,13 @@ public class AccountService {
 
         stringRedisTemplate.delete(CODE_PREFIX + mail);
         stringRedisTemplate.opsForValue().set(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId, "true", EDIT_COOLDOWN_TTL);
+    }
+    private String generateTemporaryPassword() {
+        StringBuilder password = new StringBuilder(TEMP_PASSWORD_LENGTH);
+        for (int index = 0; index < TEMP_PASSWORD_LENGTH; index++) {
+            password.append(TEMP_PASSWORD_CHARACTERS.charAt(
+                    SECURE_RANDOM.nextInt(TEMP_PASSWORD_CHARACTERS.length())));
+        }
+        return password.toString();
     }
 }

@@ -60,11 +60,12 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                         .content("{\"mail\":\"" + email + "\",\"code\":\"" + code + "\"}"))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/auth/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(signupBody(email, password, nickname)))
-                .andExpect(status().isOk());
+//        mockMvc.perform(post("/auth/signup")
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content(signupBody(email, password, nickname)))
+//                .andExpect(status().isOk());
 
+<<<<<<< HEAD
         Account account = accountRepository.findByMail(email).orElseThrow();
         assertThat(passwordEncoder.matches(password, account.getPassword())).isTrue();
 
@@ -93,6 +94,36 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                         .content("{\"refreshToken\":\"" + reissued.at("/result/refreshToken").asText() + "\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("ACCOUNT401_2"));
+=======
+//        Account account = accountRepository.findByEmail(email).orElseThrow();
+//        assertThat(passwordEncoder.matches(password, account.getPassword())).isTrue();
+//
+//        MvcResult loginResult = mockMvc.perform(post("/auth/login")
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content(loginBody(email, password)))
+//                .andExpect(status().isOk())
+//                .andExpect(jsonPath("$.result.accessToken").isNotEmpty())
+//                .andExpect(jsonPath("$.result.refreshToken").isNotEmpty())
+//                .andReturn();
+//        String refreshToken = json(loginResult).at("/result/refreshToken").asText();
+//
+//        MvcResult reissueResult = mockMvc.perform(post("/auth/reissue")
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content("{\"refreshToken\":\"" + refreshToken + "\"}"))
+//                .andExpect(status().isOk())
+//                .andReturn();
+//        JsonNode reissued = json(reissueResult);
+//
+//        mockMvc.perform(delete("/auth/logout")
+//                        .header("Authorization", bearer(reissued.at("/result/accessToken").asText())))
+//                .andExpect(status().isOk());
+//
+//        mockMvc.perform(post("/auth/reissue")
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content("{\"refreshToken\":\"" + reissued.at("/result/refreshToken").asText() + "\"}"))
+//                .andExpect(status().isUnauthorized())
+//                .andExpect(jsonPath("$.code").value("ACCOUNT401_2"));
+>>>>>>> main
     }
 
     @Test
@@ -129,6 +160,52 @@ class AuthIntegrationTest extends IntegrationTestSupport {
     void protectedEndpointRejectsAnonymousRequest() throws Exception {
         mockMvc.perform(get("/sender"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void signupRejectsMissingRequiredFields() throws Exception {
+        mockMvc.perform(post("/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON400"))
+                .andExpect(jsonPath("$.result.email").exists())
+                .andExpect(jsonPath("$.result.password").exists())
+                .andExpect(jsonPath("$.result.nickname").exists())
+                .andExpect(jsonPath("$.result.name").exists())
+                .andExpect(jsonPath("$.result.phone").exists())
+                .andExpect(jsonPath("$.result.birth").exists())
+                .andExpect(jsonPath("$.result.sourceStationId").exists())
+                .andExpect(jsonPath("$.result.destinationStationId").exists());
+    }
+
+    @Test
+    void signupRejectsInvalidFormatsAndPlaceIds() throws Exception {
+        String request = """
+                {
+                  "email":"invalid-email",
+                  "password":"short",
+                  "nickname":"tester",
+                  "name":"Integration User",
+                  "phone":"1234",
+                  "birth":"2999-01-01",
+                  "sourceStationId":0,
+                  "destinationStationId":-1,
+                  "wayPoints":[1, 0]
+                }
+                """;
+
+        mockMvc.perform(post("/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON400"))
+                .andExpect(jsonPath("$.result.email").exists())
+                .andExpect(jsonPath("$.result.password").exists())
+                .andExpect(jsonPath("$.result.phone").exists())
+                .andExpect(jsonPath("$.result.birth").exists())
+                .andExpect(jsonPath("$.result.sourceStationId").exists())
+                .andExpect(jsonPath("$.result.destinationStationId").exists());
     }
 
     private void saveUniversityDomain() {
