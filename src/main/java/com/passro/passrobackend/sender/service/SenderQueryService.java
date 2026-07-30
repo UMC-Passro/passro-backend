@@ -9,8 +9,6 @@ import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
-import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
-import com.passro.passrobackend.delivery.repository.DeliveryGoodInfoRepository;
 import com.passro.passrobackend.sender.dto.SenderDeliveryListDto;
 import com.passro.passrobackend.sender.dto.SenderDeliveryDetailDto;
 import com.passro.passrobackend.sender.dto.SenderPaymentAmountDto;
@@ -19,8 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 // 발송 관련 DB 조회 Service
 @Service
@@ -31,7 +27,6 @@ public class SenderQueryService {
     private final DeliveryRepository deliveryRepository;
     private final DeliveryLogRepository deliveryLogRepository;
     private final DeliveryPointRepository deliveryPointRepository;
-    private final DeliveryGoodInfoRepository deliveryGoodInfoRepository;
     private final SenderDeliveryValidator senderDeliveryValidator;
 
     // 발송자 배송 목록 전체 조회
@@ -42,25 +37,15 @@ public class SenderQueryService {
             return List.of();
         }
 
-        List<DeliveryGoodInfo> goodInfos = deliveryGoodInfoRepository.findByDeliveryIn(deliveries);
-        Map<Long, String> goodNameMap = goodInfos.stream()
-                .collect(Collectors.toMap(
-                        info -> info.getDelivery().getId(),
-                        DeliveryGoodInfo::getName,
-                        (existing, replacement) -> existing
-                ));
-
-        return deliveries.stream().map(delivery -> {
-            String goodName = goodNameMap.getOrDefault(delivery.getId(), "");
-
-            return SenderDeliveryListDto.builder()
+        return deliveries.stream()
+                .map(delivery -> SenderDeliveryListDto.builder()
                     .deliveryId(delivery.getId())
-                    .goodName(goodName)
+                    .name(delivery.getName())
                     .originPlace(delivery.getOrigin())
                     .destPlace(delivery.getDest())
                     .status(delivery.getStatus())
-                    .build();
-        }).toList();
+                    .build())
+                .toList();
     }
 
     // 발송 단건 상세 정보 조회

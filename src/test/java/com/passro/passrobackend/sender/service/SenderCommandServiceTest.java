@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
@@ -18,6 +19,7 @@ import com.passro.passrobackend.delivery.repository.DeliveryPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
+import com.passro.passrobackend.point.service.PointService;
 import com.passro.passrobackend.sender.dto.SenderDeliveryCreateRequestDto;
 import com.passro.passrobackend.subway.service.SubwayService;
 import java.util.Optional;
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
@@ -49,6 +52,9 @@ class SenderCommandServiceTest {
 
     @Mock
     private SubwayService subwayService;
+
+    @Mock
+    private PointService pointService;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -93,6 +99,9 @@ class SenderCommandServiceTest {
 
         // Then
         assertThat(deliveryId).isEqualTo(100L);
+        ArgumentCaptor<Delivery> deliveryCaptor = ArgumentCaptor.forClass(Delivery.class);
+        verify(deliveryRepository).save(deliveryCaptor.capture());
+        assertThat(deliveryCaptor.getValue().getName()).isEqualTo("노트북");
     }
 
     @Test
@@ -141,19 +150,24 @@ class SenderCommandServiceTest {
     void completeDelivery_success() {
         // Given
         Account sender = Account.builder().id(1L).build();
+        Account shipper = Account.builder().id(2L).build();
         Delivery delivery = Delivery.builder()
                 .id(100L)
                 .sender(sender)
+                .shipper(shipper)
                 .status(DeliveryState.CONFIRM_REQUESTED)
                 .build();
+        DeliveryPoint point = point(delivery);
 
         given(senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(100L, sender)).willReturn(delivery);
+        given(deliveryPointRepository.findByDelivery(delivery)).willReturn(Optional.of(point));
 
         // When
         senderCommandService.completeDelivery(sender, 100L);
 
         // Then
         assertThat(delivery.getStatus()).isEqualTo(DeliveryState.DELIVERED);
+        verify(pointService).settleDelivery(2L, delivery, 1700L);
     }
 
     @Test
@@ -184,16 +198,20 @@ class SenderCommandServiceTest {
         Delivery delivery = Delivery.builder()
                 .id(100L)
                 .sender(sender)
+                .status(DeliveryState.WAIT)
                 .terms(false)
                 .build();
+        DeliveryPoint point = point(delivery);
 
         given(senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(100L, sender)).willReturn(delivery);
+        given(deliveryPointRepository.findByDelivery(delivery)).willReturn(Optional.of(point));
 
         // When
         senderCommandService.agreeTerms(sender, 100L);
 
         // Then
         assertThat(delivery.getTerms()).isTrue();
+        verify(pointService).payForDelivery(1L, delivery, 1700L);
     }
 
     @Test
@@ -206,14 +224,17 @@ class SenderCommandServiceTest {
                 .sender(sender)
                 .status(DeliveryState.WAIT)
                 .build();
+        DeliveryPoint point = point(delivery);
 
         given(senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(100L, sender)).willReturn(delivery);
+        given(deliveryPointRepository.findByDelivery(delivery)).willReturn(Optional.of(point));
 
         // When
         senderCommandService.cancelDelivery(sender, 100L);
 
         // Then
         assertThat(delivery.getStatus()).isEqualTo(DeliveryState.CANCEL);
+        verify(pointService).refundDelivery(1L, delivery, 1700L);
     }
 
     @Test
@@ -234,5 +255,14 @@ class SenderCommandServiceTest {
                 .isInstanceOf(DeliveryException.class)
                 .extracting(e -> ((DeliveryException) e).getCode())
                 .isEqualTo(DeliveryErrorCode.CANNOT_CANCEL);
+    }
+
+    private DeliveryPoint point(Delivery delivery) {
+        return DeliveryPoint.builder()
+                .delivery(delivery)
+                .base_point(1000L)
+                .distance_point(500L)
+                .weight_point(200L)
+                .build();
     }
 }

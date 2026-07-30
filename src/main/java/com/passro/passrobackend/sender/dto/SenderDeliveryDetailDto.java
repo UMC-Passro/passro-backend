@@ -20,6 +20,7 @@ import java.util.List;
 @AllArgsConstructor
 public class SenderDeliveryDetailDto {
     private Long id;
+    private String name;
     private DeliveryState status; // 현재 배송 상태
     private ShipperInfo shipperInfo; // 배송자 정보
     private List<DeliveryLogInfo> deliveryTimeLine; // 배송 타임라인
@@ -69,6 +70,7 @@ public class SenderDeliveryDetailDto {
     public static SenderDeliveryDetailDto fromEntity(Delivery delivery, List<DeliveryLog> logs) {
         return SenderDeliveryDetailDto.builder()
                 .id(delivery.getId())
+                .name(delivery.getName())
                 .status(delivery.getStatus())
                 .shipperInfo(ShipperInfo.fromAccount(delivery.getShipper()))
                 .deliveryTimeLine(logs != null ? logs.stream().map(DeliveryLogInfo::fromEntity).toList() : List.of())

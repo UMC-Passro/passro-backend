@@ -24,10 +24,11 @@ public class SenderDeliveryCreateRequestDto {
     @Positive(message = "도착역 Place ID는 양수여야 합니다.")
     private Long destinationStationId;
 
-    // DeliveryGoodInfo
+    // Delivery
     @NotBlank(message = "물품명을 입력하세요.")
     private String name;
 
+    // DeliveryGoodInfo
     @NotNull(message = "물품 가격을 입력하세요.")
     @PositiveOrZero(message = "물품 가격은 0 이상이어야 합니다.")
     private Long price;

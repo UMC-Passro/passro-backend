@@ -28,6 +28,8 @@ public class Delivery extends BaseEntity {
     private Boolean matched;
     private String memo;
 
+    private String name;
+
     @Enumerated(EnumType.STRING)
     private DeliveryState status;
     private Boolean terms;

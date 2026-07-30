@@ -14,6 +14,7 @@ import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
 import com.passro.passrobackend.delivery.repository.DeliveryGoodInfoRepository;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
+import com.passro.passrobackend.point.service.PointService;
 import com.passro.passrobackend.sender.dto.SenderDeliveryCreateRequestDto;
 import com.passro.passrobackend.subway.service.SubwayService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class SenderCommandService {
     private final DeliveryPointRepository deliveryPointRepository;
     private final SenderDeliveryValidator senderDeliveryValidator;
     private final SubwayService subwayService;
+    private final PointService pointService;
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -44,6 +46,12 @@ public class SenderCommandService {
         if (delivery.getStatus() != DeliveryState.CONFIRM_REQUESTED) {
             throw new DeliveryException(DeliveryErrorCode.INVALID_STATUS_FOR_COMPLETION);
         }
+        if (delivery.getShipper() == null) {
+            throw new DeliveryException(DeliveryErrorCode.INVALID_STATUS_FOR_COMPLETION);
+        }
+
+        long settlementPoint = getTotalPoint(delivery);
+        pointService.settleDelivery(delivery.getShipper().getId(), delivery, settlementPoint);
 
         delivery.setStatus(DeliveryState.DELIVERED);
         deliveryRepository.save(delivery);
@@ -75,6 +83,7 @@ public class SenderCommandService {
                 .sender(sender)
                 .origin(origin)
                 .dest(dest)
+                .name(request.getName())
                 .memo(request.getMemo())
                 .status(DeliveryState.WAIT)
                 .terms(false)
@@ -85,7 +94,6 @@ public class SenderCommandService {
         // 배송 물품 정보 (DeliveryGoodInfo) 생성 및 저장
         DeliveryGoodInfo goodInfo = DeliveryGoodInfo.builder()
                 .delivery(delivery)
-                .name(request.getName())
                 .price(request.getPrice())
                 .size(request.getSize()) // TODO: 배송 사이즈는 enum으로 관리 고려 중입니다.
                 .picture(request.getPicture())
@@ -111,6 +119,13 @@ public class SenderCommandService {
     public void agreeTerms(Account sender, Long deliveryId) {
         Delivery delivery = senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(deliveryId, sender);
 
+        if (delivery.getStatus() != DeliveryState.WAIT) {
+            throw new DeliveryException(DeliveryErrorCode.INVALID_STATUS_TRANSITION);
+        }
+
+        long paymentPoint = getTotalPoint(delivery);
+        pointService.payForDelivery(sender.getId(), delivery, paymentPoint);
+
         delivery.setTerms(true);
         deliveryRepository.save(delivery);
     }
@@ -124,11 +139,24 @@ public class SenderCommandService {
             throw new DeliveryException(DeliveryErrorCode.CANNOT_CANCEL);
         }
 
+        long refundPoint = getTotalPoint(delivery);
+        pointService.refundDelivery(sender.getId(), delivery, refundPoint);
+
         delivery.setStatus(DeliveryState.CANCEL);
         deliveryRepository.save(delivery);
 
         // 배송 취소 처리 내역 로그에 저장
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.CANCELED));
+    }
+
+    private long getTotalPoint(Delivery delivery) {
+        DeliveryPoint point = deliveryPointRepository.findByDelivery(delivery)
+                .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.DELIVERY_POINT_NOT_FOUND));
+
+        long basePoint = point.getBase_point() == null ? 0L : point.getBase_point();
+        long distancePoint = point.getDistance_point() == null ? 0L : point.getDistance_point();
+        long weightPoint = point.getWeight_point() == null ? 0L : point.getWeight_point();
+        return Math.addExact(Math.addExact(basePoint, distancePoint), weightPoint);
     }
 
 

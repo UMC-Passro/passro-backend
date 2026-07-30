@@ -6,14 +6,12 @@ import static org.mockito.BDDMockito.given;
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
-import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
 import com.passro.passrobackend.delivery.entity.DeliveryLog;
 import com.passro.passrobackend.delivery.entity.DeliveryPoint;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
-import com.passro.passrobackend.delivery.repository.DeliveryGoodInfoRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
@@ -44,9 +42,6 @@ class SenderQueryServiceTest {
     private DeliveryPointRepository deliveryPointRepository;
 
     @Mock
-    private DeliveryGoodInfoRepository deliveryGoodInfoRepository;
-
-    @Mock
     private SenderDeliveryValidator senderDeliveryValidator;
 
     @InjectMocks
@@ -63,19 +58,13 @@ class SenderQueryServiceTest {
         Delivery delivery = Delivery.builder()
                 .id(100L)
                 .sender(sender)
+                .name("노트북")
                 .origin(origin)
                 .dest(dest)
                 .status(DeliveryState.WAIT)
                 .build();
 
-        DeliveryGoodInfo goodInfo = DeliveryGoodInfo.builder()
-                .id(1L)
-                .delivery(delivery)
-                .name("노트북")
-                .build();
-
         given(deliveryRepository.findAllBySender(sender)).willReturn(List.of(delivery));
-        given(deliveryGoodInfoRepository.findByDeliveryIn(List.of(delivery))).willReturn(List.of(goodInfo));
 
         // When
         List<SenderDeliveryListDto> result = senderQueryService.getSenders(sender);
@@ -84,7 +73,7 @@ class SenderQueryServiceTest {
         assertThat(result).hasSize(1);
         SenderDeliveryListDto dto = result.get(0);
         assertThat(dto.getDeliveryId()).isEqualTo(100L);
-        assertThat(dto.getGoodName()).isEqualTo("노트북");
+        assertThat(dto.getName()).isEqualTo("노트북");
         assertThat(dto.getOriginPlace()).isEqualTo(origin);
         assertThat(dto.getDestPlace()).isEqualTo(dest);
         assertThat(dto.getStatus()).isEqualTo(DeliveryState.WAIT);
@@ -114,6 +103,7 @@ class SenderQueryServiceTest {
                 .id(100L)
                 .sender(sender)
                 .shipper(shipper)
+                .name("노트북")
                 .status(DeliveryState.DELIVERING)
                 .build();
 
@@ -128,6 +118,7 @@ class SenderQueryServiceTest {
 
         // Then
         assertThat(result.getId()).isEqualTo(100L);
+        assertThat(result.getName()).isEqualTo("노트북");
         assertThat(result.getStatus()).isEqualTo(DeliveryState.DELIVERING);
         assertThat(result.getShipperInfo().getName()).isEqualTo("배송기사");
         assertThat(result.getDeliveryTimeLine()).hasSize(2);

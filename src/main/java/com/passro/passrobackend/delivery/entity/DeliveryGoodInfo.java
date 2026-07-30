@@ -19,7 +19,6 @@ public class DeliveryGoodInfo extends BaseEntity {
     @OneToOne(cascade = CascadeType.ALL)
     private Delivery delivery;
 
-    private String name;
     private Long price;
     private String size;
     private String picture;
