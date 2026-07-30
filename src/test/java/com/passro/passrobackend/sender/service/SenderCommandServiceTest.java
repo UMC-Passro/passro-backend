@@ -10,6 +10,7 @@ import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
 import com.passro.passrobackend.delivery.entity.DeliveryPoint;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
+import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.event.DeliveryLogEvent;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
@@ -20,14 +21,17 @@ import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
 import com.passro.passrobackend.sender.dto.SenderDeliveryCreateRequestDto;
 import com.passro.passrobackend.subway.service.SubwayService;
+import com.passro.passrobackend.file.service.S3Service;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class SenderCommandServiceTest {
@@ -52,6 +56,9 @@ class SenderCommandServiceTest {
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private S3Service s3Service;
 
     @InjectMocks
     private SenderCommandService senderCommandService;
@@ -154,6 +161,29 @@ class SenderCommandServiceTest {
 
         // Then
         assertThat(delivery.getStatus()).isEqualTo(DeliveryState.DELIVERED);
+    }
+
+    @Test
+    @DisplayName("배송 완료 승인 시 임시 이미지를 확정하고 최종 키를 로그 이벤트에 저장한다")
+    void completeDelivery_withImage_usesFinalImageKey() {
+        Account sender = Account.builder().id(1L).build();
+        Delivery delivery = Delivery.builder()
+                .id(100L)
+                .sender(sender)
+                .status(DeliveryState.CONFIRM_REQUESTED)
+                .build();
+        String uploadKey = "uploads/images/123e4567-e89b-12d3-a456-426614174000.jpg";
+        String finalKey = "delivery-images/123e4567-e89b-12d3-a456-426614174001.jpg";
+        given(senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(100L, sender))
+                .willReturn(delivery);
+        given(s3Service.finalizeUploadedImage(uploadKey)).willReturn(finalKey);
+
+        senderCommandService.completeDelivery(sender, 100L, uploadKey);
+
+        ArgumentCaptor<DeliveryLogEvent> eventCaptor = ArgumentCaptor.forClass(DeliveryLogEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getType()).isEqualTo(DeliveryLogType.DONE);
+        assertThat(eventCaptor.getValue().getImage()).isEqualTo(finalKey);
     }
 
     @Test

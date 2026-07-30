@@ -16,10 +16,14 @@ import com.passro.passrobackend.global.exception.APIException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -37,8 +41,10 @@ public class S3Service {
 			"image/png", Set.of("png"),
 			"image/webp", Set.of("webp")
 	);
-	private static final Pattern IMAGE_KEY_PATTERN = Pattern.compile(
-			"images/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|jpeg|png|webp)");
+	private static final Pattern UPLOAD_IMAGE_KEY_PATTERN = Pattern.compile(
+			"uploads/images/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|jpeg|png|webp)");
+	private static final Pattern FINAL_IMAGE_KEY_PATTERN = Pattern.compile(
+			"delivery-images/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|jpeg|png|webp)");
 
 	private final S3Presigner s3Presigner;
 	private final S3Client s3Client;
@@ -63,7 +69,7 @@ public class S3Service {
 				? ""
 				: contentType.toLowerCase(Locale.ROOT);
 		String extension = validateAndGetImageExtension(fileName, normalizedContentType, fileSize);
-		String imageKey = "images/" + UUID.randomUUID() + "." + extension;
+		String imageKey = "uploads/images/" + UUID.randomUUID() + "." + extension;
 		URL uploadUrl = getPresignedUploadUrl(imageKey, normalizedContentType, fileSize);
 		return new ImageUploadResponseDto(imageKey, uploadUrl.toString());
 	}
@@ -115,10 +121,34 @@ public class S3Service {
 	}
 
 	public void validateUploadedImage(String objectKey) {
-		if (!StringUtils.hasText(objectKey) || !IMAGE_KEY_PATTERN.matcher(objectKey).matches()) {
+		if (!isSupportedImageKey(objectKey)) {
 			throw new FileException(FileErrorCode.INVALID_FILE_NAME);
 		}
 		validateUploadedImage(objectKey, ALLOWED_IMAGE_TYPES.keySet(), MAX_IMAGE_SIZE);
+	}
+
+	public String finalizeUploadedImage(String uploadKey) {
+		if (!StringUtils.hasText(uploadKey) || !UPLOAD_IMAGE_KEY_PATTERN.matcher(uploadKey).matches()) {
+			throw new FileException(FileErrorCode.INVALID_FILE_NAME);
+		}
+		validateUploadedImage(uploadKey, ALLOWED_IMAGE_TYPES.keySet(), MAX_IMAGE_SIZE);
+
+		String extension = uploadKey.substring(uploadKey.lastIndexOf('.') + 1);
+		String finalKey = "delivery-images/" + UUID.randomUUID() + "." + extension;
+		try {
+			s3Client.copyObject(CopyObjectRequest.builder()
+					.bucket(s3Properties.getBucket())
+					.copySource(s3Properties.getBucket() + "/" + uploadKey)
+					.key(finalKey)
+					.build());
+			s3Client.deleteObject(DeleteObjectRequest.builder()
+					.bucket(s3Properties.getBucket())
+					.key(uploadKey)
+					.build());
+			return finalKey;
+		} catch (Exception e) {
+			throw new FileException(FileErrorCode.FILE_UPLOAD_FAILED);
+		}
 	}
 
 	private void validateUploadedImage(String objectKey, Set<String> allowedContentTypes, long maxSize) {
@@ -137,11 +167,54 @@ public class S3Service {
 			if (response.contentLength() == null || response.contentLength() <= 0 || response.contentLength() > maxSize) {
 				throw new FileException(FileErrorCode.INVALID_FILE_SIZE);
 			}
+			validateImageSignature(objectKey, contentType);
 		} catch (FileException e) {
 			throw e;
 		} catch (Exception e) {
 			throw new FileException(FileErrorCode.FILE_NOT_FOUND);
 		}
+	}
+
+	private void validateImageSignature(String objectKey, String contentType) {
+		ResponseBytes<GetObjectResponse> response = s3Client.getObjectAsBytes(GetObjectRequest.builder()
+				.bucket(s3Properties.getBucket())
+				.key(objectKey)
+				.range("bytes=0-11")
+				.build());
+		byte[] bytes = response.asByteArray();
+
+		boolean valid = switch (contentType) {
+			case "image/jpeg" -> startsWith(bytes, 0xFF, 0xD8, 0xFF);
+			case "image/png" -> startsWith(bytes, 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A);
+			case "image/webp" -> startsWith(bytes, 0x52, 0x49, 0x46, 0x46)
+					&& matchesAt(bytes, 8, 0x57, 0x45, 0x42, 0x50);
+			default -> false;
+		};
+		if (!valid) {
+			throw new FileException(FileErrorCode.INVALID_IMAGE_FORMAT);
+		}
+	}
+
+	private boolean startsWith(byte[] bytes, int... signature) {
+		return matchesAt(bytes, 0, signature);
+	}
+
+	private boolean matchesAt(byte[] bytes, int offset, int... signature) {
+		if (bytes.length < offset + signature.length) {
+			return false;
+		}
+		for (int i = 0; i < signature.length; i++) {
+			if ((bytes[offset + i] & 0xFF) != signature[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private boolean isSupportedImageKey(String objectKey) {
+		return StringUtils.hasText(objectKey)
+				&& (UPLOAD_IMAGE_KEY_PATTERN.matcher(objectKey).matches()
+				|| FINAL_IMAGE_KEY_PATTERN.matcher(objectKey).matches());
 	}
 
 	private String validateAndGetImageExtension(String fileName, String contentType, long fileSize) {

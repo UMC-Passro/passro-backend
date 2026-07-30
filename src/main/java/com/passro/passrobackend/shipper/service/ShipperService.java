@@ -123,7 +123,6 @@ public class ShipperService {
     }
 
     private String validateUploadedImage(String imageKey) {
-        s3Service.validateUploadedImage(imageKey);
-        return imageKey;
+        return s3Service.finalizeUploadedImage(imageKey);
     }
 }

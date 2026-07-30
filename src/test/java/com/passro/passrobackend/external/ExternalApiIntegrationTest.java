@@ -54,7 +54,7 @@ class ExternalApiIntegrationTest extends IntegrationTestSupport {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.imageKey", containsString("images/")))
+                .andExpect(jsonPath("$.result.imageKey", containsString("uploads/images/")))
                 .andExpect(jsonPath("$.result.imageKey", containsString(".jpg")))
                 .andExpect(jsonPath("$.result.uploadUrl", containsString("X-Amz-Signature")));
     }
