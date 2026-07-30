@@ -18,6 +18,7 @@ public class DeliveryLogEventListener {
         DeliveryLog deliveryLog = DeliveryLog.builder()
                 .delivery(event.getDelivery())
                 .type(event.getType())
+                .image(event.getImage())
                 .build();
         deliveryLogRepository.save(deliveryLog);
     }

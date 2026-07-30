@@ -2,6 +2,8 @@ package com.passro.passrobackend.file.controller;
 
 import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.file.exception.code.FileSuccessCode;
+import com.passro.passrobackend.file.dto.ImageUploadRequestDto;
+import com.passro.passrobackend.file.dto.ImageUploadResponseDto;
 import com.passro.passrobackend.global.response.APIResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -12,8 +14,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,6 +35,29 @@ import static com.passro.passrobackend.global.configuration.SwaggerSuccessExampl
 @Tag(name = "파일", description = "S3 파일 업로드 및 다운로드 URL 발급 API")
 public class FileController {
     private final S3Service s3Service;
+
+    @PostMapping("/image/upload-url")
+    @Operation(summary = "이미지 업로드 URL 발급",
+            description = "JPEG, PNG, WebP 이미지를 직접 업로드할 수 있는 10분 유효 사전 서명 URL을 발급합니다.")
+    public APIResponse<ImageUploadResponseDto> getImageUploadUrl(
+            @Valid @RequestBody ImageUploadRequestDto request) {
+        return APIResponse.onSuccess(
+                FileSuccessCode.OK,
+                s3Service.createImageUploadUrl(
+                        request.getFileName(),
+                        request.getContentType(),
+                        request.getFileSize()));
+    }
+
+    @GetMapping("/image/download-url")
+    @Operation(summary = "이미지 다운로드 URL 발급",
+            description = "S3 이미지 키로 10분 유효한 다운로드 URL을 발급합니다.")
+    public APIResponse<String> getImageDownloadUrl(@RequestParam String imageKey) {
+        s3Service.validateUploadedImage(imageKey);
+        return APIResponse.onSuccess(
+                FileSuccessCode.OK,
+                s3Service.getPresignedDownloadUrl(imageKey).toString());
+    }
 
     @GetMapping("{fileName}/upload")
     @Operation(summary = "파일 업로드 URL 발급", description = "파일을 직접 업로드할 수 있는 10분 유효한 사전 서명 URL을 발급합니다.")

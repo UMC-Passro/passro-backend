@@ -9,6 +9,7 @@ import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
+import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
 import com.passro.passrobackend.delivery.repository.DeliveryGoodInfoRepository;
@@ -35,9 +36,14 @@ public class SenderCommandService {
     private final SubwayService subwayService;
 
     private final ApplicationEventPublisher eventPublisher;
+    private final S3Service s3Service;
 
     // 발송 완료 처리
     public void completeDelivery(Account sender, Long deliveryId) {
+        completeDelivery(sender, deliveryId, null);
+    }
+
+    public void completeDelivery(Account sender, Long deliveryId, String imageKey) {
         Delivery delivery = senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(deliveryId, sender);
 
         // '검수 요청' 상태에서만 배송 완료 처리 가능
@@ -45,11 +51,15 @@ public class SenderCommandService {
             throw new DeliveryException(DeliveryErrorCode.INVALID_STATUS_FOR_COMPLETION);
         }
 
+        String image = imageKey == null || imageKey.isBlank()
+                ? null
+                : validateUploadedImage(imageKey);
+
         delivery.setStatus(DeliveryState.DELIVERED);
         deliveryRepository.save(delivery);
 
         // 배송 프로세스 최종 완료 처리 로그에 저장
-        eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.DONE));
+        eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.DONE, image));
     }
 
     // 배송 요청 생성
@@ -129,6 +139,10 @@ public class SenderCommandService {
 
         // 배송 취소 처리 내역 로그에 저장
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.CANCELED));
+    }
+
+    private String validateUploadedImage(String imageKey) {
+        return s3Service.finalizeUploadedImage(imageKey);
     }
 
 

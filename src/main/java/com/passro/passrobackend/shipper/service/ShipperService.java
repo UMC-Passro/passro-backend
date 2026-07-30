@@ -10,6 +10,7 @@ import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
+import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.shipper.dto.ShipperDeliveryDetailDto;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class ShipperService {
     private final DeliveryRepository deliveryRepository;
     private final DeliveryLogRepository deliveryLogRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final S3Service s3Service;
 
     public List<Delivery> listAllByShipper(Account account) {
         return deliveryRepository.findAllByShipper(account);
@@ -59,24 +61,42 @@ public class ShipperService {
 
     @Transactional
     public void acquireAccept(Account shipper, Long id) {
+        acquireAccept(shipper, id, null);
+    }
+
+    @Transactional
+    public void acquireAccept(Account shipper, Long id, String imageKey) {
         Delivery delivery = getDeliveryForUpdate(id);
         validateAssignedShipper(delivery, shipper);
         validateStatus(delivery, DeliveryState.MATCHED);
 
+        String image = imageKey == null || imageKey.isBlank()
+                ? null
+                : validateUploadedImage(imageKey);
+
         delivery.setStatus(DeliveryState.DELIVERING);
         deliveryRepository.save(delivery);
-        eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.PICKED_UP));
+        eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.PICKED_UP, image));
     }
 
     @Transactional
     public void acquireConfirm(Account shipper, Long id) {
+        acquireConfirm(shipper, id, null);
+    }
+
+    @Transactional
+    public void acquireConfirm(Account shipper, Long id, String imageKey) {
         Delivery delivery = getDeliveryForUpdate(id);
         validateAssignedShipper(delivery, shipper);
         validateStatus(delivery, DeliveryState.DELIVERING);
 
+        String image = imageKey == null || imageKey.isBlank()
+                ? null
+                : validateUploadedImage(imageKey);
+
         delivery.setStatus(DeliveryState.CONFIRM_REQUESTED);
         deliveryRepository.save(delivery);
-        eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.DELIVERED));
+        eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.DELIVERED, image));
     }
 
     private Delivery getDelivery(Long id) {
@@ -100,5 +120,9 @@ public class ShipperService {
         if (delivery.getStatus() != expected) {
             throw new DeliveryException(DeliveryErrorCode.INVALID_STATUS_TRANSITION);
         }
+    }
+
+    private String validateUploadedImage(String imageKey) {
+        return s3Service.finalizeUploadedImage(imageKey);
     }
 }

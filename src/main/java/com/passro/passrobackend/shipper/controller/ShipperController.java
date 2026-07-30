@@ -2,6 +2,7 @@ package com.passro.passrobackend.shipper.controller;
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.global.response.APIResponse;
+import com.passro.passrobackend.delivery.dto.DeliveryStatusUpdateRequestDto;
 import com.passro.passrobackend.shipper.code.ShipperSuccessCode;
 import com.passro.passrobackend.shipper.dto.ShipperDeliveryDetailDto;
 import com.passro.passrobackend.shipper.dto.ShipperDeliveryListDto;
@@ -99,8 +100,9 @@ public class ShipperController {
     })
     public APIResponse<Void> acquireAccept(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
-            @Parameter(description = "배송 ID", example = "1") @PathVariable("deliveryId") Long deliveryId) {
-        shipperService.acquireAccept(account, deliveryId);
+            @Parameter(description = "배송 ID", example = "1") @PathVariable("deliveryId") Long deliveryId,
+            @RequestBody(required = false) DeliveryStatusUpdateRequestDto request) {
+        shipperService.acquireAccept(account, deliveryId, request == null ? null : request.getImageKey());
         return APIResponse.onSuccess(ShipperSuccessCode.OK, null);
     }
 
@@ -116,8 +118,9 @@ public class ShipperController {
     })
     public APIResponse<Void> acquireConfirm(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
-            @Parameter(description = "배송 ID", example = "1") @PathVariable("deliveryId") Long deliveryId) {
-        shipperService.acquireConfirm(account, deliveryId);
+            @Parameter(description = "배송 ID", example = "1") @PathVariable("deliveryId") Long deliveryId,
+            @RequestBody(required = false) DeliveryStatusUpdateRequestDto request) {
+        shipperService.acquireConfirm(account, deliveryId, request == null ? null : request.getImageKey());
         return APIResponse.onSuccess(ShipperSuccessCode.OK, null);
     }
 }
