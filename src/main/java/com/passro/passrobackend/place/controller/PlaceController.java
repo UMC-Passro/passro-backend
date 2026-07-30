@@ -1,6 +1,6 @@
 package com.passro.passrobackend.place.controller;
 
-import com.passro.passrobackend.account.dto.SubwayApiResDTO;
+import com.passro.passrobackend.subway.dto.SubwayApiResDTO;
 import com.passro.passrobackend.account.exception.code.AccountSuccessCode;
 import com.passro.passrobackend.global.code.BaseSuccessCode;
 import com.passro.passrobackend.global.response.APIResponse;

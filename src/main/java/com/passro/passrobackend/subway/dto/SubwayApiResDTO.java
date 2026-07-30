@@ -1,4 +1,4 @@
-package com.passro.passrobackend.account.dto;
+package com.passro.passrobackend.subway.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
