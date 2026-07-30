@@ -46,14 +46,14 @@ public class AccountController {
                 .body(APIResponse.onSuccess(code, null));
     }
 
-    @PostMapping("/mypage/edit/password/mail")
+    @PatchMapping("/mypage/edit/password/mail")
     public APIResponse<Void> sendPasswordEditMail(@AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
         accountService.sendMailMessageAndEditPassword(userDetails.getAccountId());
         return APIResponse.onSuccess(code, null);
     }
 
-    @PostMapping("/mypage/edit/password")
+    @PatchMapping("/mypage/edit/password")
     public APIResponse<Void> editPassword(@Valid @RequestBody AccountReqDTO.EditPassword dto, @AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
         accountService.codeCodeConfirmAndEditPassword(dto, userDetails.getAccountId());
