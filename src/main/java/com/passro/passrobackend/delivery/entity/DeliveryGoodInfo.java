@@ -16,8 +16,12 @@ public class DeliveryGoodInfo extends BaseEntity {
     @Id
     private Long id;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "delivery_id", nullable = false, unique = true)
     private Delivery delivery;
+
+    @Column(nullable = false)
+    private String name;
 
     private Long price;
     private String size;

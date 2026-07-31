@@ -25,10 +25,13 @@ public class Delivery extends BaseEntity {
     @ManyToOne
     private Place dest;
 
-    private Boolean matched;
     private String memo;
 
-    private String name;
+    @OneToOne(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private DeliveryGoodInfo deliveryGoodInfo;
+
+    @OneToOne(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private DeliveryPoint deliveryPoint;
 
     @Enumerated(EnumType.STRING)
     private DeliveryState status;
@@ -39,4 +42,14 @@ public class Delivery extends BaseEntity {
 
     @ManyToOne
     private Account shipper;
+
+    public void attachGoodInfo(DeliveryGoodInfo goodInfo) {
+        this.deliveryGoodInfo = goodInfo;
+        goodInfo.setDelivery(this);
+    }
+
+    public void attachPoint(DeliveryPoint point) {
+        this.deliveryPoint = point;
+        point.setDelivery(this);
+    }
 }

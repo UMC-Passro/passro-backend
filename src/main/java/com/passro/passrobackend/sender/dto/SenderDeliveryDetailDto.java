@@ -72,7 +72,9 @@ public class SenderDeliveryDetailDto {
     public static SenderDeliveryDetailDto fromEntity(Delivery delivery, List<DeliveryLog> logs) {
         return SenderDeliveryDetailDto.builder()
                 .id(delivery.getId())
-                .name(delivery.getName())
+                .name(delivery.getDeliveryGoodInfo() != null
+                        ? delivery.getDeliveryGoodInfo().getName()
+                        : null)
                 .status(delivery.getStatus())
                 .shipperInfo(ShipperInfo.fromAccount(delivery.getShipper()))
                 .deliveryTimeLine(logs != null ? logs.stream().map(DeliveryLogInfo::fromEntity).toList() : List.of())

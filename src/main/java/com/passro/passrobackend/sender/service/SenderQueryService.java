@@ -7,7 +7,6 @@ import com.passro.passrobackend.delivery.entity.DeliveryPoint;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
-import com.passro.passrobackend.delivery.repository.DeliveryPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.sender.dto.SenderDeliveryListDto;
 import com.passro.passrobackend.sender.dto.SenderDeliveryDetailDto;
@@ -26,7 +25,6 @@ public class SenderQueryService {
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryLogRepository deliveryLogRepository;
-    private final DeliveryPointRepository deliveryPointRepository;
     private final SenderDeliveryValidator senderDeliveryValidator;
 
     // 발송자 배송 목록 전체 조회
@@ -40,7 +38,9 @@ public class SenderQueryService {
         return deliveries.stream()
                 .map(delivery -> SenderDeliveryListDto.builder()
                     .deliveryId(delivery.getId())
-                    .name(delivery.getName())
+                    .name(delivery.getDeliveryGoodInfo() != null
+                            ? delivery.getDeliveryGoodInfo().getName()
+                            : null)
                     .originPlace(delivery.getOrigin())
                     .destPlace(delivery.getDest())
                     .status(delivery.getStatus())
@@ -62,8 +62,10 @@ public class SenderQueryService {
     public SenderPaymentAmountDto getPaymentAmount(Account sender, Long deliveryId) {
         Delivery delivery = senderDeliveryValidator.getDeliveryAndValidateOwnership(deliveryId, sender);
 
-        DeliveryPoint deliveryPoint = deliveryPointRepository.findByDelivery(delivery)
-                .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.DELIVERY_POINT_NOT_FOUND));
+        DeliveryPoint deliveryPoint = delivery.getDeliveryPoint();
+        if (deliveryPoint == null) {
+            throw new DeliveryException(DeliveryErrorCode.DELIVERY_POINT_NOT_FOUND);
+        }
 
         return SenderPaymentAmountDto.fromEntity(deliveryPoint);
     }

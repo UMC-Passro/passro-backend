@@ -83,7 +83,9 @@ public class ChatService {
         return new ChatRoomInfoResponseDto(
                 partner.getNickname(),
                 partner.getPicture(),
-                delivery.getName(),
+                delivery.getDeliveryGoodInfo() != null
+                        ? delivery.getDeliveryGoodInfo().getName()
+                        : null,
                 delivery.getOrigin() != null ? delivery.getOrigin().getSubwayStationName() : null,
                 delivery.getDest() != null ? delivery.getDest().getSubwayStationName() : null,
                 delivery.getStatus()

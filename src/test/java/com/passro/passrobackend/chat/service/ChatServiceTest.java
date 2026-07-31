@@ -9,6 +9,7 @@ import com.passro.passrobackend.chat.exception.ChatException;
 import com.passro.passrobackend.chat.exception.code.ChatErrorCode;
 import com.passro.passrobackend.chat.repository.ChatMessageRepository;
 import com.passro.passrobackend.delivery.entity.Delivery;
+import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.place.entity.Place;
@@ -256,7 +257,9 @@ class ChatServiceTest {
             given(delivery.getOrigin()).willReturn(origin);
             given(delivery.getDest()).willReturn(dest);
 
-            given(delivery.getName()).willReturn("노트북");
+            DeliveryGoodInfo goodInfo = mock(DeliveryGoodInfo.class);
+            given(delivery.getDeliveryGoodInfo()).willReturn(goodInfo);
+            given(goodInfo.getName()).willReturn("노트북");
 
             given(deliveryRepository.findById(1L)).willReturn(Optional.of(delivery));
 

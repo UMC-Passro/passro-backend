@@ -7,12 +7,10 @@ import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.event.DeliveryLogEvent;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
-import com.passro.passrobackend.delivery.repository.DeliveryPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
-import com.passro.passrobackend.delivery.repository.DeliveryGoodInfoRepository;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
 import com.passro.passrobackend.point.service.PointService;
@@ -31,8 +29,6 @@ public class SenderCommandService {
 
     private final DeliveryRepository deliveryRepository;
     private final PlaceRepository placeRepository;
-    private final DeliveryGoodInfoRepository deliveryGoodInfoRepository;
-    private final DeliveryPointRepository deliveryPointRepository;
     private final SenderDeliveryValidator senderDeliveryValidator;
     private final SubwayService subwayService;
     private final PointService pointService;
@@ -93,30 +89,28 @@ public class SenderCommandService {
                 .sender(sender)
                 .origin(origin)
                 .dest(dest)
-                .name(request.getName())
                 .memo(request.getMemo())
                 .status(DeliveryState.WAIT)
                 .terms(false)
-                .matched(false)
                 .build();
-        deliveryRepository.save(delivery);
 
         // 배송 물품 정보 (DeliveryGoodInfo) 생성 및 저장
         DeliveryGoodInfo goodInfo = DeliveryGoodInfo.builder()
-                .delivery(delivery)
+                .name(request.getName())
                 .price(request.getPrice())
                 .size(request.getSize()) // TODO: 배송 사이즈는 enum으로 관리 고려 중입니다.
                 .picture(request.getPicture())
                 .build();
-        deliveryGoodInfoRepository.save(goodInfo);
 
         DeliveryPoint pointInfo = DeliveryPoint.builder()
-                .delivery(delivery)
                 .base_point(request.getBasePoint())
                 .distance_point(request.getDistancePoint())
                 .weight_point(request.getWeightPoint())
                 .build();
-        deliveryPointRepository.save(pointInfo);
+
+        delivery.attachGoodInfo(goodInfo);
+        delivery.attachPoint(pointInfo);
+        deliveryRepository.save(delivery);
 
         // 배송 요청 로그 저장
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.SEND_REQUEST));
@@ -160,8 +154,10 @@ public class SenderCommandService {
     }
 
     private long getTotalPoint(Delivery delivery) {
-        DeliveryPoint point = deliveryPointRepository.findByDelivery(delivery)
-                .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.DELIVERY_POINT_NOT_FOUND));
+        DeliveryPoint point = delivery.getDeliveryPoint();
+        if (point == null) {
+            throw new DeliveryException(DeliveryErrorCode.DELIVERY_POINT_NOT_FOUND);
+        }
 
         long basePoint = point.getBase_point() == null ? 0L : point.getBase_point();
         long distancePoint = point.getDistance_point() == null ? 0L : point.getDistance_point();

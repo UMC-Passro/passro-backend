@@ -112,7 +112,6 @@ class InquiryReviewIntegrationTest extends IntegrationTestSupport {
                 .shipper(shipper)
                 .status(state)
                 .terms(true)
-                .matched(shipper != null)
                 .build());
     }
 

@@ -16,7 +16,8 @@ public class DeliveryPoint extends BaseEntity {
     @Id
     private Long id;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "delivery_id", nullable = false, unique = true)
     private Delivery delivery;
 
     private Long base_point;

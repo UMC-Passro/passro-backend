@@ -15,8 +15,6 @@ import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.event.DeliveryLogEvent;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
-import com.passro.passrobackend.delivery.repository.DeliveryGoodInfoRepository;
-import com.passro.passrobackend.delivery.repository.DeliveryPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
@@ -42,12 +40,6 @@ class SenderCommandServiceTest {
 
     @Mock
     private PlaceRepository placeRepository;
-
-    @Mock
-    private DeliveryGoodInfoRepository deliveryGoodInfoRepository;
-
-    @Mock
-    private DeliveryPointRepository deliveryPointRepository;
 
     @Mock
     private SenderDeliveryValidator senderDeliveryValidator;
@@ -106,7 +98,8 @@ class SenderCommandServiceTest {
         assertThat(deliveryId).isEqualTo(100L);
         ArgumentCaptor<Delivery> deliveryCaptor = ArgumentCaptor.forClass(Delivery.class);
         verify(deliveryRepository).save(deliveryCaptor.capture());
-        assertThat(deliveryCaptor.getValue().getName()).isEqualTo("노트북");
+        assertThat(deliveryCaptor.getValue().getDeliveryGoodInfo().getName()).isEqualTo("노트북");
+        assertThat(deliveryCaptor.getValue().getDeliveryPoint()).isNotNull();
     }
 
     @Test
@@ -165,7 +158,6 @@ class SenderCommandServiceTest {
         DeliveryPoint point = point(delivery);
 
         given(senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(100L, sender)).willReturn(delivery);
-        given(deliveryPointRepository.findByDelivery(delivery)).willReturn(Optional.of(point));
 
         // When
         senderCommandService.completeDelivery(sender, 100L);
@@ -191,7 +183,6 @@ class SenderCommandServiceTest {
         String finalKey = "delivery-images/123e4567-e89b-12d3-a456-426614174001.jpg";
         given(senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(100L, sender))
                 .willReturn(delivery);
-        given(deliveryPointRepository.findByDelivery(delivery)).willReturn(Optional.of(point));
         given(s3Service.finalizeUploadedImage(uploadKey)).willReturn(finalKey);
 
         senderCommandService.completeDelivery(sender, 100L, uploadKey);
@@ -237,7 +228,6 @@ class SenderCommandServiceTest {
         DeliveryPoint point = point(delivery);
 
         given(senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(100L, sender)).willReturn(delivery);
-        given(deliveryPointRepository.findByDelivery(delivery)).willReturn(Optional.of(point));
 
         // When
         senderCommandService.agreeTerms(sender, 100L);
@@ -260,7 +250,6 @@ class SenderCommandServiceTest {
         DeliveryPoint point = point(delivery);
 
         given(senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(100L, sender)).willReturn(delivery);
-        given(deliveryPointRepository.findByDelivery(delivery)).willReturn(Optional.of(point));
 
         // When
         senderCommandService.cancelDelivery(sender, 100L);
@@ -291,11 +280,12 @@ class SenderCommandServiceTest {
     }
 
     private DeliveryPoint point(Delivery delivery) {
-        return DeliveryPoint.builder()
-                .delivery(delivery)
+        DeliveryPoint point = DeliveryPoint.builder()
                 .base_point(1000L)
                 .distance_point(500L)
                 .weight_point(200L)
                 .build();
+        delivery.attachPoint(point);
+        return point;
     }
 }

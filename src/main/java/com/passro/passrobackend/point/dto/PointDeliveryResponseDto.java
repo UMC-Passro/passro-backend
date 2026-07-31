@@ -25,7 +25,9 @@ public class PointDeliveryResponseDto {
     public static PointDeliveryResponseDto from(Delivery delivery) {
         return PointDeliveryResponseDto.builder()
                 .id(delivery.getId())
-                .name(delivery.getName())
+                .name(delivery.getDeliveryGoodInfo() != null
+                        ? delivery.getDeliveryGoodInfo().getName()
+                        : null)
                 .origin(PlaceResponseDto.from(delivery.getOrigin()))
                 .destination(PlaceResponseDto.from(delivery.getDest()))
                 .status(delivery.getStatus())

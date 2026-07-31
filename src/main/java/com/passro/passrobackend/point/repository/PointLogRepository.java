@@ -22,6 +22,11 @@ public interface PointLogRepository extends JpaRepository<PointLog, Long> {
             PointIncrementReason incrementReason
     );
 
-    @EntityGraph(attributePaths = {"delivery", "delivery.origin", "delivery.dest"})
+    @EntityGraph(attributePaths = {
+            "delivery",
+            "delivery.origin",
+            "delivery.dest",
+            "delivery.deliveryGoodInfo"
+    })
     List<PointLog> findAllByAccountOrderByCreatedAtDesc(Account account);
 }

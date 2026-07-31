@@ -3,6 +3,7 @@ package com.passro.passrobackend.point.service;
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.account.repository.AccountRepository;
 import com.passro.passrobackend.delivery.entity.Delivery;
+import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
 import com.passro.passrobackend.point.entity.PointLog;
 import com.passro.passrobackend.point.dto.PointHistoryResponseDto;
 import com.passro.passrobackend.point.enums.PointIncrementReason;
@@ -140,11 +141,12 @@ class PointServiceTest {
     }
 
     private Delivery delivery(Long id, Account sender, Account shipper) {
-        return Delivery.builder()
+        Delivery delivery = Delivery.builder()
                 .id(id)
-                .name("배송 " + id)
                 .sender(sender)
                 .shipper(shipper)
                 .build();
+        delivery.attachGoodInfo(DeliveryGoodInfo.builder().name("배송 " + id).build());
+        return delivery;
     }
 }

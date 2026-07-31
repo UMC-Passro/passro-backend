@@ -70,7 +70,9 @@ public class ShipperDeliveryListDto {
     public static ShipperDeliveryListDto fromDelivery(Delivery delivery) {
         return ShipperDeliveryListDto.builder()
                 .id(delivery.getId())
-                .name(delivery.getName())
+                .name(delivery.getDeliveryGoodInfo() != null
+                        ? delivery.getDeliveryGoodInfo().getName()
+                        : null)
                 .senderInfo(SenderInfo.fromAccount(delivery.getSender()))
                 .shipperInfo(ShipperInfo.fromAccount(delivery.getShipper()))
                 .originPlace(delivery.getOrigin())
