@@ -2,6 +2,7 @@ package com.passro.passrobackend.sender.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
@@ -34,19 +35,11 @@ public class SenderDeliveryCreateRequestDto {
     private Long price;
 
     @NotBlank(message = "물품 크기를 입력하세요.")
+    @Pattern(regexp = "(?i)S|M|L", message = "물품 크기는 S, M, L 중 하나여야 합니다.")
     private String size;
     private String picture;
 
     // Delivery memo
     private String memo;
 
-    // Delivery point
-    @PositiveOrZero(message = "기본 포인트는 0 이상이어야 합니다.")
-    private Long basePoint;
-
-    @PositiveOrZero(message = "거리 포인트는 0 이상이어야 합니다.")
-    private Long distancePoint;
-
-    @PositiveOrZero(message = "무게 포인트는 0 이상이어야 합니다.")
-    private Long weightPoint;
 }

@@ -1,6 +1,7 @@
 package com.passro.passrobackend.sender.service;
 
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.delivery.configuration.DeliveryPointProperties;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryPoint;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
@@ -15,7 +16,10 @@ import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
 import com.passro.passrobackend.point.service.PointService;
 import com.passro.passrobackend.sender.dto.SenderDeliveryCreateRequestDto;
+import com.passro.passrobackend.subway.dto.SubwayRouteResponseDto;
 import com.passro.passrobackend.subway.service.SubwayService;
+import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -32,6 +36,7 @@ public class SenderCommandService {
     private final SenderDeliveryValidator senderDeliveryValidator;
     private final SubwayService subwayService;
     private final PointService pointService;
+    private final DeliveryPointProperties deliveryPointProperties;
 
     private final ApplicationEventPublisher eventPublisher;
     private final S3Service s3Service;
@@ -94,18 +99,22 @@ public class SenderCommandService {
                 .terms(false)
                 .build();
 
+        String normalizedSize = request.getSize().toUpperCase(Locale.ROOT);
+        SubwayRouteResponseDto route = subwayService.findShortestRoute(origin, List.of(), dest);
+
         // 배송 물품 정보 (DeliveryGoodInfo) 생성 및 저장
         DeliveryGoodInfo goodInfo = DeliveryGoodInfo.builder()
                 .name(request.getName())
                 .price(request.getPrice())
-                .size(request.getSize()) // TODO: 배송 사이즈는 enum으로 관리 고려 중입니다.
+                .size(normalizedSize) // TODO: 배송 사이즈는 enum으로 관리 고려 중입니다.
                 .picture(request.getPicture())
                 .build();
 
         DeliveryPoint pointInfo = DeliveryPoint.builder()
-                .base_point(request.getBasePoint())
-                .distance_point(request.getDistancePoint())
-                .weight_point(request.getWeightPoint())
+                .base_point(deliveryPointProperties.getBase())
+                .distance_point(deliveryPointProperties.pointForRoute(
+                        countTravelStations(route)))
+                .weight_point(deliveryPointProperties.pointForSize(normalizedSize))
                 .build();
 
         delivery.attachGoodInfo(goodInfo);
@@ -163,6 +172,11 @@ public class SenderCommandService {
         long distancePoint = point.getDistance_point() == null ? 0L : point.getDistance_point();
         long weightPoint = point.getWeight_point() == null ? 0L : point.getWeight_point();
         return Math.addExact(Math.addExact(basePoint, distancePoint), weightPoint);
+    }
+
+    private int countTravelStations(SubwayRouteResponseDto route) {
+        int graphEdges = Math.max(0, route.getStations().size() - 1);
+        return Math.max(0, graphEdges - route.getTransferCount());
     }
 
     private String validateUploadedImage(String imageKey) {

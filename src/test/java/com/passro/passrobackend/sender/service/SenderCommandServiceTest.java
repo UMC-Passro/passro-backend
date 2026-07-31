@@ -7,6 +7,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.delivery.configuration.DeliveryPointProperties;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
 import com.passro.passrobackend.delivery.entity.DeliveryPoint;
@@ -20,9 +21,13 @@ import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
 import com.passro.passrobackend.point.service.PointService;
 import com.passro.passrobackend.sender.dto.SenderDeliveryCreateRequestDto;
+import com.passro.passrobackend.subway.dto.SubwayRouteResponseDto;
+import com.passro.passrobackend.subway.dto.SubwayStationResponseDto;
 import com.passro.passrobackend.subway.service.SubwayService;
 import com.passro.passrobackend.file.service.S3Service;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,6 +56,9 @@ class SenderCommandServiceTest {
     private PointService pointService;
 
     @Mock
+    private DeliveryPointProperties deliveryPointProperties;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @Mock
@@ -69,12 +77,9 @@ class SenderCommandServiceTest {
                 .destinationStationId(20L)
                 .name("노트북")
                 .price(1000000L)
-                .size("MEDIUM")
+                .size("M")
                 .picture("pic.jpg")
                 .memo("조심히 배송해 주세요")
-                .basePoint(1000L)
-                .distancePoint(500L)
-                .weightPoint(200L)
                 .build();
 
         Place origin = Place.builder().id(10L).subwayRouteName("2호선").subwayStationName("강남").build();
@@ -84,6 +89,14 @@ class SenderCommandServiceTest {
         given(placeRepository.findById(20L)).willReturn(Optional.of(dest));
         given(subwayService.getRegionByPlaceId(10L)).willReturn("수도권");
         given(subwayService.getRegionByPlaceId(20L)).willReturn("수도권");
+        given(subwayService.findShortestRoute(origin, List.of(), dest))
+                .willReturn(new SubwayRouteResponseDto(11, 0,
+                        IntStream.rangeClosed(0, 11)
+                                .mapToObj(index -> new SubwayStationResponseDto())
+                                .toList()));
+        given(deliveryPointProperties.getBase()).willReturn(2000L);
+        given(deliveryPointProperties.pointForRoute(11)).willReturn(200L);
+        given(deliveryPointProperties.pointForSize("M")).willReturn(500L);
 
         given(deliveryRepository.save(any(Delivery.class))).willAnswer(invocation -> {
             Delivery delivery = invocation.getArgument(0);
@@ -99,7 +112,9 @@ class SenderCommandServiceTest {
         ArgumentCaptor<Delivery> deliveryCaptor = ArgumentCaptor.forClass(Delivery.class);
         verify(deliveryRepository).save(deliveryCaptor.capture());
         assertThat(deliveryCaptor.getValue().getDeliveryGoodInfo().getName()).isEqualTo("노트북");
-        assertThat(deliveryCaptor.getValue().getDeliveryPoint()).isNotNull();
+        assertThat(deliveryCaptor.getValue().getDeliveryPoint().getBase_point()).isEqualTo(2000L);
+        assertThat(deliveryCaptor.getValue().getDeliveryPoint().getDistance_point()).isEqualTo(200L);
+        assertThat(deliveryCaptor.getValue().getDeliveryPoint().getWeight_point()).isEqualTo(500L);
     }
 
     @Test

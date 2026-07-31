@@ -103,12 +103,9 @@ public abstract class IntegrationTestSupport {
                   "destinationStationId":%d,
                   "name":"%s",
                   "price":100000,
-                  "size":"MEDIUM",
+                  "size":"M",
                   "picture":"good.png",
-                  "memo":"Handle with care",
-                  "basePoint":1000,
-                  "distancePoint":500,
-                  "weightPoint":300
+                  "memo":"Handle with care"
                 }
                 """.formatted(sourceStationId, destinationStationId, goodName);
 

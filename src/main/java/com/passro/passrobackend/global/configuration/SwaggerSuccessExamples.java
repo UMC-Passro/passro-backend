@@ -22,7 +22,7 @@ public final class SwaggerSuccessExamples {
     public static final String SENDER_DETAIL =
             "{\"success\":true,\"code\":\"SENDER200_1\",\"message\":\"요청 성공.\",\"result\":{\"id\":1,\"status\":\"DELIVERING\",\"shipperInfo\":{\"name\":\"홍길동\",\"picture\":\"https://example.com/profile.png\",\"place\":{\"id\":1,\"address\":\"서울시 강남구\"}},\"deliveryTimeLine\":[]}}";
     public static final String SENDER_PAYMENT =
-            "{\"success\":true,\"code\":\"SENDER200_1\",\"message\":\"요청 성공.\",\"result\":{\"id\":1,\"basePoint\":1000,\"distancePoint\":500,\"weightPoint\":300,\"totalPoint\":1800}}";
+            "{\"success\":true,\"code\":\"SENDER200_1\",\"message\":\"요청 성공.\",\"result\":{\"id\":1,\"basePoint\":2000,\"distancePoint\":200,\"weightPoint\":500,\"totalPoint\":2700}}";
     public static final String SENDER_CREATED =
             "{\"success\":true,\"code\":\"SENDER201_1\",\"message\":\"생성 성공.\",\"result\":\"1\"}";
     public static final String SENDER_OK =
@@ -34,7 +34,7 @@ public final class SwaggerSuccessExamples {
     public static final String SHIPPER_OK =
             "{\"success\":true,\"code\":\"SHIPPER200_1\",\"message\":\"요청 성공.\",\"result\":null}";
     public static final String SUBWAY_SHORTEST_ROUTE =
-            "{\"success\":true,\"code\":\"SUBWAY200_1\",\"message\":\"최단 경로 탐색 성공.\",\"result\":{\"shortestDistance\":5,\"transferCount\":1,\"stations\":[{\"placeId\":101,\"region\":\"수도권\",\"routeName\":\"2호선\",\"stationName\":\"강남\"},{\"placeId\":420,\"region\":\"수도권\",\"routeName\":\"신분당\",\"stationName\":\"판교(판교테크노밸리)\"}]}}";
+            "{\"success\":true,\"code\":\"SUBWAY200_1\",\"message\":\"최단 경로 탐색 성공.\",\"result\":{\"shortestDistance\":5,\"transferCount\":1,\"stations\":[{\"placeId\":101,\"region\":\"수도권\",\"routeName\":\"수인분당\",\"stationName\":\"미금(분당서울대병원)\"},{\"placeId\":102,\"region\":\"수도권\",\"routeName\":\"수인분당\",\"stationName\":\"정자\"},{\"placeId\":201,\"region\":\"수도권\",\"routeName\":\"신분당\",\"stationName\":\"정자\"},{\"placeId\":202,\"region\":\"수도권\",\"routeName\":\"신분당\",\"stationName\":\"판교(판교테크노밸리)\"}]}}";
     public static final String SUBWAY_STATION_LIST =
             "{\"success\":true,\"code\":\"SUBWAY200_2\",\"message\":\"지하철역 검색 성공.\",\"result\":[{\"placeId\":101,\"routeName\":\"2호선\",\"stationName\":\"강남\"}]}";
 }
