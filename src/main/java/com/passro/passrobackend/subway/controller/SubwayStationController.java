@@ -28,7 +28,7 @@ import static com.passro.passrobackend.global.configuration.SwaggerSuccessExampl
 @RestController
 @RequiredArgsConstructor
 @Validated
-@RequestMapping("/subway/stations")
+@RequestMapping("/subway/search")
 @SecurityRequirements
 @Tag(name = "지하철", description = "지하철역 검색 및 최단 경로 탐색 API")
 public class SubwayStationController {
