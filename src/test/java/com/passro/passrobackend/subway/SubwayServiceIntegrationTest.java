@@ -167,11 +167,11 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
     void openApiDocumentsSubwayResourcesUnderOneTag() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.paths['/subway/stations'].get.tags[0]").value("지하철"))
-                .andExpect(jsonPath("$.paths['/subway/stations'].get.security").isEmpty())
+                .andExpect(jsonPath("$.paths['/subway/search'].get.tags[0]").value("지하철"))
+                .andExpect(jsonPath("$.paths['/subway/search'].get.security").isEmpty())
                 .andExpect(jsonPath("$.paths['/subway/routes/shortest'].post.tags[0]").value("지하철"))
                 .andExpect(jsonPath("$.paths['/subway/routes/shortest'].post.security").isEmpty())
-                .andExpect(jsonPath("$.paths['/subway/search']").doesNotExist());
+                .andExpect(jsonPath("$.paths['/subway/stations']").doesNotExist());
     }
 
     @Test

@@ -76,7 +76,7 @@ class ExternalApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void subwaySearchFindsRouteNameContainingKeyword() throws Exception {
-        mockMvc.perform(get("/subway/stations").param("keyword", "2"))
+        mockMvc.perform(get("/subway/search").param("keyword", "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUBWAY200_2"))
                 .andExpect(jsonPath("$.result[0].region").doesNotExist())
@@ -85,14 +85,14 @@ class ExternalApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void subwaySearchFindsStationNameContainingKeyword() throws Exception {
-        mockMvc.perform(get("/subway/stations").param("keyword", "강남"))
+        mockMvc.perform(get("/subway/search").param("keyword", "강남"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result[*].stationName", hasItem("강남")));
     }
 
     @Test
     void subwaySearchRejectsInvalidKeyword() throws Exception {
-        mockMvc.perform(get("/subway/stations").param("keyword", "Gangnam!"))
+        mockMvc.perform(get("/subway/search").param("keyword", "Gangnam!"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COMMON400"));
     }
