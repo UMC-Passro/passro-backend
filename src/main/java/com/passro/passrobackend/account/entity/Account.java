@@ -43,4 +43,28 @@ public class Account extends BaseEntity {
     public void certify() {
         this.certified = true;
     }
+
+    public void usePoint(long amount) {
+        validatePointAmount(amount);
+        long currentPoint = currentPoint();
+        if (currentPoint < amount) {
+            throw new IllegalStateException("보유 포인트가 부족합니다.");
+        }
+        this.point = currentPoint - amount;
+    }
+
+    public void earnPoint(long amount) {
+        validatePointAmount(amount);
+        this.point = Math.addExact(currentPoint(), amount);
+    }
+
+    public long currentPoint() {
+        return point == null ? 0L : point;
+    }
+
+    private void validatePointAmount(long amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("포인트는 0보다 커야 합니다.");
+        }
+    }
 }

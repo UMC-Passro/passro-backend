@@ -137,7 +137,6 @@ class ShipperDeliveryIntegrationTest extends IntegrationTestSupport {
                 .sender(sender)
                 .status(DeliveryState.WAIT)
                 .terms(true)
-                .matched(false)
                 .build());
 
         ExecutorService executor = Executors.newFixedThreadPool(2);
@@ -160,7 +159,6 @@ class ShipperDeliveryIntegrationTest extends IntegrationTestSupport {
 
             Delivery matchedDelivery = deliveryRepository.findById(delivery.getId()).orElseThrow();
             assertThat(matchedDelivery.getStatus()).isEqualTo(DeliveryState.MATCHED);
-            assertThat(matchedDelivery.getMatched()).isTrue();
             assertThat(matchedDelivery.getShipper().getId())
                     .isIn(firstShipper.getId(), secondShipper.getId());
             assertThat(deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(matchedDelivery))

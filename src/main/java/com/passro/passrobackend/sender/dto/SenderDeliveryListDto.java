@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class SenderDeliveryListDto {
     private Long deliveryId;
-    private String goodName;
+    private String name;
     private Place originPlace;
     private Place destPlace;
     private DeliveryState status;

@@ -1,22 +1,25 @@
 package com.passro.passrobackend.sender.service;
 
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.delivery.configuration.DeliveryPointProperties;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryPoint;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.event.DeliveryLogEvent;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
-import com.passro.passrobackend.delivery.repository.DeliveryPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
-import com.passro.passrobackend.delivery.repository.DeliveryGoodInfoRepository;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
+import com.passro.passrobackend.point.service.PointService;
 import com.passro.passrobackend.sender.dto.SenderDeliveryCreateRequestDto;
+import com.passro.passrobackend.subway.dto.SubwayRouteResponseDto;
 import com.passro.passrobackend.subway.service.SubwayService;
+import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -30,10 +33,10 @@ public class SenderCommandService {
 
     private final DeliveryRepository deliveryRepository;
     private final PlaceRepository placeRepository;
-    private final DeliveryGoodInfoRepository deliveryGoodInfoRepository;
-    private final DeliveryPointRepository deliveryPointRepository;
     private final SenderDeliveryValidator senderDeliveryValidator;
     private final SubwayService subwayService;
+    private final PointService pointService;
+    private final DeliveryPointProperties deliveryPointProperties;
 
     private final ApplicationEventPublisher eventPublisher;
     private final S3Service s3Service;
@@ -50,6 +53,12 @@ public class SenderCommandService {
         if (delivery.getStatus() != DeliveryState.CONFIRM_REQUESTED) {
             throw new DeliveryException(DeliveryErrorCode.INVALID_STATUS_FOR_COMPLETION);
         }
+        if (delivery.getShipper() == null) {
+            throw new DeliveryException(DeliveryErrorCode.INVALID_STATUS_FOR_COMPLETION);
+        }
+
+        long settlementPoint = getTotalPoint(delivery);
+        pointService.settleDelivery(delivery.getShipper().getId(), delivery, settlementPoint);
 
         String image = imageKey == null || imageKey.isBlank()
                 ? null
@@ -88,27 +97,29 @@ public class SenderCommandService {
                 .memo(request.getMemo())
                 .status(DeliveryState.WAIT)
                 .terms(false)
-                .matched(false)
                 .build();
-        deliveryRepository.save(delivery);
+
+        String normalizedSize = request.getSize().toUpperCase(Locale.ROOT);
+        SubwayRouteResponseDto route = subwayService.findShortestRoute(origin, List.of(), dest);
 
         // 배송 물품 정보 (DeliveryGoodInfo) 생성 및 저장
         DeliveryGoodInfo goodInfo = DeliveryGoodInfo.builder()
-                .delivery(delivery)
                 .name(request.getName())
                 .price(request.getPrice())
-                .size(request.getSize()) // TODO: 배송 사이즈는 enum으로 관리 고려 중입니다.
+                .size(normalizedSize) // TODO: 배송 사이즈는 enum으로 관리 고려 중입니다.
                 .picture(request.getPicture())
                 .build();
-        deliveryGoodInfoRepository.save(goodInfo);
 
         DeliveryPoint pointInfo = DeliveryPoint.builder()
-                .delivery(delivery)
-                .base_point(request.getBasePoint())
-                .distance_point(request.getDistancePoint())
-                .weight_point(request.getWeightPoint())
+                .base_point(deliveryPointProperties.getBase())
+                .distance_point(deliveryPointProperties.pointForRoute(
+                        countTravelStations(route)))
+                .weight_point(deliveryPointProperties.pointForSize(normalizedSize))
                 .build();
-        deliveryPointRepository.save(pointInfo);
+
+        delivery.attachGoodInfo(goodInfo);
+        delivery.attachPoint(pointInfo);
+        deliveryRepository.save(delivery);
 
         // 배송 요청 로그 저장
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.SEND_REQUEST));
@@ -120,6 +131,13 @@ public class SenderCommandService {
     // 발송 약관 동의
     public void agreeTerms(Account sender, Long deliveryId) {
         Delivery delivery = senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(deliveryId, sender);
+
+        if (delivery.getStatus() != DeliveryState.WAIT) {
+            throw new DeliveryException(DeliveryErrorCode.INVALID_STATUS_TRANSITION);
+        }
+
+        long paymentPoint = getTotalPoint(delivery);
+        pointService.payForDelivery(sender.getId(), delivery, paymentPoint);
 
         delivery.setTerms(true);
         deliveryRepository.save(delivery);
@@ -134,11 +152,31 @@ public class SenderCommandService {
             throw new DeliveryException(DeliveryErrorCode.CANNOT_CANCEL);
         }
 
+        long refundPoint = getTotalPoint(delivery);
+        pointService.refundDelivery(sender.getId(), delivery, refundPoint);
+
         delivery.setStatus(DeliveryState.CANCEL);
         deliveryRepository.save(delivery);
 
         // 배송 취소 처리 내역 로그에 저장
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.CANCELED));
+    }
+
+    private long getTotalPoint(Delivery delivery) {
+        DeliveryPoint point = delivery.getDeliveryPoint();
+        if (point == null) {
+            throw new DeliveryException(DeliveryErrorCode.DELIVERY_POINT_NOT_FOUND);
+        }
+
+        long basePoint = point.getBase_point() == null ? 0L : point.getBase_point();
+        long distancePoint = point.getDistance_point() == null ? 0L : point.getDistance_point();
+        long weightPoint = point.getWeight_point() == null ? 0L : point.getWeight_point();
+        return Math.addExact(Math.addExact(basePoint, distancePoint), weightPoint);
+    }
+
+    private int countTravelStations(SubwayRouteResponseDto route) {
+        int graphEdges = Math.max(0, route.getStations().size() - 1);
+        return Math.max(0, graphEdges - route.getTransferCount());
     }
 
     private String validateUploadedImage(String imageKey) {

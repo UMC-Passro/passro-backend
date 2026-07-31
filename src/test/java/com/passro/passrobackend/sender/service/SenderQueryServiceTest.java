@@ -13,9 +13,7 @@ import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
-import com.passro.passrobackend.delivery.repository.DeliveryGoodInfoRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
-import com.passro.passrobackend.delivery.repository.DeliveryPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.sender.dto.SenderDeliveryDetailDto;
@@ -23,7 +21,6 @@ import com.passro.passrobackend.sender.dto.SenderDeliveryListDto;
 import com.passro.passrobackend.sender.dto.SenderPaymentAmountDto;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,12 +36,6 @@ class SenderQueryServiceTest {
 
     @Mock
     private DeliveryLogRepository deliveryLogRepository;
-
-    @Mock
-    private DeliveryPointRepository deliveryPointRepository;
-
-    @Mock
-    private DeliveryGoodInfoRepository deliveryGoodInfoRepository;
 
     @Mock
     private SenderDeliveryValidator senderDeliveryValidator;
@@ -67,15 +58,9 @@ class SenderQueryServiceTest {
                 .dest(dest)
                 .status(DeliveryState.WAIT)
                 .build();
-
-        DeliveryGoodInfo goodInfo = DeliveryGoodInfo.builder()
-                .id(1L)
-                .delivery(delivery)
-                .name("노트북")
-                .build();
+        delivery.attachGoodInfo(DeliveryGoodInfo.builder().name("노트북").build());
 
         given(deliveryRepository.findAllBySender(sender)).willReturn(List.of(delivery));
-        given(deliveryGoodInfoRepository.findByDeliveryIn(List.of(delivery))).willReturn(List.of(goodInfo));
 
         // When
         List<SenderDeliveryListDto> result = senderQueryService.getSenders(sender);
@@ -84,7 +69,7 @@ class SenderQueryServiceTest {
         assertThat(result).hasSize(1);
         SenderDeliveryListDto dto = result.get(0);
         assertThat(dto.getDeliveryId()).isEqualTo(100L);
-        assertThat(dto.getGoodName()).isEqualTo("노트북");
+        assertThat(dto.getName()).isEqualTo("노트북");
         assertThat(dto.getOriginPlace()).isEqualTo(origin);
         assertThat(dto.getDestPlace()).isEqualTo(dest);
         assertThat(dto.getStatus()).isEqualTo(DeliveryState.WAIT);
@@ -116,6 +101,7 @@ class SenderQueryServiceTest {
                 .shipper(shipper)
                 .status(DeliveryState.DELIVERING)
                 .build();
+        delivery.attachGoodInfo(DeliveryGoodInfo.builder().name("노트북").build());
 
         DeliveryLog log1 = DeliveryLog.builder().id(1L).type(DeliveryLogType.SEND_REQUEST).createdAt(LocalDateTime.now()).build();
         DeliveryLog log2 = DeliveryLog.builder().id(2L).type(DeliveryLogType.MATCHED).createdAt(LocalDateTime.now()).build();
@@ -128,6 +114,7 @@ class SenderQueryServiceTest {
 
         // Then
         assertThat(result.getId()).isEqualTo(100L);
+        assertThat(result.getName()).isEqualTo("노트북");
         assertThat(result.getStatus()).isEqualTo(DeliveryState.DELIVERING);
         assertThat(result.getShipperInfo().getName()).isEqualTo("배송기사");
         assertThat(result.getDeliveryTimeLine()).hasSize(2);
@@ -141,14 +128,13 @@ class SenderQueryServiceTest {
         Delivery delivery = Delivery.builder().id(100L).sender(sender).build();
         DeliveryPoint point = DeliveryPoint.builder()
                 .id(10L)
-                .delivery(delivery)
                 .base_point(1000L)
                 .distance_point(500L)
                 .weight_point(300L)
                 .build();
+        delivery.attachPoint(point);
 
         given(senderDeliveryValidator.getDeliveryAndValidateOwnership(100L, sender)).willReturn(delivery);
-        given(deliveryPointRepository.findByDelivery(delivery)).willReturn(Optional.of(point));
 
         // When
         SenderPaymentAmountDto result = senderQueryService.getPaymentAmount(sender, 100L);
@@ -169,7 +155,6 @@ class SenderQueryServiceTest {
         Delivery delivery = Delivery.builder().id(100L).sender(sender).build();
 
         given(senderDeliveryValidator.getDeliveryAndValidateOwnership(100L, sender)).willReturn(delivery);
-        given(deliveryPointRepository.findByDelivery(delivery)).willReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> senderQueryService.getPaymentAmount(sender, 100L))

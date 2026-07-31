@@ -12,6 +12,7 @@ import lombok.*;
 @Getter
 public class ShipperDeliveryListDto {
     private Long id;
+    private String name;
 
     private SenderInfo senderInfo;
     private ShipperInfo shipperInfo;
@@ -69,6 +70,9 @@ public class ShipperDeliveryListDto {
     public static ShipperDeliveryListDto fromDelivery(Delivery delivery) {
         return ShipperDeliveryListDto.builder()
                 .id(delivery.getId())
+                .name(delivery.getDeliveryGoodInfo() != null
+                        ? delivery.getDeliveryGoodInfo().getName()
+                        : null)
                 .senderInfo(SenderInfo.fromAccount(delivery.getSender()))
                 .shipperInfo(ShipperInfo.fromAccount(delivery.getShipper()))
                 .originPlace(delivery.getOrigin())
