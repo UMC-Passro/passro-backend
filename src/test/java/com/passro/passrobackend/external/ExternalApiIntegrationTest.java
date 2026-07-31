@@ -79,6 +79,7 @@ class ExternalApiIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(get("/subway/search").param("keyword", "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUBWAY200_2"))
+                .andExpect(jsonPath("$.result[0].id").isNumber())
                 .andExpect(jsonPath("$.result[0].region").doesNotExist())
                 .andExpect(jsonPath("$.result[*].routeName", hasItem("2호선")));
     }

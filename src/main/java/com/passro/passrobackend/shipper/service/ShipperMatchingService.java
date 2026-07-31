@@ -78,7 +78,7 @@ public class ShipperMatchingService {
                         accountPlace.getDestinationPlace()
                 );
                 passThroughPlaceIds = routeDto.getStations().stream()
-                        .map(SubwayStationResponseDto::getPlaceId)
+                        .map(SubwayStationResponseDto::getId)
                         .collect(Collectors.toSet());
             } catch (Exception e) {
                 log.warn("배송기사 최단 경로 계산 실패 (통과 역 기준 알고리즘 제외): shipperId={}, error={}", shipper.getId(), e.getMessage());

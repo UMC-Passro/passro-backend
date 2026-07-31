@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 public class SubwayStationResponseDto {
 
     @Schema(description = "Place ID", example = "101")
-    private Long placeId;
+    private Long id;
 
     @Schema(description = "권역명. 최단 경로 응답에서 제공됩니다.", example = "수도권", nullable = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -34,7 +34,7 @@ public final class SwaggerSuccessExamples {
     public static final String SHIPPER_OK =
             "{\"success\":true,\"code\":\"SHIPPER200_1\",\"message\":\"요청 성공.\",\"result\":null}";
     public static final String SUBWAY_SHORTEST_ROUTE =
-            "{\"success\":true,\"code\":\"SUBWAY200_1\",\"message\":\"최단 경로 탐색 성공.\",\"result\":{\"shortestDistance\":5,\"transferCount\":1,\"stations\":[{\"placeId\":101,\"region\":\"수도권\",\"routeName\":\"수인분당\",\"stationName\":\"미금(분당서울대병원)\"},{\"placeId\":102,\"region\":\"수도권\",\"routeName\":\"수인분당\",\"stationName\":\"정자\"},{\"placeId\":201,\"region\":\"수도권\",\"routeName\":\"신분당\",\"stationName\":\"정자\"},{\"placeId\":202,\"region\":\"수도권\",\"routeName\":\"신분당\",\"stationName\":\"판교(판교테크노밸리)\"}]}}";
+            "{\"success\":true,\"code\":\"SUBWAY200_1\",\"message\":\"최단 경로 탐색 성공.\",\"result\":{\"shortestDistance\":5,\"transferCount\":1,\"stations\":[{\"id\":101,\"region\":\"수도권\",\"routeName\":\"수인분당\",\"stationName\":\"미금(분당서울대병원)\"},{\"id\":102,\"region\":\"수도권\",\"routeName\":\"수인분당\",\"stationName\":\"정자\"},{\"id\":201,\"region\":\"수도권\",\"routeName\":\"신분당\",\"stationName\":\"정자\"},{\"id\":202,\"region\":\"수도권\",\"routeName\":\"신분당\",\"stationName\":\"판교(판교테크노밸리)\"}]}}";
     public static final String SUBWAY_STATION_LIST =
-            "{\"success\":true,\"code\":\"SUBWAY200_2\",\"message\":\"지하철역 검색 성공.\",\"result\":[{\"placeId\":101,\"routeName\":\"2호선\",\"stationName\":\"강남\"}]}";
+            "{\"success\":true,\"code\":\"SUBWAY200_2\",\"message\":\"지하철역 검색 성공.\",\"result\":[{\"id\":101,\"routeName\":\"2호선\",\"stationName\":\"강남\"}]}";
 }

@@ -100,7 +100,7 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
                 origin, List.of(waypoint), destination);
 
         assertThat(result.getStations())
-                .extracting(station -> station.getPlaceId())
+                .extracting(station -> station.getId())
                 .containsExactly(
                         origin.getId(),
                         requiredNode("수인분당", "정자").getId(),
@@ -127,12 +127,12 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.result.shortestDistance").value(5))
                 .andExpect(jsonPath("$.result.transferCount").value(1))
                 .andExpect(jsonPath("$.result.stations.length()").value(4))
-                .andExpect(jsonPath("$.result.stations[0].placeId").value(origin.getId()))
+                .andExpect(jsonPath("$.result.stations[0].id").value(origin.getId()))
                 .andExpect(jsonPath("$.result.stations[1].routeName").value("수인분당"))
                 .andExpect(jsonPath("$.result.stations[1].stationName").value("정자"))
                 .andExpect(jsonPath("$.result.stations[2].routeName").value("신분당"))
                 .andExpect(jsonPath("$.result.stations[2].stationName").value("정자"))
-                .andExpect(jsonPath("$.result.stations[3].placeId").value(destination.getId()));
+                .andExpect(jsonPath("$.result.stations[3].id").value(destination.getId()));
     }
 
     @Test
