@@ -92,6 +92,15 @@ class ExternalApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void subwaySearchAcceptsHangulConsonantsAndVowels() throws Exception {
+        mockMvc.perform(get("/subway/search").param("keyword", "ㄱ"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/subway/search").param("keyword", "ㅏ"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void subwaySearchRejectsInvalidKeyword() throws Exception {
         mockMvc.perform(get("/subway/search").param("keyword", "Gangnam!"))
                 .andExpect(status().isBadRequest())

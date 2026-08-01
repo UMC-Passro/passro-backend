@@ -50,7 +50,7 @@ public class SubwayStationController {
     public APIResponse<List<SubwayStationResponseDto>> search(
             @Parameter(description = "노선명 또는 역명 검색어", example = "강남", required = true)
             @RequestParam
-            @Pattern(regexp = "^[가-힣0-9]+$", message = "검색어는 한글과 숫자만 입력 가능합니다.")
+            @Pattern(regexp = "^[가-힣ㄱ-ㅎㅏ-ㅣ0-9]+$", message = "검색어는 한글과 숫자만 입력 가능합니다.")
             String keyword) {
         List<SubwayStationResponseDto> stations = placeService.searchByKeyword(keyword).stream()
                 .map(SubwayStationResponseDto::from)
