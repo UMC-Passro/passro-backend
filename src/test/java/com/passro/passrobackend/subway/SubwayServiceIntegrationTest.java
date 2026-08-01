@@ -13,6 +13,7 @@ import com.passro.passrobackend.subway.graph.SubwayEdge;
 import com.passro.passrobackend.subway.graph.SubwayNode;
 import com.passro.passrobackend.subway.service.SubwayService;
 import com.passro.passrobackend.support.IntegrationTestSupport;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -301,6 +302,55 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void lineOneBranchesDoNotCreateCrossBranchGhostEdges() {
+        assertThat(adjacentStationNames("1호선", "주안"))
+                .containsExactlyInAnyOrder("간석", "도화");
+        assertThat(adjacentStationNames("1호선", "수원"))
+                .containsExactlyInAnyOrder("화서", "세류");
+        assertThat(adjacentStationNames("1호선", "구로"))
+                .contains("신도림", "가산디지털단지", "구일");
+
+        SubwayRouteResponseDto route = subwayService.findShortestRoute(
+                place("1호선", "주안"), null, place("1호선", "수원"));
+
+        assertThat(route.getShortestDistance()).isGreaterThan(1);
+        assertThat(route.getStations())
+                .extracting(station -> station.getStationName())
+                .contains("구로");
+    }
+
+    @Test
+    void exceptionalBranchLinesUseOnlyRealAdjacentStations() {
+        assertThat(adjacentStationNames("2호선", "시청"))
+                .containsExactlyInAnyOrder("충정로(경기대입구)", "을지로입구");
+        assertThat(adjacentStationNames("2호선", "신도림"))
+                .contains("문래", "대림(구로구청)", "도림천");
+
+        assertThat(adjacentStationNames("5호선", "강동"))
+                .contains("천호(풍납토성)", "길동", "둔촌동");
+        assertThat(adjacentStationNames("5호선", "길동"))
+                .doesNotContain("올림픽공원(한국체대)");
+
+        assertThat(adjacentStationNames("경의중앙", "가좌"))
+                .contains("디지털미디어시티", "홍대입구", "신촌")
+                .doesNotContain("서울역");
+
+        assertThat(adjacentStationNames("경춘", "상봉"))
+                .contains("중랑", "광운대", "망우");
+        assertThat(adjacentStationNames("경춘", "광운대"))
+                .containsExactly("상봉");
+    }
+
+    @Test
+    void everyCorrectedBranchingRouteRemainsConnected() {
+        assertSameRouteConnected("1호선");
+        assertSameRouteConnected("2호선");
+        assertSameRouteConnected("5호선");
+        assertSameRouteConnected("경의중앙");
+        assertSameRouteConnected("경춘");
+    }
+
+    @Test
     void stationLookupReturnsEveryRouteSpecificNode() {
         List<SubwayNode> jeongjaNodes = subwayService.findNodesByStationName("정자");
 
@@ -388,6 +438,39 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
                 .filter(edge -> edge.getTarget().getId().equals(target.getId()))
                 .findFirst()
                 .orElseThrow();
+    }
+
+    private Set<String> adjacentStationNames(String routeName, String stationName) {
+        return requiredNode(routeName, stationName).getEdges().stream()
+                .filter(edge -> !edge.isCrossroute())
+                .map(edge -> edge.getTarget().getName())
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
+    private void assertSameRouteConnected(String routeName) {
+        List<SubwayNode> routeNodes = subwayService.getNodes().stream()
+                .filter(node -> node.getRoute().equals(routeName))
+                .toList();
+        Set<Long> visitedNodeIds = new HashSet<>();
+        ArrayDeque<SubwayNode> queue = new ArrayDeque<>();
+        queue.add(routeNodes.getFirst());
+
+        while (!queue.isEmpty()) {
+            SubwayNode current = queue.removeFirst();
+            if (!visitedNodeIds.add(current.getId())) {
+                continue;
+            }
+            current.getEdges().stream()
+                    .filter(edge -> !edge.isCrossroute())
+                    .map(SubwayEdge::getTarget)
+                    .filter(node -> node.getRoute().equals(routeName))
+                    .filter(node -> !visitedNodeIds.contains(node.getId()))
+                    .forEach(queue::addLast);
+        }
+
+        assertThat(visitedNodeIds)
+                .as("%s 노선의 모든 역이 연결되어야 합니다.", routeName)
+                .containsExactlyInAnyOrderElementsOf(routeNodes.stream().map(SubwayNode::getId).toList());
     }
 
     private record EdgeKey(Long sourceId, Long targetId, int cost, boolean crossroute) {
