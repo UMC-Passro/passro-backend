@@ -20,7 +20,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -37,7 +36,7 @@ public class AccountService {
     private final WayPointRepository wayPointRepository;
     private final PlaceRepository placeRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JavaMailSender javaMailSender;
+    private final AsyncMailService asyncMailService;
     private final StringRedisTemplate stringRedisTemplate;
 
     private final JwtProvider jwtProvider;
@@ -81,7 +80,7 @@ public class AccountService {
         // 메일의 내용 설정
         simpleMailMessage.setText("인증 코드: " + code + "\n5분 이내에 입력해주세요.");
 
-        javaMailSender.send(simpleMailMessage);
+        asyncMailService.send(simpleMailMessage);
 
     }
 
@@ -220,7 +219,7 @@ public class AccountService {
                     message.setTo(account.getEmail());
                     message.setSubject("[Passro] 아이디 찾기 안내");
                     message.setText("가입된 아이디(이메일): " + account.getEmail());
-                    javaMailSender.send(message);
+                    asyncMailService.send(message);
                 });
     }
 
@@ -238,7 +237,7 @@ public class AccountService {
                     message.setSubject("[Passro] 임시 비밀번호 안내");
                     message.setText("임시 비밀번호: " + temporaryPassword
                             + "\n로그인 후 비밀번호를 변경해주세요.");
-                    javaMailSender.send(message);
+                    asyncMailService.send(message);
                 });
     }
 

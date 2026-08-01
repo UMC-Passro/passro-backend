@@ -2,6 +2,7 @@ package com.passro.passrobackend.account;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -50,7 +51,7 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                         .content("{\"mail\":\"" + email + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("ACCOUNT200_1"));
-        verify(mailSender).send(any(SimpleMailMessage.class));
+        verify(mailSender, timeout(1000)).send(any(SimpleMailMessage.class));
 
         String code = redisTemplate.opsForValue().get("email:verify:code:" + email);
         assertThat(code).matches("\\d{6}");
