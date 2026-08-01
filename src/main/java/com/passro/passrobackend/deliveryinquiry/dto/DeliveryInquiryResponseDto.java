@@ -1,7 +1,7 @@
-package com.passro.passrobackend.inquiry.dto;
+package com.passro.passrobackend.deliveryinquiry.dto;
 
-import com.passro.passrobackend.inquiry.entity.Inquiry;
-import com.passro.passrobackend.inquiry.enums.InquiryCategory;
+import com.passro.passrobackend.deliveryinquiry.entity.DeliveryInquiry;
+import com.passro.passrobackend.deliveryinquiry.enums.DeliveryInquiryCategory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,17 +13,19 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class InquiryResponseDto {
+public class DeliveryInquiryResponseDto {
     private Long inquiryId;
-    private InquiryCategory category;
+    private Long deliveryId;
+    private DeliveryInquiryCategory category;
     private String title;
     private String content;
     private String writerNickname;
     private LocalDateTime createdAt;
 
-    public static InquiryResponseDto fromInquiry(Inquiry inquiry) {
-        return InquiryResponseDto.builder()
+    public static DeliveryInquiryResponseDto fromDeliveryInquiry(DeliveryInquiry inquiry) {
+        return DeliveryInquiryResponseDto.builder()
                 .inquiryId(inquiry.getId())
+                .deliveryId(inquiry.getDelivery() != null ? inquiry.getDelivery().getId() : null)
                 .category(inquiry.getCategory())
                 .title(inquiry.getTitle())
                 .content(inquiry.getContent())

@@ -1,6 +1,6 @@
-package com.passro.passrobackend.inquiry.dto;
+package com.passro.passrobackend.deliveryinquiry.dto;
 
-import com.passro.passrobackend.inquiry.enums.InquiryCategory;
+import com.passro.passrobackend.deliveryinquiry.enums.DeliveryInquiryCategory;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -15,12 +15,15 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class InquiryCreateRequestDto {
+public class DeliveryInquiryCreateRequestDto {
+
+    @NotNull(message = "배송 ID는 필수입니다.")
+    private Long deliveryId;
 
     @NotNull(message = "카테고리는 필수입니다.")
-    private InquiryCategory category;
+    private DeliveryInquiryCategory category;
 
-    @NotBlank(message = "제목은 필수입니다.")
+    // 제목은 선택 입력 (ERD상 nullable)
     @Size(max = 255, message = "제목은 255자 이하여야 합니다.")
     private String title;
 
