@@ -132,6 +132,29 @@ class AuthIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void nicknameAvailabilityCanBeCheckedWithoutAuthentication() throws Exception {
+        Account account = createAccount("nick");
+
+        mockMvc.perform(get("/auth/nickname/check")
+                        .param("nickname", account.getNickname()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value(false));
+
+        mockMvc.perform(get("/auth/nickname/check")
+                        .param("nickname", "available-nickname"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value(true));
+    }
+
+    @Test
+    void nicknameAvailabilityRejectsInvalidNickname() throws Exception {
+        mockMvc.perform(get("/auth/nickname/check")
+                        .param("nickname", ""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON400"));
+    }
+
+    @Test
     void signupRejectsMissingRequiredFields() throws Exception {
         mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)

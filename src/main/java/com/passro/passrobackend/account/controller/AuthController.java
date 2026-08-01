@@ -15,11 +15,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import static com.passro.passrobackend.global.configuration.SwaggerErrorExamples.*;
@@ -27,11 +30,22 @@ import static com.passro.passrobackend.global.configuration.SwaggerSuccessExampl
 
 @RestController
 @RequiredArgsConstructor
+@Validated
 @RequestMapping("/auth")
 @Tag(name = "인증", description = "이메일 인증 및 회원가입 API")
 public class AuthController {
 
     private final AccountService accountService;
+
+    @GetMapping("/nickname/check")
+    @Operation(summary = "닉네임 중복 확인", description = "닉네임이 사용 가능한지 확인합니다. true이면 사용 가능합니다.")
+    public APIResponse<Boolean> checkNickname(
+            @RequestParam
+            @NotBlank(message = "닉네임을 입력하세요.")
+            @Size(max = 20, message = "닉네임은 20자 이하여야 합니다.")
+            String nickname) {
+        return APIResponse.onSuccess(AccountSuccessCode.OK, accountService.isNicknameAvailable(nickname));
+    }
 
     @PostMapping("/mail/send")
     @Operation(summary = "인증 메일 발송", description = "대학교 이메일로 6자리 인증 코드를 발송합니다. 인증 코드는 5분 동안 유효합니다.")

@@ -85,6 +85,10 @@ public class AccountService {
 
     }
 
+    public boolean isNicknameAvailable(String nickname) {
+        return !accountRepository.existsByNickname(nickname);
+    }
+
     private void validateUniversityEmail(String email){
         int atIndex = email.indexOf("@");
         if (atIndex == -1 || atIndex == email.length() - 1)
