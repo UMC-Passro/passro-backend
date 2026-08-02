@@ -27,7 +27,6 @@ import org.springframework.web.bind.annotation.*;
 
 import static com.passro.passrobackend.global.configuration.SwaggerErrorExamples.DELIVERY_NOT_FOUND;
 import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.SHIPPER_DETAIL;
-import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.SHIPPER_LIST;
 import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.SHIPPER_OK;
 
 import com.passro.passrobackend.shipper.service.ShipperMatchingService;
@@ -59,8 +58,7 @@ public class ShipperController {
     @GetMapping("/matched")
     @ResponseBody
     @Operation(summary = "매칭 대기 배송 목록 조회", description = "로그인한 배송기사의 권역 및 동선을 기반으로 우선순위 정렬된 배송 요청 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
-            content = @Content(examples = @ExampleObject(name = "SHIPPER200_1", summary = "매칭 대기 배송 조회 성공", value = SHIPPER_LIST)))
+    @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true)
     public APIResponse<List<ShipperDeliveryListDto>> listMatched(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
         return APIResponse.onSuccess(ShipperSuccessCode.OK,
@@ -73,8 +71,7 @@ public class ShipperController {
     @GetMapping("/")
     @ResponseBody
     @Operation(summary = "내 배송 목록 조회", description = "로그인한 배송기사에게 배정된 배송 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
-            content = @Content(examples = @ExampleObject(name = "SHIPPER200_1", summary = "내 배송 목록 조회 성공", value = SHIPPER_LIST)))
+    @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true)
     public APIResponse<List<ShipperDeliveryListDto>> listDelivery(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 상태 필터", example = "DELIVERING")

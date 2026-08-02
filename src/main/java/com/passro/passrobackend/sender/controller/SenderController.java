@@ -67,8 +67,7 @@ public class SenderController {
     // 발송자 배송 조회
     @GetMapping
     @Operation(summary = "내 배송 목록 조회", description = "로그인한 발송자가 요청한 배송 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
-            content = @Content(examples = @ExampleObject(name = "SENDER200_1", summary = "배송 목록 조회 성공", value = SENDER_LIST)))
+    @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true)
     public APIResponse<List<SenderDeliveryListDto>> getSenders(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 상태 필터", example = "DELIVERING")
