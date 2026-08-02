@@ -1,5 +1,6 @@
 package com.passro.passrobackend.account.dto.authDTO;
 
+import com.passro.passrobackend.account.validation.PasswordComplexity;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,8 +21,9 @@ public class AuthReqDTO {
         @Email(message = "올바른 이메일 형식이 아닙니다.")
         private String mail;
 
-        @NotBlank(message = "비밀번호를 입력하세요.")
+        @NotBlank(message = "변경할 비밀번호를 입력하세요.")
         @Size(min = 6, max = 20, message = "비밀번호는 6자 이상 20자 이하여야 합니다.")
+        @PasswordComplexity
         private String password;
 
         @NotBlank(message = "닉네임을 입력하세요.")
