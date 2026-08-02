@@ -22,7 +22,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Optional<Account> findFirstByNameAndPhoneNumber(String name, String phoneNumber);
 
     Optional<Account> findFirstByNameAndPhoneNumberAndMail(String name, String phoneNumber, String mail);
-    Optional<Account> findFirstByNameAndPhoneAndEmail(String name, String phone, String email);
+
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM Account a WHERE a.id = :id")

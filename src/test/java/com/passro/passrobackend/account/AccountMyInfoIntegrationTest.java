@@ -2,6 +2,7 @@ package com.passro.passrobackend.account;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -79,7 +80,7 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
                 }
                 """.formatted(newNickname, newPhoneNumber, startPlace.getId(), destinationPlace.getId(), wayPointPlace.getId());
 
-        mockMvc.perform(post("/mypage/edit/myInfo")
+        mockMvc.perform(patch("/mypage/edit/myInfo")
                         .header("Authorization", bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
@@ -110,7 +111,7 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
                 }
                 """.formatted(other.getNickname(), account.getPhoneNumber(), startPlace.getId(), destinationPlace.getId());
 
-        mockMvc.perform(post("/mypage/edit/myInfo")
+        mockMvc.perform(patch("/mypage/edit/myInfo")
                         .header("Authorization", bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
@@ -133,7 +134,7 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
                 }
                 """.formatted(account.getNickname(), other.getPhoneNumber(), startPlace.getId(), destinationPlace.getId());
 
-        mockMvc.perform(post("/mypage/edit/myInfo")
+        mockMvc.perform(patch("/mypage/edit/myInfo")
                         .header("Authorization", bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
@@ -157,7 +158,7 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
                 }
                 """.formatted(account.getNickname(), account.getPhoneNumber(), destinationPlace.getId());
 
-        mockMvc.perform(post("/mypage/edit/myInfo")
+        mockMvc.perform(patch("/mypage/edit/myInfo")
                         .header("Authorization", bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
@@ -179,7 +180,7 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
                 }
                 """.formatted(account.getPhoneNumber(), startPlace.getId(), destinationPlace.getId());
 
-        mockMvc.perform(post("/mypage/edit/myInfo")
+        mockMvc.perform(patch("/mypage/edit/myInfo")
                         .header("Authorization", bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
@@ -200,13 +201,13 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
                 }
                 """.formatted(account.getNickname(), account.getPhoneNumber(), startPlace.getId(), destinationPlace.getId());
 
-        mockMvc.perform(post("/mypage/edit/myInfo")
+        mockMvc.perform(patch("/mypage/edit/myInfo")
                         .header("Authorization", bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/mypage/edit/myInfo")
+        mockMvc.perform(patch("/mypage/edit/myInfo")
                         .header("Authorization", bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
@@ -216,7 +217,7 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void editMyInfoRejectsAnonymousRequest() throws Exception {
-        mockMvc.perform(post("/mypage/edit/myInfo")
+        mockMvc.perform(patch("/mypage/edit/myInfo")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isForbidden());
