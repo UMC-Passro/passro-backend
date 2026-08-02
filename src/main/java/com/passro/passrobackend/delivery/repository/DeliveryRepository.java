@@ -27,6 +27,9 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
     List<Delivery> findAllByStatus(@Param("status") DeliveryState status);
 
     // 배송기사별 배정된 배송 목록 조회 메서드
+
+    long countByShipper(Account shipper);
+
     @Query("""
         SELECT d
         FROM Delivery d
@@ -50,4 +53,5 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
         WHERE d.sender = :sender
     """)
     List<Delivery> findAllBySender(@Param("sender") Account sender);
+    long countBySender(Account sender);
 }

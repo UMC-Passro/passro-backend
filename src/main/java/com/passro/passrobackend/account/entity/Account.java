@@ -21,7 +21,7 @@ public class Account extends BaseEntity {
     private Long id;
 
     @Column(nullable = false)
-    private String email;
+    private String mail;
     @Column(nullable = false)
     private String password;
     @Column(nullable = false)
@@ -31,7 +31,7 @@ public class Account extends BaseEntity {
     private Place place_id;
 
     private String name;
-    private String phone;
+    private String phoneNumber;
     private LocalDate birth;
     private Boolean certified;
     private Long point;
@@ -44,6 +44,17 @@ public class Account extends BaseEntity {
         this.certified = true;
     }
 
+    public void changeNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public void changePassword(String password){
+        this.password = password;
+    }
+
+    public void changePhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
     public void usePoint(long amount) {
         validatePointAmount(amount);
         long currentPoint = currentPoint();

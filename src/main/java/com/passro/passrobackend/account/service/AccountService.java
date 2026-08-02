@@ -1,5 +1,7 @@
 package com.passro.passrobackend.account.service;
 
+import com.passro.passrobackend.account.dto.accountDTO.AccountReqDTO;
+import com.passro.passrobackend.account.dto.accountDTO.AccountResDTO;
 import com.passro.passrobackend.account.dto.authDTO.AuthReqDTO;
 import com.passro.passrobackend.account.dto.authDTO.AuthResDTO;
 import com.passro.passrobackend.account.entity.Account;
@@ -12,10 +14,14 @@ import com.passro.passrobackend.account.repository.AccountPlaceRepository;
 import com.passro.passrobackend.account.repository.AccountRepository;
 import com.passro.passrobackend.account.repository.UniversityRepository;
 import com.passro.passrobackend.account.repository.WayPointRepository;
+import com.passro.passrobackend.delivery.repository.DeliveryRepository;
+import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.global.jwt.JwtProperties;
 import com.passro.passrobackend.global.jwt.JwtProvider;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
+import com.passro.passrobackend.review.dto.ReviewAverageResponseDto;
+import com.passro.passrobackend.review.service.ReviewService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -29,6 +35,10 @@ import java.time.Duration;
 @Service
 @RequiredArgsConstructor
 public class AccountService {
+
+    private final DeliveryRepository deliveryRepository;
+    private final ReviewService reviewService;
+    private final S3Service s3Service;
 
     private final AccountRepository accountRepository;
     private final UniversityRepository universityRepository;
@@ -44,33 +54,47 @@ public class AccountService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-    private static final String CODE_PREFIX = "email:verify:code:";
-    private static final String VERIFIED_PREFIX = "email:verify:done:";
-    private static final String COOLDOWN_PREFIX = "email:verify:cooldown:";
-    private static final String REFRESH_PREFIX = "refresh:token:";
+    //인증 코드
+    private static final String CODE_PREFIX = "mail:verify:code:";
+    private static final Duration CODE_TTL = Duration.ofMinutes(5);
+
+    //인증 자격
+    private static final String VERIFIED_PREFIX = "mail:verify:done:";
+    private static final Duration VERIFIED_TTL = Duration.ofMinutes(30);
+
+    //인증 요청 대기
+    private static final String RESEND_COOLDOWN_PREFIX = "mail:verify:cooldown:";
+    private static final Duration RESEND_COOLDOWN_TTL = Duration.ofSeconds(60);
+
+    //닉네임 변경 대기
+    private static final String EDIT_INFO_COOLDOWN_PREFIX = "edit:info:verify:code";
+
+    //비밀번호 변경 대기
+    private static final String EDIT_PASSWORD_COOLDOWN_PREFIX = "edit:password:verify:code";
+
+    //내 정보 변경 시간
+    private static final Duration EDIT_COOLDOWN_TTL = Duration.ofMinutes(5);
+
     private static final String TEMP_PASSWORD_CHARACTERS =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final int TEMP_PASSWORD_LENGTH = 12;
-    private static final Duration CODE_TTL = Duration.ofMinutes(5);
-    private static final Duration VERIFIED_TTL = Duration.ofMinutes(30);
-    private static final Duration RESEND_COOLDOWN = Duration.ofSeconds(60);
 
-    public void sendMailMessage(AuthReqDTO.SendMail dto) {
+    private static final String REFRESH_PREFIX = "refresh:token:";
+
+
+    public void sendMailMessageSignUpOrShipperSelect(AuthReqDTO.SendMail dto) {
         String mail = dto.getMail();
 
         if(dto.isStudent())
-            validateUniversityEmail(mail);
+            validateUniversityMail(mail);
 
-        if (accountRepository.existsByEmail(mail))
-            throw new AccountException(AccountErrorCode.DUPLICATE_EMAIL);
+        if (accountRepository.existsByMail(mail))
+            throw new AccountException(AccountErrorCode.DUPLICATE_MAIL);
 
-        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(COOLDOWN_PREFIX + mail)))
-            throw new AccountException(AccountErrorCode.MAIL_RESEND_TOO_FAST);
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(RESEND_COOLDOWN_PREFIX + mail)))
+            throw new AccountException(AccountErrorCode.TOO_FAST);
 
         String code = generateCode();
-
-        stringRedisTemplate.opsForValue().set(CODE_PREFIX + mail, code, CODE_TTL);
-        stringRedisTemplate.opsForValue().set(COOLDOWN_PREFIX + mail, "true", RESEND_COOLDOWN);
 
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
         // 메일을 받을 수신자 설정
@@ -82,27 +106,64 @@ public class AccountService {
 
         asyncMailService.send(simpleMailMessage);
 
+        stringRedisTemplate.opsForValue().set(CODE_PREFIX + mail, code, CODE_TTL);
+        stringRedisTemplate.opsForValue().set(RESEND_COOLDOWN_PREFIX + mail, "true", RESEND_COOLDOWN_TTL);
     }
 
     public boolean isNicknameAvailable(String nickname) {
         return !accountRepository.existsByNickname(nickname);
     }
 
-    private void validateUniversityEmail(String email){
+    private void validateUniversityEmail(String email) {
         int atIndex = email.indexOf("@");
         if (atIndex == -1 || atIndex == email.length() - 1)
-            throw new AccountException(AccountErrorCode.INVALID_EMAIL_DOMAIN);
+            throw new AccountException(AccountErrorCode.INVALID_MAIL_DOMAIN);
+    }
 
-        String domain = email.substring(atIndex + 1).toLowerCase();
+    public void sendMailMessageAndEditPassword(Long accountId) {
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
+
+        String mail = account.getMail();
+
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(RESEND_COOLDOWN_PREFIX + mail)))
+            throw new AccountException(AccountErrorCode.TOO_FAST);
+
+        if(Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId)))
+            throw new AccountException(AccountErrorCode.TOO_FAST);
+
+        String code = generateCode();
+
+        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
+        // 메일을 받을 수신자 설정
+        simpleMailMessage.setTo(mail);
+        // 메일의 제목 설정
+        simpleMailMessage.setSubject("[Passro] 이메일 인증 코드");
+        // 메일의 내용 설정
+        simpleMailMessage.setText("인증 코드: " + code + "\n5분 이내에 입력해주세요.");
+
+        asyncMailService.send(simpleMailMessage);
+
+        stringRedisTemplate.opsForValue().set(CODE_PREFIX + mail, code, CODE_TTL);
+        stringRedisTemplate.opsForValue().set(RESEND_COOLDOWN_PREFIX + mail, "true", RESEND_COOLDOWN_TTL);
+    }
+
+    private void validateUniversityMail(String mail){
+        int atIndex = mail.indexOf("@");
+        if (atIndex == -1 || atIndex == mail.length() - 1)
+            throw new AccountException(AccountErrorCode.INVALID_MAIL_DOMAIN);
+
+        String domain = mail.substring(atIndex + 1).toLowerCase();
 
         boolean allowed = universityRepository.findAll().stream()
                 .anyMatch(university -> {
-                    String registered = university.getEmailDomain().toLowerCase();
+                    String registered = university.getMailDomain().toLowerCase();
                     return domain.equals(registered) || domain.endsWith("." + registered);
                 });
 
         if (!allowed)
-            throw new AccountException(AccountErrorCode.INVALID_EMAIL_DOMAIN);
+            throw new AccountException(AccountErrorCode.INVALID_MAIL_DOMAIN);
     }
 
     private String generateCode(){
@@ -116,7 +177,7 @@ public class AccountService {
 
         String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX+mail);
 
-        savedCodeConfirm(mail, code, savedCode);
+        savedCodeConfirm(code, savedCode);
 
         stringRedisTemplate.delete(CODE_PREFIX + mail);
         stringRedisTemplate.opsForValue().set(VERIFIED_PREFIX + mail, "true", VERIFIED_TTL);
@@ -129,27 +190,27 @@ public class AccountService {
 
         String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX+mail);
 
-        savedCodeConfirm(mail, code, savedCode);
-
-        stringRedisTemplate.delete(CODE_PREFIX + mail);
+        savedCodeConfirm(code, savedCode);
 
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
 
         account.certify();
+
         accountRepository.save(account);
 
+        stringRedisTemplate.delete(CODE_PREFIX + mail);
     }
 
     @Transactional
     public void signup(AuthReqDTO.Signup dto){
-        String isConfirm = stringRedisTemplate.opsForValue().get(VERIFIED_PREFIX+dto.getEmail());
+        String isConfirm = stringRedisTemplate.opsForValue().get(VERIFIED_PREFIX+dto.getMail());
 
         if(isConfirm==null || !isConfirm.equals("true"))
             throw new AccountException(AccountErrorCode.MAIL_NOT_CONFIRM);
 
-        if(accountRepository.existsByEmail(dto.getEmail()))
-            throw new AccountException(AccountErrorCode.DUPLICATE_EMAIL);
+        if(accountRepository.existsByMail(dto.getMail()))
+            throw new AccountException(AccountErrorCode.DUPLICATE_MAIL);
 
         if(accountRepository.existsByNickname(dto.getNickname()))
             throw new AccountException(AccountErrorCode.DUPLICATE_NICKNAME);
@@ -163,13 +224,13 @@ public class AccountService {
 
 
         Account account = accountRepository.save(Account.builder()
-                .email(dto.getEmail())
+                .mail(dto.getMail())
                 .password(password)
                 .nickname(dto.getNickname())
                 .name(dto.getName())
-                .phone(dto.getPhone())
+                .phoneNumber(dto.getPhoneNumber())
                 .birth(dto.getBirth())
-                .certified(true)
+                .certified(false)
                 .point(0L)
                 .picture(dto.getPicture())
                 .role(AccountRole.USER)
@@ -195,11 +256,12 @@ public class AccountService {
                         .build());
             }
         }
-        stringRedisTemplate.delete(VERIFIED_PREFIX + dto.getEmail());
+        stringRedisTemplate.delete(VERIFIED_PREFIX + dto.getMail());
+        stringRedisTemplate.delete(RESEND_COOLDOWN_PREFIX + dto.getMail());
     }
 
     public AuthResDTO.TokenResponse login(AuthReqDTO.Login dto){
-        Account account = accountRepository.findByEmail(dto.getEmail())
+        Account account = accountRepository.findByMail(dto.getMail())
                 .orElseThrow(()->new AccountException(AccountErrorCode.INVALID_CREDENTIALS));
 
         if(!passwordEncoder.matches(dto.getPassword(), account.getPassword()))
@@ -208,32 +270,33 @@ public class AccountService {
         return issueTokens(account);
     }
 
+
     public void logout(Long accountId) {
         stringRedisTemplate.delete(REFRESH_PREFIX + accountId);
     }
 
     public void findId(AuthReqDTO.FindId dto) {
-        accountRepository.findFirstByNameAndPhone(dto.getName(), dto.getPhone())
+        accountRepository.findFirstByNameAndPhoneNumber(dto.getName(), dto.getPhoneNumber())
                 .ifPresent(account -> {
                     SimpleMailMessage message = new SimpleMailMessage();
-                    message.setTo(account.getEmail());
+                    message.setTo(account.getMail());
                     message.setSubject("[Passro] 아이디 찾기 안내");
-                    message.setText("가입된 아이디(이메일): " + account.getEmail());
+                    message.setText("가입된 아이디(이메일): " + account.getMail());
                     asyncMailService.send(message);
                 });
     }
 
     @Transactional
     public void findPassword(AuthReqDTO.FindPassword dto) {
-        accountRepository.findFirstByNameAndPhoneAndEmail(
-                        dto.getName(), dto.getPhone(), dto.getEmail())
+        accountRepository.findFirstByNameAndPhoneNumberAndMail(
+                        dto.getName(), dto.getPhoneNumber(), dto.getMail())
                 .ifPresent(account -> {
                     String temporaryPassword = generateTemporaryPassword();
                     account.setPassword(passwordEncoder.encode(temporaryPassword));
                     accountRepository.save(account);
 
                     SimpleMailMessage message = new SimpleMailMessage();
-                    message.setTo(account.getEmail());
+                    message.setTo(account.getMail());
                     message.setSubject("[Passro] 임시 비밀번호 안내");
                     message.setText("임시 비밀번호: " + temporaryPassword
                             + "\n로그인 후 비밀번호를 변경해주세요.");
@@ -269,6 +332,127 @@ public class AccountService {
         return new AuthResDTO.TokenResponse(accessToken, refreshToken);
     }
 
+    private void savedCodeConfirm(String code, String savedCode){
+        if(savedCode==null)
+            throw new AccountException(AccountErrorCode.MAIL_CODE_EXPIRED);
+        if(!savedCode.equals(code))
+            throw new AccountException(AccountErrorCode.MAIL_CODE_MISMATCH);
+    }
+
+    public AccountResDTO.ShipperMyPage myShipperPage(Long accountId){
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
+
+        String picture = null;
+        if (account.getPicture() != null) {
+            picture = s3Service.getPresignedDownloadUrl(account.getPicture()).toString();
+        }
+
+        String nickname = account.getNickname();
+        Long deliveryCount = deliveryRepository.countByShipper(account);
+        Long point = account.getPoint();
+
+        double rating = 0.0;
+        ReviewAverageResponseDto ratingDTO = reviewService.getAverageRating(accountId);
+        if(ratingDTO != null)
+            rating = ratingDTO.getAverageRating();
+
+
+        return new AccountResDTO.ShipperMyPage(picture, nickname, deliveryCount, point, rating);
+    }
+
+    public AccountResDTO.SenderMyPage mySenderPage(Long accountId){
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
+
+        String picture = null;
+        if (account.getPicture() != null) {
+            picture = s3Service.getPresignedDownloadUrl(account.getPicture()).toString();
+        }
+
+        String nickname = account.getNickname();
+        Long deliveryCount = deliveryRepository.countBySender(account);
+        Long point = account.getPoint();
+
+        return new AccountResDTO.SenderMyPage(picture, nickname, deliveryCount, point);
+    }
+
+    @Transactional
+    public void editMyInfo(AccountReqDTO.EditMyInfo dto, Long accountId) {
+
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_INFO_COOLDOWN_PREFIX + accountId)))
+            throw new AccountException(AccountErrorCode.TOO_FAST);
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
+
+        if (!account.getNickname().equals(dto.getNickname()) && accountRepository.existsByNickname(dto.getNickname()))
+            throw new AccountException(AccountErrorCode.DUPLICATE_NICKNAME);
+
+        if (!account.getPhoneNumber().equals(dto.getPhoneNumber()) && accountRepository.existsByPhoneNumber(dto.getPhoneNumber()))
+            throw new AccountException(AccountErrorCode.DUPLICATE_PHONE_NUMBER);
+
+        AccountPlace accountPlace = accountPlaceRepository.findByAccount(account)
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
+
+        Place startPlace = placeRepository.findById(dto.getStartPlaceId())
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
+        Place destinationPlace = placeRepository.findById(dto.getDestinationPlaceId())
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
+
+        wayPointRepository.deleteAllByAccountPlace(accountPlace);
+
+        if (dto.getWayPoints() != null) {
+            for (int i = 0; i < dto.getWayPoints().size(); i++) {
+                Long wayPointPlaceId = dto.getWayPoints().get(i);
+                Place wayPointPlace = placeRepository.findById(wayPointPlaceId)
+                        .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
+
+                wayPointRepository.save(WayPoint.builder()
+                        .accountPlace(accountPlace)
+                        .place(wayPointPlace)
+                        .visitOrder(i)
+                        .build());
+
+            }
+        }
+
+            accountPlace.changePlace(startPlace, destinationPlace);
+
+            account.changeNickname(dto.getNickname());
+
+            account.changePhoneNumber(dto.getPhoneNumber());
+
+            accountRepository.save(account);
+
+            stringRedisTemplate.opsForValue().set(EDIT_INFO_COOLDOWN_PREFIX + accountId, "true", EDIT_COOLDOWN_TTL);
+    }
+
+    public void codeCodeConfirmAndEditPassword(AccountReqDTO.EditPassword dto, Long accountId) {
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
+
+        String mail = account.getMail();
+
+        String code = dto.getCode();
+
+        String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX + mail);
+
+        savedCodeConfirm(code, savedCode);
+
+        if (passwordEncoder.matches(dto.getPassword(), account.getPassword()))
+            throw new AccountException(AccountErrorCode.SAME_PASSWORD);
+
+        String editPassword = passwordEncoder.encode(dto.getPassword());
+
+        account.changePassword(editPassword);
+        accountRepository.save(account);
+
+
+        stringRedisTemplate.delete(CODE_PREFIX + mail);
+        stringRedisTemplate.opsForValue().set(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId, "true", EDIT_COOLDOWN_TTL);
+    }
     private String generateTemporaryPassword() {
         StringBuilder password = new StringBuilder(TEMP_PASSWORD_LENGTH);
         for (int index = 0; index < TEMP_PASSWORD_LENGTH; index++) {
@@ -276,14 +460,5 @@ public class AccountService {
                     SECURE_RANDOM.nextInt(TEMP_PASSWORD_CHARACTERS.length())));
         }
         return password.toString();
-    }
-
-    private void savedCodeConfirm(String mail, String code, String savedCode){
-        if(savedCode==null)
-            throw new AccountException(AccountErrorCode.MAIL_CODE_EXPIRED);
-        if(!savedCode.equals(code)) {
-            stringRedisTemplate.delete(CODE_PREFIX + mail);
-            throw new AccountException(AccountErrorCode.MAIL_CODE_MISMATCH);
-        }
     }
 }
