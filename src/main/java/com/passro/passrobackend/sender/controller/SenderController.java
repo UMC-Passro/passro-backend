@@ -79,8 +79,7 @@ public class SenderController {
     @GetMapping("/{deliveryId}")
     @Operation(summary = "배송 상세 조회", description = "본인이 요청한 배송의 현재 상태와 진행 이력을 조회합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
-                    content = @Content(examples = @ExampleObject(name = "SENDER200_1", summary = "배송 상세 조회 성공", value = SENDER_DETAIL))),
+            @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true),
             @ApiResponse(responseCode = "403", description = "해당 배송에 접근할 권한이 없음",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
                             examples = @ExampleObject(name = "DELIVERY403_1", summary = "배송 접근 권한 없음", value = DELIVERY_FORBIDDEN))),
