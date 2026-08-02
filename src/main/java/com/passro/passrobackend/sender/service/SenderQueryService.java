@@ -4,6 +4,7 @@ import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryLog;
 import com.passro.passrobackend.delivery.entity.DeliveryPoint;
+import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
@@ -28,8 +29,10 @@ public class SenderQueryService {
     private final SenderDeliveryValidator senderDeliveryValidator;
 
     // 발송자 배송 목록 전체 조회
-    public List<SenderDeliveryListDto> getSenders(Account sender) {
-        List<Delivery> deliveries = deliveryRepository.findAllBySender(sender);
+    public List<SenderDeliveryListDto> getSenders(Account sender, DeliveryState status) {
+        List<Delivery> deliveries = status == null
+                ? deliveryRepository.findAllBySender(sender)
+                : deliveryRepository.findAllBySenderAndStatus(sender, status);
 
         if (deliveries.isEmpty()) {
             return List.of();
@@ -44,6 +47,7 @@ public class SenderQueryService {
                     .originPlace(delivery.getOrigin())
                     .destPlace(delivery.getDest())
                     .status(delivery.getStatus())
+                    .createdAt(delivery.getCreatedAt())
                     .build())
                 .toList();
     }

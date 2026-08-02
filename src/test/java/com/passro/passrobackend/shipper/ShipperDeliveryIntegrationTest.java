@@ -35,6 +35,33 @@ class ShipperDeliveryIntegrationTest extends IntegrationTestSupport {
     @Autowired
     private ShipperService shipperService;
 
+    @Test
+    void shipperCanFilterAssignedDeliveriesByStatusAndReadCreatedAt() throws Exception {
+        Account sender = createAccount("filter-shipper-sender");
+        Account shipper = createAccount("filter-shipper");
+        Delivery matched = deliveryRepository.saveAndFlush(Delivery.builder()
+                .sender(sender)
+                .shipper(shipper)
+                .status(DeliveryState.MATCHED)
+                .build());
+        Delivery delivering = deliveryRepository.saveAndFlush(Delivery.builder()
+                .sender(sender)
+                .shipper(shipper)
+                .status(DeliveryState.DELIVERING)
+                .build());
+
+        mockMvc.perform(get("/shipper/")
+                        .param("status", "DELIVERING")
+                        .header("Authorization", bearer(accessToken(shipper))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.length()").value(1))
+                .andExpect(jsonPath("$.result[0].id").value(delivering.getId()))
+                .andExpect(jsonPath("$.result[0].deliveryState").value("DELIVERING"))
+                .andExpect(jsonPath("$.result[0].createdAt").isNotEmpty());
+
+        assertThat(matched.getId()).isNotEqualTo(delivering.getId());
+    }
+
     // @Test // TODO: 출발지/도착지 로직 수정 완료 후 주석 해제
     void shipperCanProgressAssignedDeliveryThroughEveryState() throws Exception {
         Account sender = createAccount("flow-sender");

@@ -28,8 +28,10 @@ public class ShipperService {
     private final ApplicationEventPublisher eventPublisher;
     private final S3Service s3Service;
 
-    public List<Delivery> listAllByShipper(Account account) {
-        return deliveryRepository.findAllByShipper(account);
+    public List<Delivery> listAllByShipper(Account account, DeliveryState status) {
+        return status == null
+                ? deliveryRepository.findAllByShipper(account)
+                : deliveryRepository.findAllByShipperAndStatus(account, status);
     }
 
     public ShipperDeliveryDetailDto getDeliveryById(Account shipper, Long id) {
