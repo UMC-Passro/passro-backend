@@ -308,7 +308,7 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
         assertThat(adjacentStationNames("1호선", "수원"))
                 .containsExactlyInAnyOrder("화서", "세류");
         assertThat(adjacentStationNames("1호선", "구로"))
-                .contains("신도림", "가산디지털단지", "구일");
+                .containsExactlyInAnyOrder("신도림", "가산디지털단지", "구일");
 
         SubwayRouteResponseDto route = subwayService.findShortestRoute(
                 place("1호선", "주안"), null, place("1호선", "수원"));
@@ -324,19 +324,18 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
         assertThat(adjacentStationNames("2호선", "시청"))
                 .containsExactlyInAnyOrder("충정로(경기대입구)", "을지로입구");
         assertThat(adjacentStationNames("2호선", "신도림"))
-                .contains("문래", "대림(구로구청)", "도림천");
+                .containsExactlyInAnyOrder("문래", "대림(구로구청)", "도림천");
 
         assertThat(adjacentStationNames("5호선", "강동"))
-                .contains("천호(풍납토성)", "길동", "둔촌동");
+                .containsExactlyInAnyOrder("천호(풍납토성)", "길동", "둔촌동");
         assertThat(adjacentStationNames("5호선", "길동"))
                 .doesNotContain("올림픽공원(한국체대)");
 
         assertThat(adjacentStationNames("경의중앙", "가좌"))
-                .contains("디지털미디어시티", "홍대입구", "신촌")
-                .doesNotContain("서울역");
+                .containsExactlyInAnyOrder("디지털미디어시티", "홍대입구", "신촌");
 
         assertThat(adjacentStationNames("경춘", "상봉"))
-                .contains("중랑", "광운대", "망우");
+                .containsExactlyInAnyOrder("중랑", "광운대", "망우");
         assertThat(adjacentStationNames("경춘", "광운대"))
                 .containsExactly("상봉");
     }
