@@ -75,6 +75,8 @@ class SenderDeliveryIntegrationTest extends IntegrationTestSupport {
                         .header("Authorization", bearer(token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.id").value(deliveryId))
+                .andExpect(jsonPath("$.result.originPlace.id").value(sourceId))
+                .andExpect(jsonPath("$.result.destPlace.id").value(destId))
                 .andExpect(jsonPath("$.result.status").value("WAIT"))
                 .andExpect(jsonPath("$.result.deliveryTimeLine[0].type").value("SEND_REQUEST"));
 

@@ -13,6 +13,8 @@ import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
+import com.passro.passrobackend.place.entity.Place;
+import com.passro.passrobackend.place.repository.PlaceRepository;
 import com.passro.passrobackend.shipper.service.ShipperService;
 import com.passro.passrobackend.support.IntegrationTestSupport;
 import java.util.List;
@@ -34,6 +36,38 @@ class ShipperDeliveryIntegrationTest extends IntegrationTestSupport {
 
     @Autowired
     private ShipperService shipperService;
+
+    @Autowired
+    private PlaceRepository placeRepository;
+
+    @Test
+    void shipperDeliveryDetailContainsCurrentStationFields() throws Exception {
+        Account sender = createAccount("station-field-sender");
+        Account shipper = createAccount("station-field-shipper");
+        Place origin = placeRepository.saveAndFlush(Place.builder()
+                .subwayRouteName("2호선")
+                .subwayStationName("강남")
+                .build());
+        Place destination = placeRepository.saveAndFlush(Place.builder()
+                .subwayRouteName("신분당선")
+                .subwayStationName("판교")
+                .build());
+        Delivery delivery = deliveryRepository.saveAndFlush(Delivery.builder()
+                .sender(sender)
+                .shipper(shipper)
+                .origin(origin)
+                .dest(destination)
+                .status(DeliveryState.DELIVERING)
+                .build());
+
+        mockMvc.perform(get("/shipper/{deliveryId}/", delivery.getId())
+                        .header("Authorization", bearer(accessToken(shipper))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.originPlace.subwayRouteName").value("2호선"))
+                .andExpect(jsonPath("$.result.originPlace.subwayStationName").value("강남"))
+                .andExpect(jsonPath("$.result.destPlace.subwayRouteName").value("신분당선"))
+                .andExpect(jsonPath("$.result.destPlace.subwayStationName").value("판교"));
+    }
 
     @Test
     void shipperCanFilterAssignedDeliveriesByStatusAndReadCreatedAt() throws Exception {

@@ -23,6 +23,8 @@ import java.util.List;
 public class SenderDeliveryDetailDto {
     private Long id;
     private String name;
+    private Place originPlace;
+    private Place destPlace;
     private DeliveryState status; // 현재 배송 상태
     private ShipperInfo shipperInfo; // 배송자 정보
     private List<DeliveryLogInfo> deliveryTimeLine; // 배송 타임라인
@@ -77,6 +79,8 @@ public class SenderDeliveryDetailDto {
                 .name(delivery.getDeliveryGoodInfo() != null
                         ? delivery.getDeliveryGoodInfo().getName()
                         : null)
+                .originPlace(delivery.getOrigin())
+                .destPlace(delivery.getDest())
                 .status(delivery.getStatus())
                 .shipperInfo(ShipperInfo.fromAccount(delivery.getShipper()))
                 .deliveryTimeLine(logs != null ? logs.stream().map(DeliveryLogInfo::fromEntity).toList() : List.of())

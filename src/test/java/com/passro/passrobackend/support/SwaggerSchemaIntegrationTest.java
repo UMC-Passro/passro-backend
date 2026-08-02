@@ -27,5 +27,37 @@ class SwaggerSchemaIntegrationTest extends IntegrationTestSupport {
         assertThat(document.at(
                 "/components/schemas/SenderDeliveryDetailDto/type").asText())
                 .isEqualTo("object");
+        assertThat(document.at(
+                "/components/schemas/SenderDeliveryDetailDto/properties/originPlace/$ref").asText())
+                .isEqualTo("#/components/schemas/Place");
+        assertThat(document.at(
+                "/components/schemas/SenderDeliveryDetailDto/properties/destPlace/$ref").asText())
+                .isEqualTo("#/components/schemas/Place");
+    }
+
+    @Test
+    void shipperDetailResponseUsesCurrentPlaceSchema() throws Exception {
+        String body = mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        JsonNode document = objectMapper.readTree(body);
+
+        assertThat(document.at(
+                "/paths/~1shipper~1{deliveryId}~1/get/responses/200/content/*~1*/schema/$ref").asText())
+                .isEqualTo("#/components/schemas/APIResponseShipperDeliveryDetailDto");
+        assertThat(document.at(
+                "/components/schemas/APIResponseShipperDeliveryDetailDto/properties/result/$ref").asText())
+                .isEqualTo("#/components/schemas/ShipperDeliveryDetailDto");
+        assertThat(document.at(
+                "/components/schemas/ShipperDeliveryDetailDto/type").asText())
+                .isEqualTo("object");
+        assertThat(document.at(
+                "/components/schemas/Place/properties/subwayRouteName").isMissingNode())
+                .isFalse();
+        assertThat(document.at(
+                "/components/schemas/Place/properties/subwayStationName").isMissingNode())
+                .isFalse();
     }
 }

@@ -118,10 +118,14 @@ class SenderQueryServiceTest {
         // Given
         Account sender = Account.builder().id(1L).build();
         Account shipper = Account.builder().id(2L).name("배송기사").picture("profile.jpg").build();
+        Place origin = Place.builder().id(10L).subwayRouteName("2호선").subwayStationName("강남").build();
+        Place destination = Place.builder().id(20L).subwayRouteName("신분당선").subwayStationName("판교").build();
         Delivery delivery = Delivery.builder()
                 .id(100L)
                 .sender(sender)
                 .shipper(shipper)
+                .origin(origin)
+                .dest(destination)
                 .status(DeliveryState.DELIVERING)
                 .build();
         delivery.attachGoodInfo(DeliveryGoodInfo.builder().name("노트북").build());
@@ -138,6 +142,8 @@ class SenderQueryServiceTest {
         // Then
         assertThat(result.getId()).isEqualTo(100L);
         assertThat(result.getName()).isEqualTo("노트북");
+        assertThat(result.getOriginPlace()).isEqualTo(origin);
+        assertThat(result.getDestPlace()).isEqualTo(destination);
         assertThat(result.getStatus()).isEqualTo(DeliveryState.DELIVERING);
         assertThat(result.getShipperInfo().getName()).isEqualTo("배송기사");
         assertThat(result.getDeliveryTimeLine()).hasSize(2);

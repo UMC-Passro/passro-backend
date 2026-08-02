@@ -26,7 +26,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import static com.passro.passrobackend.global.configuration.SwaggerErrorExamples.DELIVERY_NOT_FOUND;
-import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.SHIPPER_DETAIL;
 import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.SHIPPER_OK;
 
 import com.passro.passrobackend.shipper.service.ShipperMatchingService;
@@ -83,8 +82,7 @@ public class ShipperController {
     @ResponseBody
     @Operation(summary = "배송 상세 조회", description = "배송 ID로 배송 상세 정보를 조회합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
-                    content = @Content(examples = @ExampleObject(name = "SHIPPER200_1", summary = "배송 상세 조회 성공", value = SHIPPER_DETAIL))),
+            @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true),
             @ApiResponse(responseCode = "404", description = "배송 정보를 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
                             examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND)))
