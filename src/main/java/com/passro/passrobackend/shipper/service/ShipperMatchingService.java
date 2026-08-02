@@ -40,8 +40,10 @@ public class ShipperMatchingService {
     public List<Delivery> listMatchRequestedWithPriority(Account shipper) {
         Optional<AccountPlace> accountPlaceOpt = accountPlaceRepository.findByAccount(shipper);
         if (accountPlaceOpt.isEmpty()) {
-            // 동선 정보가 등록되지 않은 배송기사인 경우 전체 대기 목록 반환
-            return deliveryRepository.findAllByStatus(DeliveryState.WAIT);
+            // 동선 정보가 등록되지 않은 배송기사인 경우 전체 대기 목록 반환 (약관 동의 건만)
+            return deliveryRepository.findAllByStatus(DeliveryState.WAIT).stream()
+                    .filter(delivery -> Boolean.TRUE.equals(delivery.getTerms()))
+                    .toList();
         }
 
         AccountPlace accountPlace = accountPlaceOpt.get();
@@ -76,7 +78,7 @@ public class ShipperMatchingService {
                         accountPlace.getDestinationPlace()
                 );
                 passThroughPlaceIds = routeDto.getStations().stream()
-                        .map(SubwayStationResponseDto::getPlaceId)
+                        .map(SubwayStationResponseDto::getId)
                         .collect(Collectors.toSet());
             } catch (Exception e) {
                 log.warn("배송기사 최단 경로 계산 실패 (통과 역 기준 알고리즘 제외): shipperId={}, error={}", shipper.getId(), e.getMessage());
@@ -103,7 +105,7 @@ public class ShipperMatchingService {
 
     // SubwayService 연산 시 예외가 발생하면 해당 배송건을 건너뛰도록 null 반환
     private EvaluatedDelivery evaluateDeliverySafely(Delivery delivery, Long shipperStartId, Long shipperDestId, Set<Long> passThroughPlaceIds, String shipperRegion) {
-        if (delivery == null || delivery.getOrigin() == null || delivery.getDest() == null) {
+        if (delivery == null || delivery.getOrigin() == null || delivery.getDest() == null || !Boolean.TRUE.equals(delivery.getTerms())) {
             return null;
         }
 

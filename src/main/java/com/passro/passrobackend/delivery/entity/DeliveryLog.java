@@ -28,4 +28,7 @@ public class DeliveryLog extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private DeliveryLogType type;
+
+    @Column(length = 500)
+    private String image;
 }

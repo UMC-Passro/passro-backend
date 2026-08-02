@@ -9,9 +9,7 @@ import com.passro.passrobackend.chat.exception.ChatException;
 import com.passro.passrobackend.chat.exception.code.ChatErrorCode;
 import com.passro.passrobackend.chat.repository.ChatMessageRepository;
 import com.passro.passrobackend.delivery.entity.Delivery;
-import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
-import com.passro.passrobackend.delivery.repository.DeliveryGoodInfoRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,7 +23,6 @@ public class ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final DeliveryRepository deliveryRepository;
-    private final DeliveryGoodInfoRepository deliveryGoodInfoRepository;
 
     // 채팅 참여자 여부 검증 (sender 또는 shipper만 접근 가능)
     private Delivery getDeliveryAndValidateAccess(Long deliveryId, Account account) {
@@ -83,12 +80,12 @@ public class ChatService {
         boolean isSender = delivery.getSender().getId().equals(account.getId());
         Account partner = isSender ? delivery.getShipper() : delivery.getSender();
 
-        DeliveryGoodInfo goodInfo = deliveryGoodInfoRepository.findByDelivery(delivery).orElse(null);
-
         return new ChatRoomInfoResponseDto(
                 partner.getNickname(),
                 partner.getPicture(),
-                goodInfo != null ? goodInfo.getName() : null,
+                delivery.getDeliveryGoodInfo() != null
+                        ? delivery.getDeliveryGoodInfo().getName()
+                        : null,
                 delivery.getOrigin() != null ? delivery.getOrigin().getSubwayStationName() : null,
                 delivery.getDest() != null ? delivery.getDest().getSubwayStationName() : null,
                 delivery.getStatus()

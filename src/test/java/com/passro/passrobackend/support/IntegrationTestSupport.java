@@ -99,18 +99,18 @@ public abstract class IntegrationTestSupport {
         return "Bearer " + token;
     }
 
-    protected long createDelivery(String token, String goodName, String origin, String destination) throws Exception {
+    protected long createDelivery(String token, String goodName, long sourceStationId, long destinationStationId) throws Exception {
         String body = """
                 {
-                  "originAddress":"%s",
-                  "destAddress":"%s",
+                  "sourceStationId":%d,
+                  "destinationStationId":%d,
                   "name":"%s",
                   "price":100000,
-                  "size":"MEDIUM",
+                  "size":"M",
                   "picture":"good.png",
                   "memo":"Handle with care"
                 }
-                """.formatted(origin, destination, goodName);
+                """.formatted(sourceStationId, destinationStationId, goodName);
 
         MvcResult result = mockMvc.perform(post("/sender")
                         .header("Authorization", bearer(token))

@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import com.passro.passrobackend.file.exception.FileException;
 import com.passro.passrobackend.file.service.S3Service;
@@ -41,17 +43,61 @@ class ExternalApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void imageUploadUrlIsIssuedByFileApi() throws Exception {
+        mockMvc.perform(post("/file/image/upload-url")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "fileName": "proof.jpg",
+                                  "contentType": "image/jpeg",
+                                  "fileSize": 1024
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.imageKey", containsString("uploads/images/")))
+                .andExpect(jsonPath("$.result.imageKey", containsString(".jpg")))
+                .andExpect(jsonPath("$.result.uploadUrl", containsString("X-Amz-Signature")));
+    }
+
+    @Test
+    void imageUploadRejectsMismatchedExtensionAndContentType() throws Exception {
+        mockMvc.perform(post("/file/image/upload-url")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "fileName": "proof.png",
+                                  "contentType": "image/jpeg",
+                                  "fileSize": 1024
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("FILE400_1"));
+    }
+
+    @Test
     void subwaySearchFindsRouteNameContainingKeyword() throws Exception {
         mockMvc.perform(get("/subway/search").param("keyword", "2"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result[*].subwayRouteName", hasItem("2호선")));
+                .andExpect(jsonPath("$.code").value("SUBWAY200_2"))
+                .andExpect(jsonPath("$.result[0].id").isNumber())
+                .andExpect(jsonPath("$.result[0].region").doesNotExist())
+                .andExpect(jsonPath("$.result[*].routeName", hasItem("2호선")));
     }
 
     @Test
     void subwaySearchFindsStationNameContainingKeyword() throws Exception {
         mockMvc.perform(get("/subway/search").param("keyword", "강남"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result[*].subwayStationName", hasItem("강남")));
+                .andExpect(jsonPath("$.result[*].stationName", hasItem("강남")));
+    }
+
+    @Test
+    void subwaySearchAcceptsHangulConsonantsAndVowels() throws Exception {
+        mockMvc.perform(get("/subway/search").param("keyword", "ㄱ"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/subway/search").param("keyword", "ㅏ"))
+                .andExpect(status().isOk());
     }
 
     @Test

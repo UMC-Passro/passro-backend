@@ -9,10 +9,6 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum InquirySuccessCode implements BaseSuccessCode {
 
-    OK(HttpStatus.OK,
-            "INQUIRY200_1",
-            "문의 조회 성공."),
-
     CREATED(HttpStatus.CREATED,
             "INQUIRY201_1",
             "문의 등록 성공.");
@@ -20,5 +16,4 @@ public enum InquirySuccessCode implements BaseSuccessCode {
     private final HttpStatus status;
     private final String code;
     private final String message;
-
 }

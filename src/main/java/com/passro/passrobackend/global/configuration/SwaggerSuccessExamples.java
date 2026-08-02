@@ -18,11 +18,11 @@ public final class SwaggerSuccessExamples {
     public static final String REVIEW_AVERAGE =
             "{\"success\":true,\"code\":\"REVIEW200_1\",\"message\":\"평균 평점 조회 성공\",\"result\":{\"averageRating\":4.5}}";
     public static final String SENDER_LIST =
-            "{\"success\":true,\"code\":\"SENDER200_1\",\"message\":\"요청 성공.\",\"result\":[{\"deliveryId\":1,\"goodName\":\"노트북\",\"originAddress\":\"서울시 강남구\",\"destAddress\":\"서울시 마포구\",\"status\":\"WAIT\"}]}";
+            "{\"success\":true,\"code\":\"SENDER200_1\",\"message\":\"요청 성공.\",\"result\":[{\"deliveryId\":1,\"name\":\"노트북\",\"originPlace\":{\"id\":1,\"subwayRouteName\":\"2호선\",\"subwayStationName\":\"강남\"},\"destPlace\":{\"id\":2,\"subwayRouteName\":\"2호선\",\"subwayStationName\":\"홍대입구\"},\"status\":\"WAIT\"}]}";
     public static final String SENDER_DETAIL =
             "{\"success\":true,\"code\":\"SENDER200_1\",\"message\":\"요청 성공.\",\"result\":{\"id\":1,\"status\":\"DELIVERING\",\"shipperInfo\":{\"name\":\"홍길동\",\"picture\":\"https://example.com/profile.png\",\"place\":{\"id\":1,\"address\":\"서울시 강남구\"}},\"deliveryTimeLine\":[]}}";
     public static final String SENDER_PAYMENT =
-            "{\"success\":true,\"code\":\"SENDER200_1\",\"message\":\"요청 성공.\",\"result\":{\"id\":1,\"basePoint\":1000,\"distancePoint\":500,\"weightPoint\":300,\"totalPoint\":1800}}";
+            "{\"success\":true,\"code\":\"SENDER200_1\",\"message\":\"요청 성공.\",\"result\":{\"id\":1,\"basePoint\":2000,\"distancePoint\":200,\"weightPoint\":500,\"totalPoint\":2700}}";
     public static final String SENDER_CREATED =
             "{\"success\":true,\"code\":\"SENDER201_1\",\"message\":\"생성 성공.\",\"result\":\"1\"}";
     public static final String SENDER_OK =
@@ -33,4 +33,8 @@ public final class SwaggerSuccessExamples {
             "{\"success\":true,\"code\":\"SHIPPER200_1\",\"message\":\"요청 성공.\",\"result\":{\"id\":1,\"senderInfo\":{\"name\":\"김발송\",\"picture\":\"https://example.com/profile.png\",\"place\":{\"id\":1,\"address\":\"서울시 강남구\"}},\"shipperInfo\":{\"name\":\"이배송\",\"picture\":\"https://example.com/shipper.png\",\"place\":{\"id\":4,\"address\":\"서울시 송파구\"}},\"originPlace\":{\"id\":2,\"address\":\"서울시 강남구\"},\"destPlace\":{\"id\":3,\"address\":\"서울시 마포구\"},\"deliveryState\":\"MATCHED\",\"memo\":\"안전 배송 부탁드립니다.\"}}";
     public static final String SHIPPER_OK =
             "{\"success\":true,\"code\":\"SHIPPER200_1\",\"message\":\"요청 성공.\",\"result\":null}";
+    public static final String SUBWAY_SHORTEST_ROUTE =
+            "{\"success\":true,\"code\":\"SUBWAY200_1\",\"message\":\"최단 경로 탐색 성공.\",\"result\":{\"shortestDistance\":5,\"transferCount\":1,\"stations\":[{\"id\":101,\"region\":\"수도권\",\"routeName\":\"수인분당\",\"stationName\":\"미금(분당서울대병원)\"},{\"id\":102,\"region\":\"수도권\",\"routeName\":\"수인분당\",\"stationName\":\"정자\"},{\"id\":201,\"region\":\"수도권\",\"routeName\":\"신분당\",\"stationName\":\"정자\"},{\"id\":202,\"region\":\"수도권\",\"routeName\":\"신분당\",\"stationName\":\"판교(판교테크노밸리)\"}]}}";
+    public static final String SUBWAY_STATION_LIST =
+            "{\"success\":true,\"code\":\"SUBWAY200_2\",\"message\":\"지하철역 검색 성공.\",\"result\":[{\"id\":101,\"routeName\":\"2호선\",\"stationName\":\"강남\"}]}";
 }

@@ -21,13 +21,24 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
         FROM Delivery d
         LEFT JOIN FETCH d.origin
         LEFT JOIN FETCH d.dest
+        LEFT JOIN FETCH d.deliveryGoodInfo
         WHERE d.status = :status
     """)
     List<Delivery> findAllByStatus(@Param("status") DeliveryState status);
 
     // 배송기사별 배정된 배송 목록 조회 메서드
-    List<Delivery> findAllByShipper(Account shipper);
+
     long countByShipper(Account shipper);
+
+    @Query("""
+        SELECT d
+        FROM Delivery d
+        LEFT JOIN FETCH d.origin
+        LEFT JOIN FETCH d.dest
+        LEFT JOIN FETCH d.deliveryGoodInfo
+        WHERE d.shipper = :shipper
+    """)
+    List<Delivery> findAllByShipper(@Param("shipper") Account shipper);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT d FROM Delivery d WHERE d.id = :id")
@@ -38,6 +49,7 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
         FROM Delivery d
         LEFT JOIN FETCH d.origin
         LEFT JOIN FETCH d.dest
+        LEFT JOIN FETCH d.deliveryGoodInfo
         WHERE d.sender = :sender
     """)
     List<Delivery> findAllBySender(@Param("sender") Account sender);

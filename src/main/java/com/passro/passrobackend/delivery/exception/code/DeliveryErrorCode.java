@@ -26,7 +26,13 @@ public enum DeliveryErrorCode implements BaseErrorCode {
             "배송 완료 처리를 할 수 없는 상태입니다."),
     INVALID_STATUS_TRANSITION(HttpStatus.BAD_REQUEST,
             "DELIVERY400_3",
-            "현재 배송 상태에서는 요청한 상태 변경을 수행할 수 없습니다.");
+            "현재 배송 상태에서는 요청한 상태 변경을 수행할 수 없습니다."),
+    SAME_ORIGIN_DESTINATION_NOT_ALLOWED(HttpStatus.BAD_REQUEST,
+            "DELIVERY400_4",
+            "출발역과 도착역은 같을 수 없습니다."),
+    DELIVERY_POINT_NOT_FOUND(HttpStatus.NOT_FOUND,
+            "DELIVERY404_3",
+            "해당 배송의 결제 포인트 정보를 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;

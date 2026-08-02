@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 @Builder
 public class InquiryResponseDto {
     private Long inquiryId;
-    private Long deliveryId;
     private InquiryCategory category;
     private String title;
     private String content;
@@ -25,7 +24,6 @@ public class InquiryResponseDto {
     public static InquiryResponseDto fromInquiry(Inquiry inquiry) {
         return InquiryResponseDto.builder()
                 .inquiryId(inquiry.getId())
-                .deliveryId(inquiry.getDelivery() != null ? inquiry.getDelivery().getId() : null)
                 .category(inquiry.getCategory())
                 .title(inquiry.getTitle())
                 .content(inquiry.getContent())

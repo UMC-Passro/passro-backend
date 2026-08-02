@@ -11,7 +11,6 @@ import com.passro.passrobackend.chat.repository.ChatMessageRepository;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
-import com.passro.passrobackend.delivery.repository.DeliveryGoodInfoRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.place.entity.Place;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +41,6 @@ class ChatServiceTest {
 
     @Mock ChatMessageRepository chatMessageRepository;
     @Mock DeliveryRepository deliveryRepository;
-    @Mock DeliveryGoodInfoRepository deliveryGoodInfoRepository;
 
     @InjectMocks ChatService chatService;
 
@@ -225,7 +223,6 @@ class ChatServiceTest {
             given(delivery.getDest()).willReturn(dest);
 
             given(deliveryRepository.findById(1L)).willReturn(Optional.of(delivery));
-            given(deliveryGoodInfoRepository.findByDelivery(delivery)).willReturn(Optional.empty());
 
             ChatRoomInfoResponseDto result = chatService.getChatRoomInfo(1L, sender);
 
@@ -244,8 +241,6 @@ class ChatServiceTest {
             given(delivery.getDest()).willReturn(dest);
 
             given(deliveryRepository.findById(1L)).willReturn(Optional.of(delivery));
-            given(deliveryGoodInfoRepository.findByDelivery(delivery)).willReturn(Optional.empty());
-
             ChatRoomInfoResponseDto result = chatService.getChatRoomInfo(1L, shipper);
 
             assertThat(result.partnerNickname()).isEqualTo("sender닉네임");
@@ -253,8 +248,8 @@ class ChatServiceTest {
         }
 
         @Test
-        @DisplayName("DeliveryGoodInfo 존재 시 itemName 반환")
-        void withGoodInfo_returnsItemName() {
+        @DisplayName("Delivery name을 itemName으로 반환")
+        void deliveryName_returnsItemName() {
             Place origin = mock(Place.class);
             Place dest = mock(Place.class);
             given(origin.getSubwayStationName()).willReturn("서울");
@@ -263,10 +258,10 @@ class ChatServiceTest {
             given(delivery.getDest()).willReturn(dest);
 
             DeliveryGoodInfo goodInfo = mock(DeliveryGoodInfo.class);
+            given(delivery.getDeliveryGoodInfo()).willReturn(goodInfo);
             given(goodInfo.getName()).willReturn("노트북");
 
             given(deliveryRepository.findById(1L)).willReturn(Optional.of(delivery));
-            given(deliveryGoodInfoRepository.findByDelivery(delivery)).willReturn(Optional.of(goodInfo));
 
             ChatRoomInfoResponseDto result = chatService.getChatRoomInfo(1L, sender);
 
@@ -274,8 +269,8 @@ class ChatServiceTest {
         }
 
         @Test
-        @DisplayName("DeliveryGoodInfo 없으면 itemName은 null")
-        void withoutGoodInfo_itemNameIsNull() {
+        @DisplayName("Delivery name이 없으면 itemName은 null")
+        void withoutDeliveryName_itemNameIsNull() {
             Place origin = mock(Place.class);
             Place dest = mock(Place.class);
             given(origin.getSubwayStationName()).willReturn("서울");
@@ -284,7 +279,6 @@ class ChatServiceTest {
             given(delivery.getDest()).willReturn(dest);
 
             given(deliveryRepository.findById(1L)).willReturn(Optional.of(delivery));
-            given(deliveryGoodInfoRepository.findByDelivery(delivery)).willReturn(Optional.empty());
 
             ChatRoomInfoResponseDto result = chatService.getChatRoomInfo(1L, sender);
 

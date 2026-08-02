@@ -1,4 +1,4 @@
-package com.passro.passrobackend.inquiry;
+package com.passro.passrobackend.deliveryinquiry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -17,7 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
-class InquiryReviewIntegrationTest extends IntegrationTestSupport {
+class DeliveryInquiryReviewIntegrationTest extends IntegrationTestSupport {
 
     @Autowired
     private ReviewRepository reviewRepository;
@@ -28,15 +28,15 @@ class InquiryReviewIntegrationTest extends IntegrationTestSupport {
         Account shipper = createAccount("inquiry-shipper");
         Delivery delivery = saveDelivery(sender, shipper, DeliveryState.DELIVERING);
 
-        mockMvc.perform(post("/inquiry")
+        mockMvc.perform(post("/delivery-inquiry")
                         .header("Authorization", bearer(accessToken(sender)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(inquiryBody(delivery.getId(), "Where is it?")))
+                        .content(deliveryInquiryBody(delivery.getId(), "Where is it?")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.result.deliveryId").value(delivery.getId()))
                 .andExpect(jsonPath("$.result.writerNickname").value(sender.getNickname()));
 
-        mockMvc.perform(get("/inquiry/{deliveryId}", delivery.getId())
+        mockMvc.perform(get("/delivery-inquiry/{deliveryId}", delivery.getId())
                         .header("Authorization", bearer(accessToken(shipper))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result[0].title").value("Delivery question"))
@@ -48,14 +48,14 @@ class InquiryReviewIntegrationTest extends IntegrationTestSupport {
         Account account = createAccount("invalid-inquiry");
         String token = accessToken(account);
 
-        mockMvc.perform(post("/inquiry")
+        mockMvc.perform(post("/delivery-inquiry")
                         .header("Authorization", bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(inquiryBody(999999L, "")))
+                        .content(deliveryInquiryBody(999999L, "")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COMMON400"));
 
-        mockMvc.perform(get("/inquiry/{deliveryId}", 999999L)
+        mockMvc.perform(get("/delivery-inquiry/{deliveryId}", 999999L)
                         .header("Authorization", bearer(token)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("DELIVERY404_1"));
@@ -112,11 +112,10 @@ class InquiryReviewIntegrationTest extends IntegrationTestSupport {
                 .shipper(shipper)
                 .status(state)
                 .terms(true)
-                .matched(shipper != null)
                 .build());
     }
 
-    private String inquiryBody(long deliveryId, String content) {
+    private String deliveryInquiryBody(long deliveryId, String content) {
         return """
                 {"deliveryId":%d,"category":"ETC","title":"Delivery question","content":"%s"}
                 """.formatted(deliveryId, content);
@@ -127,8 +126,8 @@ class InquiryReviewIntegrationTest extends IntegrationTestSupport {
         String body = "{\"deliveryId\":" + deliveryId + ",\"rating\":" + rating
                 + ",\"content\":\"Good delivery\"}";
         return mockMvc.perform(post("/reviews")
-                .header("Authorization", bearer(token))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(body));
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body));
     }
 }

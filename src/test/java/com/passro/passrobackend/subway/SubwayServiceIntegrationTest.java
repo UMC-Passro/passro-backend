@@ -2,6 +2,7 @@ package com.passro.passrobackend.subway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -99,7 +100,7 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
                 origin, List.of(waypoint), destination);
 
         assertThat(result.getStations())
-                .extracting(station -> station.getPlaceId())
+                .extracting(station -> station.getId())
                 .containsExactly(
                         origin.getId(),
                         requiredNode("수인분당", "정자").getId(),
@@ -126,12 +127,12 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.result.shortestDistance").value(5))
                 .andExpect(jsonPath("$.result.transferCount").value(1))
                 .andExpect(jsonPath("$.result.stations.length()").value(4))
-                .andExpect(jsonPath("$.result.stations[0].placeId").value(origin.getId()))
+                .andExpect(jsonPath("$.result.stations[0].id").value(origin.getId()))
                 .andExpect(jsonPath("$.result.stations[1].routeName").value("수인분당"))
                 .andExpect(jsonPath("$.result.stations[1].stationName").value("정자"))
                 .andExpect(jsonPath("$.result.stations[2].routeName").value("신분당"))
                 .andExpect(jsonPath("$.result.stations[2].stationName").value("정자"))
-                .andExpect(jsonPath("$.result.stations[3].placeId").value(destination.getId()));
+                .andExpect(jsonPath("$.result.stations[3].id").value(destination.getId()));
     }
 
     @Test
@@ -160,6 +161,17 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value("SUBWAY404_1"));
+    }
+
+    @Test
+    void openApiDocumentsSubwayResourcesUnderOneTag() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/subway/search'].get.tags[0]").value("지하철"))
+                .andExpect(jsonPath("$.paths['/subway/search'].get.security").isEmpty())
+                .andExpect(jsonPath("$.paths['/subway/routes/shortest'].post.tags[0]").value("지하철"))
+                .andExpect(jsonPath("$.paths['/subway/routes/shortest'].post.security").isEmpty())
+                .andExpect(jsonPath("$.paths['/subway/stations']").doesNotExist());
     }
 
     @Test
