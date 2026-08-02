@@ -36,11 +36,11 @@ public enum AccountErrorCode implements BaseErrorCode {
 
     DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST,
             "ACCOUNT400_6",
-            "사용 중인 닉네임입니다.."),
+            "사용 중인 닉네임입니다."),
 
     DUPLICATE_PHONE_NUMBER(HttpStatus.BAD_REQUEST,
             "ACCOUNT400_7",
-            "사용 중인 전화번호입니다.."),
+            "사용 중인 전화번호입니다."),
 
     INVALID_MAIL_DOMAIN(HttpStatus.BAD_REQUEST,
             "ACCOUNT400_8",
