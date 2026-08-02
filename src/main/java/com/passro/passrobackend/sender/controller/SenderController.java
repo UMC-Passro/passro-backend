@@ -4,6 +4,8 @@ import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.global.response.APIResponse;
 import com.passro.passrobackend.delivery.dto.DeliveryStatusUpdateRequestDto;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
+import com.passro.passrobackend.delivery.location.dto.ShipperLocationResponseDto;
+import com.passro.passrobackend.delivery.location.service.ShipperLocationService;
 import com.passro.passrobackend.sender.code.SenderSuccessCode;
 import com.passro.passrobackend.sender.dto.SenderDeliveryCreateRequestDto;
 import com.passro.passrobackend.sender.dto.SenderDeliveryDetailDto;
@@ -45,6 +47,22 @@ public class SenderController {
 
     private final SenderQueryService senderQueryService;
     private final SenderCommandService senderCommandService;
+    private final ShipperLocationService shipperLocationService;
+
+    @GetMapping("/{deliveryId}/shipper-location")
+    @Operation(summary = "배송기사 현재 위치 조회", description = "발송자가 배송 중인 본인 배송의 배송기사 위치를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "위치 조회 성공", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "400", description = "배송 중 상태가 아님"),
+            @ApiResponse(responseCode = "403", description = "배송 접근 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "배송 또는 위치 정보를 찾을 수 없음")
+    })
+    public APIResponse<ShipperLocationResponseDto> getShipperLocation(
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
+            @Parameter(description = "배송 ID", example = "1") @PathVariable Long deliveryId) {
+        return APIResponse.onSuccess(
+                SenderSuccessCode.OK, shipperLocationService.getLocation(account, deliveryId));
+    }
 
     // 발송자 배송 조회
     @GetMapping

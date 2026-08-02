@@ -4,6 +4,9 @@ import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.global.response.APIResponse;
 import com.passro.passrobackend.delivery.dto.DeliveryStatusUpdateRequestDto;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
+import com.passro.passrobackend.delivery.location.dto.ShipperLocationResponseDto;
+import com.passro.passrobackend.delivery.location.dto.ShipperLocationUpdateRequestDto;
+import com.passro.passrobackend.delivery.location.service.ShipperLocationService;
 import com.passro.passrobackend.shipper.code.ShipperSuccessCode;
 import com.passro.passrobackend.shipper.dto.ShipperDeliveryDetailDto;
 import com.passro.passrobackend.shipper.dto.ShipperDeliveryListDto;
@@ -17,6 +20,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +39,22 @@ import com.passro.passrobackend.shipper.service.ShipperMatchingService;
 public class ShipperController {
     private final ShipperService shipperService;
     private final ShipperMatchingService shipperMatchingService;
+    private final ShipperLocationService shipperLocationService;
+
+    @PutMapping("/location")
+    @Operation(summary = "현재 위치 갱신", description = "배송 중인 배송기사가 현재 위도, 경도와 역 위치를 갱신합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "위치 갱신 성공", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "400", description = "좌표 또는 역 ID 검증 실패"),
+            @ApiResponse(responseCode = "403", description = "배송 중인 배송기사가 아님"),
+            @ApiResponse(responseCode = "404", description = "역 정보를 찾을 수 없음")
+    })
+    public APIResponse<ShipperLocationResponseDto> updateLocation(
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
+            @Valid @RequestBody ShipperLocationUpdateRequestDto request) {
+        return APIResponse.onSuccess(
+                ShipperSuccessCode.OK, shipperLocationService.updateLocation(account, request));
+    }
 
     @GetMapping("/matched")
     @ResponseBody

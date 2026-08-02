@@ -30,6 +30,8 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
 
     long countByShipper(Account shipper);
 
+    boolean existsByShipperAndStatus(Account shipper, DeliveryState status);
+
     @Query("""
         SELECT d
         FROM Delivery d
