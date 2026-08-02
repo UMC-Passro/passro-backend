@@ -3,6 +3,7 @@ package com.passro.passrobackend.sender.controller;
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.global.response.APIResponse;
 import com.passro.passrobackend.delivery.dto.DeliveryStatusUpdateRequestDto;
+import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.location.dto.ShipperLocationResponseDto;
 import com.passro.passrobackend.delivery.location.service.ShipperLocationService;
 import com.passro.passrobackend.sender.code.SenderSuccessCode;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -68,8 +70,10 @@ public class SenderController {
     @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
             content = @Content(examples = @ExampleObject(name = "SENDER200_1", summary = "배송 목록 조회 성공", value = SENDER_LIST)))
     public APIResponse<List<SenderDeliveryListDto>> getSenders(
-            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
-        return APIResponse.onSuccess(SenderSuccessCode.OK, senderQueryService.getSenders(account));
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
+            @Parameter(description = "배송 상태 필터", example = "DELIVERING")
+            @RequestParam(required = false) DeliveryState status) {
+        return APIResponse.onSuccess(SenderSuccessCode.OK, senderQueryService.getSenders(account, status));
     }
 
     // 발송자 배송 단건 조회

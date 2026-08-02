@@ -2,6 +2,7 @@ package com.passro.passrobackend.sender.dto;
 
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.place.entity.Place;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,4 +18,5 @@ public class SenderDeliveryListDto {
     private Place originPlace;
     private Place destPlace;
     private DeliveryState status;
+    private LocalDateTime createdAt;
 }

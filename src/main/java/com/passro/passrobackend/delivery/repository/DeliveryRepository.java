@@ -42,6 +42,19 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
     """)
     List<Delivery> findAllByShipper(@Param("shipper") Account shipper);
 
+    @Query("""
+        SELECT d
+        FROM Delivery d
+        LEFT JOIN FETCH d.origin
+        LEFT JOIN FETCH d.dest
+        LEFT JOIN FETCH d.deliveryGoodInfo
+        WHERE d.shipper = :shipper
+          AND d.status = :status
+    """)
+    List<Delivery> findAllByShipperAndStatus(
+            @Param("shipper") Account shipper,
+            @Param("status") DeliveryState status);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT d FROM Delivery d WHERE d.id = :id")
     Optional<Delivery> findByIdForUpdate(@Param("id") Long id);
@@ -55,5 +68,18 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
         WHERE d.sender = :sender
     """)
     List<Delivery> findAllBySender(@Param("sender") Account sender);
+
+    @Query("""
+        SELECT d
+        FROM Delivery d
+        LEFT JOIN FETCH d.origin
+        LEFT JOIN FETCH d.dest
+        LEFT JOIN FETCH d.deliveryGoodInfo
+        WHERE d.sender = :sender
+          AND d.status = :status
+    """)
+    List<Delivery> findAllBySenderAndStatus(
+            @Param("sender") Account sender,
+            @Param("status") DeliveryState status);
     long countBySender(Account sender);
 }

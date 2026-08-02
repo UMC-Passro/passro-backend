@@ -145,6 +145,29 @@ class SenderDeliveryIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void senderCanFilterDeliveriesByStatusAndReadCreatedAt() throws Exception {
+        Account sender = createAccount("filter-sender");
+        String token = accessToken(sender);
+        long waitingDeliveryId = createDelivery(token, "Waiting item", sourceId, destId);
+        long deliveredDeliveryId = createDelivery(token, "Delivered item", sourceId, destId);
+
+        Delivery delivered = deliveryRepository.findById(deliveredDeliveryId).orElseThrow();
+        delivered.setStatus(DeliveryState.DELIVERED);
+        deliveryRepository.saveAndFlush(delivered);
+
+        mockMvc.perform(get("/sender")
+                        .param("status", "DELIVERED")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.length()").value(1))
+                .andExpect(jsonPath("$.result[0].deliveryId").value(deliveredDeliveryId))
+                .andExpect(jsonPath("$.result[0].status").value("DELIVERED"))
+                .andExpect(jsonPath("$.result[0].createdAt").isNotEmpty());
+
+        assertThat(waitingDeliveryId).isNotEqualTo(deliveredDeliveryId);
+    }
+
+    @Test
     void anotherSenderCannotReadOrModifyDelivery() throws Exception {
         Account owner = createAccount("owner");
         Account stranger = createAccount("stranger");

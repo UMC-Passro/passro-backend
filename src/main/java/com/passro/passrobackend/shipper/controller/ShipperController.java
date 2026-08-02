@@ -3,6 +3,7 @@ package com.passro.passrobackend.shipper.controller;
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.global.response.APIResponse;
 import com.passro.passrobackend.delivery.dto.DeliveryStatusUpdateRequestDto;
+import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.location.dto.ShipperLocationResponseDto;
 import com.passro.passrobackend.delivery.location.dto.ShipperLocationUpdateRequestDto;
 import com.passro.passrobackend.delivery.location.service.ShipperLocationService;
@@ -62,7 +63,11 @@ public class ShipperController {
             content = @Content(examples = @ExampleObject(name = "SHIPPER200_1", summary = "매칭 대기 배송 조회 성공", value = SHIPPER_LIST)))
     public APIResponse<List<ShipperDeliveryListDto>> listMatched(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
-        return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperMatchingService.listMatchRequestedWithPriority(account).stream().map(ShipperDeliveryListDto::fromDelivery).toList());
+        return APIResponse.onSuccess(ShipperSuccessCode.OK,
+                shipperMatchingService.listMatchRequestedWithPriority(account).stream()
+                        .map(result -> ShipperDeliveryListDto.fromDelivery(
+                                result.delivery(), result.estimatedTimeMinutes()))
+                        .toList());
     }
 
     @GetMapping("/")
@@ -71,8 +76,10 @@ public class ShipperController {
     @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
             content = @Content(examples = @ExampleObject(name = "SHIPPER200_1", summary = "내 배송 목록 조회 성공", value = SHIPPER_LIST)))
     public APIResponse<List<ShipperDeliveryListDto>> listDelivery(
-            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
-         return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperService.listAllByShipper(account).stream().map(ShipperDeliveryListDto::fromDelivery).toList());
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
+            @Parameter(description = "배송 상태 필터", example = "DELIVERING")
+            @RequestParam(required = false) DeliveryState status) {
+         return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperService.listAllByShipper(account, status).stream().map(ShipperDeliveryListDto::fromDelivery).toList());
     }
 
     @GetMapping("/{deliveryId}/")
