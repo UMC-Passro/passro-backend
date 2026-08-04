@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 import java.time.Duration;
 
 @Service
@@ -58,7 +59,7 @@ public class AccountService {
         return !accountRepository.existsByNickname(nickname);
     }
 
-    public AccountResDTO.ShipperMyPage myShipperPage(Long accountId){
+    public AccountResDTO.ShipperMyPage myShipperPage(Long accountId) {
         Account account = findByAccount(accountId);
 
         String picture = null;
@@ -72,16 +73,15 @@ public class AccountService {
 
         double rating = 0.0;
         ReviewAverageResponseDto ratingDTO = reviewService.getAverageRating(accountId);
-        if(ratingDTO != null)
+        if (ratingDTO != null)
             rating = ratingDTO.getAverageRating();
 
 
         return new AccountResDTO.ShipperMyPage(picture, nickname, deliveryCount, point, rating);
     }
 
-    public AccountResDTO.SenderMyPage mySenderPage(Long accountId){
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
+    public AccountResDTO.SenderMyPage mySenderPage(Long accountId) {
+        Account account = findByAccount(accountId);
 
         String picture = null;
         if (account.getPicture() != null) {
@@ -101,8 +101,7 @@ public class AccountService {
         if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_INFO_COOLDOWN_PREFIX + accountId)))
             throw new AccountException(AccountErrorCode.TOO_FAST);
 
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
+        Account account = findByAccount(accountId);
 
         if (!account.getNickname().equals(dto.getNickname()) && accountRepository.existsByNickname(dto.getNickname()))
             throw new AccountException(AccountErrorCode.DUPLICATE_NICKNAME);
@@ -135,19 +134,18 @@ public class AccountService {
             }
         }
 
-            accountPlace.changePlace(startPlace, destinationPlace);
-            account.changeNickname(dto.getNickname());
-            account.changePhoneNumber(dto.getPhoneNumber());
+        accountPlace.changePlace(startPlace, destinationPlace);
+        account.changeNickname(dto.getNickname());
+        account.changePhoneNumber(dto.getPhoneNumber());
 
-            accountRepository.save(account);
+        accountRepository.save(account);
 
-            stringRedisTemplate.opsForValue().set(EDIT_INFO_COOLDOWN_PREFIX + accountId, "true", EDIT_COOLDOWN_TTL);
+        stringRedisTemplate.opsForValue().set(EDIT_INFO_COOLDOWN_PREFIX + accountId, "true", EDIT_COOLDOWN_TTL);
     }
 
     public void codeCodeConfirmAndEditPassword(AccountReqDTO.EditPassword dto, Long accountId) {
 
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
+        Account account = findByAccount(accountId);
 
         String mail = account.getMail();
 
@@ -171,10 +169,9 @@ public class AccountService {
     }
 
 
-
-    public Account findByAccount(Long accountId){
+    public Account findByAccount(Long accountId) {
         return accountRepository.findById(accountId)
-                .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
     }
 
 }

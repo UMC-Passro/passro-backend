@@ -8,6 +8,7 @@ import com.passro.passrobackend.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+
 import java.time.Duration;
 
 @RequiredArgsConstructor
@@ -26,16 +27,16 @@ public class VerificationCodeService {
     private static final Duration VERIFIED_TTL = Duration.ofMinutes(30);
 
 
-    public void confirmUniversityMailCode(AuthReqDTO.ConfirmCode dto, Long accountId){
+    public void confirmUniversityMailCode(AuthReqDTO.ConfirmCode dto, Long accountId) {
         String mail = dto.getMail();
         String code = dto.getCode();
 
-        String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX+mail);
+        String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX + mail);
 
         confirmSavedCode(code, savedCode);
 
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
 
         account.certify();
 
@@ -44,11 +45,11 @@ public class VerificationCodeService {
         stringRedisTemplate.delete(CODE_PREFIX + mail);
     }
 
-    public void confirmCode(AuthReqDTO.ConfirmCode dto){
+    public void confirmCode(AuthReqDTO.ConfirmCode dto) {
         String mail = dto.getMail();
         String code = dto.getCode();
 
-        String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX+mail);
+        String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX + mail);
 
         confirmSavedCode(code, savedCode);
 
@@ -57,10 +58,10 @@ public class VerificationCodeService {
 
     }
 
-    public void confirmSavedCode(String code, String savedCode){
-        if(savedCode==null)
+    public void confirmSavedCode(String code, String savedCode) {
+        if (savedCode == null)
             throw new AccountException(AccountErrorCode.MAIL_CODE_EXPIRED);
-        if(!savedCode.equals(code))
+        if (!savedCode.equals(code))
             throw new AccountException(AccountErrorCode.MAIL_CODE_MISMATCH);
     }
 }

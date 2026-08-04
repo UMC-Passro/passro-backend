@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.stereotype.Service;
+
 import java.security.SecureRandom;
 import java.time.Duration;
 
@@ -41,7 +42,7 @@ public class MailSenderService {
     public void sendMailMessageSignUpOrShipperSelect(AuthReqDTO.SendMail dto) {
         String mail = dto.getMail();
 
-        if(dto.isStudent())
+        if (dto.isStudent())
             validateUniversityMail(mail);
 
         if (accountRepository.existsByMail(mail))
@@ -57,13 +58,13 @@ public class MailSenderService {
 
         String mail = account.getMail();
 
-        if(Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId)))
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId)))
             throw new AccountException(AccountErrorCode.TOO_FAST);
 
         sendMail(mail);
     }
 
-    private void validateUniversityMail(String mail){
+    private void validateUniversityMail(String mail) {
         int atIndex = mail.indexOf("@");
         if (atIndex == -1 || atIndex == mail.length() - 1)
             throw new AccountException(AccountErrorCode.INVALID_MAIL_DOMAIN);
@@ -81,7 +82,7 @@ public class MailSenderService {
     }
 
 
-    private void sendMail(String mail){
+    private void sendMail(String mail) {
         if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(RESEND_COOLDOWN_PREFIX + mail)))
             throw new AccountException(AccountErrorCode.TOO_FAST);
 
@@ -101,7 +102,7 @@ public class MailSenderService {
         stringRedisTemplate.opsForValue().set(RESEND_COOLDOWN_PREFIX + mail, "true", RESEND_COOLDOWN_TTL);
     }
 
-    private String generateCode(){
+    private String generateCode() {
         int code = 100000 + SECURE_RANDOM.nextInt(900000);
         return String.valueOf(code);
     }

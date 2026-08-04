@@ -60,10 +60,9 @@ public class AuthService {
     private static final String REFRESH_PREFIX = "refresh:token:";
 
 
-
     @Transactional
-    public void signup(AuthReqDTO.Signup dto){
-        String confirmStatus = stringRedisTemplate.opsForValue().get(VERIFIED_PREFIX+dto.getMail());
+    public void signup(AuthReqDTO.Signup dto) {
+        String confirmStatus = stringRedisTemplate.opsForValue().get(VERIFIED_PREFIX + dto.getMail());
 
         validateCodeConfirmed(confirmStatus);
         validateMailNotDuplicated(dto.getMail());
@@ -101,11 +100,11 @@ public class AuthService {
         stringRedisTemplate.delete(RESEND_COOLDOWN_PREFIX + dto.getMail());
     }
 
-    public AuthResDTO.TokenResponse login(AuthReqDTO.Login dto){
+    public AuthResDTO.TokenResponse login(AuthReqDTO.Login dto) {
         Account account = accountRepository.findByMail(dto.getMail())
-                .orElseThrow(()->new AccountException(AccountErrorCode.INVALID_CREDENTIALS));
+                .orElseThrow(() -> new AccountException(AccountErrorCode.INVALID_CREDENTIALS));
 
-        if(!passwordEncoder.matches(dto.getPassword(), account.getPassword()))
+        if (!passwordEncoder.matches(dto.getPassword(), account.getPassword()))
             throw new AccountException(AccountErrorCode.INVALID_CREDENTIALS);
 
         return issueTokens(account);
@@ -116,7 +115,7 @@ public class AuthService {
     }
 
 
-    private AuthResDTO.TokenResponse issueTokens(Account account){
+    private AuthResDTO.TokenResponse issueTokens(Account account) {
         String accessToken = jwtProvider.createAccessToken(account.getId(), account.getRole().name());
         String refreshToken = jwtProvider.createRefreshToken(account.getId());
 
@@ -126,16 +125,16 @@ public class AuthService {
         return new AuthResDTO.TokenResponse(accessToken, refreshToken);
     }
 
-    public AuthResDTO.TokenResponse reissueToken(AuthReqDTO.ReIssue dto){
+    public AuthResDTO.TokenResponse reissueToken(AuthReqDTO.ReIssue dto) {
         String refreshToken = dto.getRefreshToken();
 
-        if(!jwtProvider.validateToken(refreshToken))
+        if (!jwtProvider.validateToken(refreshToken))
             throw new AccountException(AccountErrorCode.INVALID_REFRESH_TOKEN);
 
         Long accountId = jwtProvider.getAccountId(refreshToken);
         String savedToken = stringRedisTemplate.opsForValue().get(REFRESH_PREFIX + accountId);
 
-        if(savedToken == null || !savedToken.equals(refreshToken))
+        if (savedToken == null || !savedToken.equals(refreshToken))
             throw new AccountException(AccountErrorCode.INVALID_REFRESH_TOKEN);
 
         Account account = accountRepository.findById(accountId)
@@ -162,7 +161,7 @@ public class AuthService {
                         dto.getName(), dto.getPhoneNumber(), dto.getMail())
                 .ifPresent(account -> {
                     String temporaryPassword = generateTemporaryPassword();
-                    account.setPassword(passwordEncoder.encode(temporaryPassword));
+                    account.changePassword(passwordEncoder.encode(temporaryPassword));
                     accountRepository.save(account);
 
                     SimpleMailMessage message = new SimpleMailMessage();
@@ -170,11 +169,10 @@ public class AuthService {
                     message.setSubject("[Passro] 임시 비밀번호 안내");
                     message.setText("임시 비밀번호: " + temporaryPassword
                             + "\n로그인 후 비밀번호를 변경해주세요.");
+
                     asyncMailService.send(message);
                 });
     }
-
-
 
 
     private String generateTemporaryPassword() {
@@ -186,27 +184,27 @@ public class AuthService {
         return password.toString();
     }
 
-    private Place getPlace(Long stationId){
+    private Place getPlace(Long stationId) {
         return placeRepository.findById(stationId)
                 .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
     }
 
-    private void validateCodeConfirmed(String confirmStatus){
-        if(confirmStatus==null || !confirmStatus.equals("true"))
+    private void validateCodeConfirmed(String confirmStatus) {
+        if (confirmStatus == null || !confirmStatus.equals("true"))
             throw new AccountException(AccountErrorCode.MAIL_NOT_CONFIRM);
     }
 
-    private void validateMailNotDuplicated(String mail){
-        if(accountRepository.existsByMail(mail))
+    private void validateMailNotDuplicated(String mail) {
+        if (accountRepository.existsByMail(mail))
             throw new AccountException(AccountErrorCode.DUPLICATE_MAIL);
     }
 
-    private void validateNicknameNotDuplicated(String nickname){
-        if(accountRepository.existsByNickname(nickname))
+    private void validateNicknameNotDuplicated(String nickname) {
+        if (accountRepository.existsByNickname(nickname))
             throw new AccountException(AccountErrorCode.DUPLICATE_NICKNAME);
     }
 
-    private void saveWayPoints(List<Long> wayPoints, AccountPlace accountPlace){
+    private void saveWayPoints(List<Long> wayPoints, AccountPlace accountPlace) {
         if (wayPoints != null) {
             for (int i = 0; i < wayPoints.size(); i++) {
                 Long wayPointPlaceId = wayPoints.get(i);
@@ -218,7 +216,7 @@ public class AuthService {
                         .place(wayPointPlace)
                         .visitOrder(i)
                         .build());
-                }
+            }
         }
 
     }
