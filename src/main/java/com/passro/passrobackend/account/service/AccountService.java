@@ -60,12 +60,12 @@ public class AccountService {
     }
 
     public AccountResDTO.ShipperMyPage myShipperPage(Long accountId) {
-        Account account = findByAccount(accountId);
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(()-> new AccountException(AccountErrorCode.NOT_FOUND));
 
         String picture = null;
-        if (account.getPicture() != null) {
+        if (account.getPicture() != null)
             picture = s3Service.getPresignedDownloadUrl(account.getPicture()).toString();
-        }
 
         String nickname = account.getNickname();
         Long deliveryCount = deliveryRepository.countByShipper(account);
@@ -76,12 +76,12 @@ public class AccountService {
         if (ratingDTO != null)
             rating = ratingDTO.getAverageRating();
 
-
         return new AccountResDTO.ShipperMyPage(picture, nickname, deliveryCount, point, rating);
     }
 
     public AccountResDTO.SenderMyPage mySenderPage(Long accountId) {
-        Account account = findByAccount(accountId);
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(()-> new AccountException(AccountErrorCode.NOT_FOUND));
 
         String picture = null;
         if (account.getPicture() != null) {
@@ -101,7 +101,8 @@ public class AccountService {
         if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_INFO_COOLDOWN_PREFIX + accountId)))
             throw new AccountException(AccountErrorCode.TOO_FAST);
 
-        Account account = findByAccount(accountId);
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(()-> new AccountException(AccountErrorCode.NOT_FOUND));
 
         if (!account.getNickname().equals(dto.getNickname()) && accountRepository.existsByNickname(dto.getNickname()))
             throw new AccountException(AccountErrorCode.DUPLICATE_NICKNAME);
@@ -110,7 +111,7 @@ public class AccountService {
             throw new AccountException(AccountErrorCode.DUPLICATE_PHONE_NUMBER);
 
         AccountPlace accountPlace = accountPlaceRepository.findByAccount(account)
-                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
+                .orElseThrow(()-> new AccountException(AccountErrorCode.NOT_FOUND));
 
         Place startPlace = placeRepository.findById(dto.getStartPlaceId())
                 .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
@@ -145,7 +146,8 @@ public class AccountService {
 
     public void codeCodeConfirmAndEditPassword(AccountReqDTO.EditPassword dto, Long accountId) {
 
-        Account account = findByAccount(accountId);
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(()-> new AccountException(AccountErrorCode.NOT_FOUND));
 
         String mail = account.getMail();
 
@@ -167,11 +169,4 @@ public class AccountService {
         stringRedisTemplate.delete(CODE_PREFIX + mail);
         stringRedisTemplate.opsForValue().set(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId, "true", EDIT_COOLDOWN_TTL);
     }
-
-
-    public Account findByAccount(Long accountId) {
-        return accountRepository.findById(accountId)
-                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
-    }
-
 }

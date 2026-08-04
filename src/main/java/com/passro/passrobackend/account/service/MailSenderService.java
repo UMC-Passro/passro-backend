@@ -19,6 +19,7 @@ import java.time.Duration;
 public class MailSenderService {
 
     private final AsyncMailService asyncMailService;
+    private final AuthService authService;
 
     private final AccountRepository accountRepository;
     private final UniversityRepository universityRepository;
@@ -45,8 +46,7 @@ public class MailSenderService {
         if (dto.isStudent())
             validateUniversityMail(mail);
 
-        if (accountRepository.existsByMail(mail))
-            throw new AccountException(AccountErrorCode.DUPLICATE_MAIL);
+        authService.validateMailNotDuplicated(mail);
 
         sendMail(mail);
     }
@@ -54,7 +54,7 @@ public class MailSenderService {
     public void sendMailMessageEditPassword(Long accountId) {
 
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
+                .orElseThrow(()-> new AccountException(AccountErrorCode.NOT_FOUND));
 
         String mail = account.getMail();
 

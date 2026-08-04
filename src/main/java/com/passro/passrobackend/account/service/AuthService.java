@@ -138,7 +138,7 @@ public class AuthService {
             throw new AccountException(AccountErrorCode.INVALID_REFRESH_TOKEN);
 
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
+                .orElseThrow(()-> new AccountException(AccountErrorCode.NOT_FOUND));
 
         return issueTokens(account);
     }
@@ -184,22 +184,22 @@ public class AuthService {
         return password.toString();
     }
 
-    private Place getPlace(Long stationId) {
+    public Place getPlace(Long stationId) {
         return placeRepository.findById(stationId)
                 .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
     }
 
-    private void validateCodeConfirmed(String confirmStatus) {
+    public void validateCodeConfirmed(String confirmStatus) {
         if (confirmStatus == null || !confirmStatus.equals("true"))
             throw new AccountException(AccountErrorCode.MAIL_NOT_CONFIRM);
     }
 
-    private void validateMailNotDuplicated(String mail) {
+    public void validateMailNotDuplicated(String mail) {
         if (accountRepository.existsByMail(mail))
             throw new AccountException(AccountErrorCode.DUPLICATE_MAIL);
     }
 
-    private void validateNicknameNotDuplicated(String nickname) {
+    public void validateNicknameNotDuplicated(String nickname) {
         if (accountRepository.existsByNickname(nickname))
             throw new AccountException(AccountErrorCode.DUPLICATE_NICKNAME);
     }
