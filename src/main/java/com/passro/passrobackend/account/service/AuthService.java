@@ -10,15 +10,11 @@ import com.passro.passrobackend.account.exception.AccountException;
 import com.passro.passrobackend.account.exception.code.AccountErrorCode;
 import com.passro.passrobackend.account.repository.AccountPlaceRepository;
 import com.passro.passrobackend.account.repository.AccountRepository;
-import com.passro.passrobackend.account.repository.UniversityRepository;
 import com.passro.passrobackend.account.repository.WayPointRepository;
-import com.passro.passrobackend.delivery.repository.DeliveryRepository;
-import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.global.jwt.JwtProperties;
 import com.passro.passrobackend.global.jwt.JwtProvider;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
-import com.passro.passrobackend.review.service.ReviewService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -35,17 +31,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final DeliveryRepository deliveryRepository;
-    private final ReviewService reviewService;
-    private final S3Service s3Service;
+    private final AsyncMailService asyncMailService;
 
     private final AccountRepository accountRepository;
-    private final UniversityRepository universityRepository;
     private final AccountPlaceRepository accountPlaceRepository;
     private final WayPointRepository wayPointRepository;
     private final PlaceRepository placeRepository;
+
     private final PasswordEncoder passwordEncoder;
-    private final AsyncMailService asyncMailService;
+
     private final StringRedisTemplate stringRedisTemplate;
 
     private final JwtProvider jwtProvider;
@@ -53,32 +47,19 @@ public class AuthService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-    //인증 코드
-    private static final String CODE_PREFIX = "mail:verify:code:";
-    private static final Duration CODE_TTL = Duration.ofMinutes(5);
-
     //인증 자격
     private static final String VERIFIED_PREFIX = "mail:verify:done:";
-    private static final Duration VERIFIED_TTL = Duration.ofMinutes(30);
 
     //인증 요청 대기
     private static final String RESEND_COOLDOWN_PREFIX = "mail:verify:cooldown:";
-    private static final Duration RESEND_COOLDOWN_TTL = Duration.ofSeconds(60);
-
-    //닉네임 변경 대기
-    private static final String EDIT_INFO_COOLDOWN_PREFIX = "edit:info:verify:code";
-
-    //비밀번호 변경 대기
-    private static final String EDIT_PASSWORD_COOLDOWN_PREFIX = "edit:password:verify:code";
-
-    //내 정보 변경 시간
-    private static final Duration EDIT_COOLDOWN_TTL = Duration.ofMinutes(5);
 
     private static final String TEMP_PASSWORD_CHARACTERS =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final int TEMP_PASSWORD_LENGTH = 12;
 
     private static final String REFRESH_PREFIX = "refresh:token:";
+
+
 
     @Transactional
     public void signup(AuthReqDTO.Signup dto){
@@ -120,7 +101,6 @@ public class AuthService {
         stringRedisTemplate.delete(RESEND_COOLDOWN_PREFIX + dto.getMail());
     }
 
-
     public AuthResDTO.TokenResponse login(AuthReqDTO.Login dto){
         Account account = accountRepository.findByMail(dto.getMail())
                 .orElseThrow(()->new AccountException(AccountErrorCode.INVALID_CREDENTIALS));
@@ -131,10 +111,10 @@ public class AuthService {
         return issueTokens(account);
     }
 
-
     public void logout(Long accountId) {
         stringRedisTemplate.delete(REFRESH_PREFIX + accountId);
     }
+
 
     private AuthResDTO.TokenResponse issueTokens(Account account){
         String accessToken = jwtProvider.createAccessToken(account.getId(), account.getRole().name());
@@ -163,6 +143,7 @@ public class AuthService {
 
         return issueTokens(account);
     }
+
 
     public void findId(AuthReqDTO.FindId dto) {
         accountRepository.findFirstByNameAndPhoneNumber(dto.getName(), dto.getPhoneNumber())
@@ -193,6 +174,9 @@ public class AuthService {
                 });
     }
 
+
+
+
     private String generateTemporaryPassword() {
         StringBuilder password = new StringBuilder(TEMP_PASSWORD_LENGTH);
         for (int index = 0; index < TEMP_PASSWORD_LENGTH; index++) {
@@ -202,14 +186,14 @@ public class AuthService {
         return password.toString();
     }
 
-    private void validateCodeConfirmed(String confirmStatus){
-        if(confirmStatus==null || !confirmStatus.equals("true"))
-            throw new AccountException(AccountErrorCode.MAIL_NOT_CONFIRM);
-    }
-
     private Place getPlace(Long stationId){
         return placeRepository.findById(stationId)
                 .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
+    }
+
+    private void validateCodeConfirmed(String confirmStatus){
+        if(confirmStatus==null || !confirmStatus.equals("true"))
+            throw new AccountException(AccountErrorCode.MAIL_NOT_CONFIRM);
     }
 
     private void validateMailNotDuplicated(String mail){

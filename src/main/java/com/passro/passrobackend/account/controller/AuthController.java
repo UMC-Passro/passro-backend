@@ -4,6 +4,9 @@ import com.passro.passrobackend.account.dto.authDTO.AuthReqDTO;
 import com.passro.passrobackend.account.dto.authDTO.AuthResDTO;
 import com.passro.passrobackend.account.exception.code.AccountSuccessCode;
 import com.passro.passrobackend.account.service.AccountService;
+import com.passro.passrobackend.account.service.AuthService;
+import com.passro.passrobackend.account.service.MailSenderService;
+import com.passro.passrobackend.account.service.VerificationCodeService;
 import com.passro.passrobackend.global.code.BaseSuccessCode;
 import com.passro.passrobackend.global.configuration.security.CustomUserDetails;
 import com.passro.passrobackend.global.response.APIResponse;
@@ -37,6 +40,9 @@ import static com.passro.passrobackend.global.configuration.SwaggerSuccessExampl
 public class AuthController {
 
     private final AccountService accountService;
+    private final MailSenderService mailSenderService;
+    private final VerificationCodeService verificationCodeService;
+    private final AuthService authService;
 
     @GetMapping("/nickname/check")
     @Operation(summary = "닉네임 중복 확인", description = "닉네임이 사용 가능한지 확인합니다. true이면 사용 가능합니다.")
@@ -49,7 +55,7 @@ public class AuthController {
     }
 
     @PostMapping("/mail/send")
-    @Operation(summary = "인증 메일 발송", description = "대학교 이메일로 6자리 인증 코드를 발송합니다. 인증 코드는 5분 동안 유효합니다.")
+    @Operation(summary = "인증 메일 발송", description = "이메일로 6자리 인증 코드를 발송합니다. 인증 코드는 5분 동안 유효합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "인증 메일 발송 성공", useReturnTypeSchema = true,
                     content = @Content(examples = @ExampleObject(name = "ACCOUNT200_1", summary = "인증 메일 발송 성공", value = ACCOUNT_OK))),
@@ -65,7 +71,7 @@ public class AuthController {
     })
     public APIResponse<Void> mailSend(@Valid @RequestBody AuthReqDTO.SendMail dto){
         BaseSuccessCode code = AccountSuccessCode.OK;
-        accountService.sendMailMessageSignUpOrShipperSelect(dto);
+        mailSenderService.sendMailMessageSignUpOrShipperSelect(dto);
         return APIResponse.onSuccess(code, null);
     }
 
@@ -83,7 +89,7 @@ public class AuthController {
     })
     public APIResponse<Void> confirmCode(@Valid @RequestBody AuthReqDTO.ConfirmCode dto, @AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
-        accountService.confirmCode(dto);
+        verificationCodeService.confirmCode(dto);
         return APIResponse.onSuccess(code, null);
     }
 
@@ -101,7 +107,7 @@ public class AuthController {
     })
     public APIResponse<Void> confirmUniversityCode(@Valid @RequestBody AuthReqDTO.ConfirmCode dto, @AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
-        accountService.confirmUniversityCode(dto, userDetails.getAccountId());
+        verificationCodeService.confirmUniversityMailCode(dto, userDetails.getAccountId());
         return APIResponse.onSuccess(code, null);
     }
 
@@ -120,7 +126,7 @@ public class AuthController {
     })
     public APIResponse<Void> signup(@Valid @RequestBody AuthReqDTO.Signup dto){
         BaseSuccessCode code = AccountSuccessCode.OK;
-        accountService.signup(dto);
+        authService.signup(dto);
         return APIResponse.onSuccess(code, null);
     }
 
@@ -129,27 +135,27 @@ public class AuthController {
         BaseSuccessCode code = AccountSuccessCode.OK;
         return ResponseEntity.ok()
                 .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().getHeaderValue())
-                .body(APIResponse.onSuccess(code, accountService.login(dto)));
+                .body(APIResponse.onSuccess(code, authService.login(dto)));
     }
 
     @DeleteMapping("/logout")
     public APIResponse<Void> logout(@AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
-        accountService.logout(userDetails.getAccountId());
+        authService.logout(userDetails.getAccountId());
         return APIResponse.onSuccess(code, null);
     }
 
     @PostMapping("/find/id")
     public APIResponse<Void> findId(@Valid @RequestBody AuthReqDTO.FindId dto) {
         BaseSuccessCode code = AccountSuccessCode.OK;
-        accountService.findId(dto);
+        authService.findId(dto);
         return APIResponse.onSuccess(code, null);
     }
 
     @PostMapping("/find/password")
     public APIResponse<Void> findPassword(@Valid @RequestBody AuthReqDTO.FindPassword dto) {
         BaseSuccessCode code = AccountSuccessCode.OK;
-        accountService.findPassword(dto);
+        authService.findPassword(dto);
         return APIResponse.onSuccess(code, null);
     }
 
@@ -158,6 +164,6 @@ public class AuthController {
         BaseSuccessCode code = AccountSuccessCode.OK;
         return ResponseEntity.ok()
                 .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().getHeaderValue())
-                .body(APIResponse.onSuccess(code, accountService.reissueToken(dto)));
+                .body(APIResponse.onSuccess(code, authService.reissueToken(dto)));
     }
 }

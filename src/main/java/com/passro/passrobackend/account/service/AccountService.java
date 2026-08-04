@@ -2,22 +2,16 @@ package com.passro.passrobackend.account.service;
 
 import com.passro.passrobackend.account.dto.accountDTO.AccountReqDTO;
 import com.passro.passrobackend.account.dto.accountDTO.AccountResDTO;
-import com.passro.passrobackend.account.dto.authDTO.AuthReqDTO;
-import com.passro.passrobackend.account.dto.authDTO.AuthResDTO;
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.account.entity.AccountPlace;
 import com.passro.passrobackend.account.entity.WayPoint;
-import com.passro.passrobackend.account.enums.AccountRole;
 import com.passro.passrobackend.account.exception.AccountException;
 import com.passro.passrobackend.account.exception.code.AccountErrorCode;
 import com.passro.passrobackend.account.repository.AccountPlaceRepository;
 import com.passro.passrobackend.account.repository.AccountRepository;
-import com.passro.passrobackend.account.repository.UniversityRepository;
 import com.passro.passrobackend.account.repository.WayPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.file.service.S3Service;
-import com.passro.passrobackend.global.jwt.JwtProperties;
-import com.passro.passrobackend.global.jwt.JwtProvider;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
 import com.passro.passrobackend.review.dto.ReviewAverageResponseDto;
@@ -25,11 +19,8 @@ import com.passro.passrobackend.review.service.ReviewService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.security.SecureRandom;
 import java.time.Duration;
 
 @Service
@@ -39,33 +30,19 @@ public class AccountService {
     private final DeliveryRepository deliveryRepository;
     private final ReviewService reviewService;
     private final S3Service s3Service;
-    private final MailSenderService mailSenderService;
+    private final VerificationCodeService verificationCodeService;
 
     private final AccountRepository accountRepository;
-    private final UniversityRepository universityRepository;
     private final AccountPlaceRepository accountPlaceRepository;
     private final WayPointRepository wayPointRepository;
     private final PlaceRepository placeRepository;
+
     private final PasswordEncoder passwordEncoder;
-    private final AsyncMailService asyncMailService;
+
     private final StringRedisTemplate stringRedisTemplate;
-
-    private final JwtProvider jwtProvider;
-    private final JwtProperties jwtProperties;
-
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     //인증 코드
     private static final String CODE_PREFIX = "mail:verify:code:";
-    private static final Duration CODE_TTL = Duration.ofMinutes(5);
-
-    //인증 자격
-    private static final String VERIFIED_PREFIX = "mail:verify:done:";
-    private static final Duration VERIFIED_TTL = Duration.ofMinutes(30);
-
-    //인증 요청 대기
-    private static final String RESEND_COOLDOWN_PREFIX = "mail:verify:cooldown:";
-    private static final Duration RESEND_COOLDOWN_TTL = Duration.ofSeconds(60);
 
     //닉네임 변경 대기
     private static final String EDIT_INFO_COOLDOWN_PREFIX = "edit:info:verify:code";
@@ -76,20 +53,13 @@ public class AccountService {
     //내 정보 변경 시간
     private static final Duration EDIT_COOLDOWN_TTL = Duration.ofMinutes(5);
 
-    private static final String TEMP_PASSWORD_CHARACTERS =
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    private static final int TEMP_PASSWORD_LENGTH = 12;
-
-    private static final String REFRESH_PREFIX = "refresh:token:";
-
 
     public boolean isNicknameAvailable(String nickname) {
         return !accountRepository.existsByNickname(nickname);
     }
 
     public AccountResDTO.ShipperMyPage myShipperPage(Long accountId){
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
+        Account account = findByAccount(accountId);
 
         String picture = null;
         if (account.getPicture() != null) {
@@ -166,9 +136,7 @@ public class AccountService {
         }
 
             accountPlace.changePlace(startPlace, destinationPlace);
-
             account.changeNickname(dto.getNickname());
-
             account.changePhoneNumber(dto.getPhoneNumber());
 
             accountRepository.save(account);
@@ -187,7 +155,7 @@ public class AccountService {
 
         String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX + mail);
 
-        mailSenderService.savedCodeConfirm(code, savedCode);
+        verificationCodeService.confirmSavedCode(code, savedCode);
 
         if (passwordEncoder.matches(dto.getPassword(), account.getPassword()))
             throw new AccountException(AccountErrorCode.SAME_PASSWORD);
@@ -200,6 +168,13 @@ public class AccountService {
 
         stringRedisTemplate.delete(CODE_PREFIX + mail);
         stringRedisTemplate.opsForValue().set(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId, "true", EDIT_COOLDOWN_TTL);
+    }
+
+
+
+    public Account findByAccount(Long accountId){
+        return accountRepository.findById(accountId)
+                .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
     }
 
 }
