@@ -113,7 +113,7 @@ public class AuthService {
                 .destinationPlace(destinationPlace)
                 .build());
 
-        wayPointSave(dto.getWayPoints(), accountPlace);
+        saveWayPoints(dto.getWayPoints(), accountPlace);
 
 
         stringRedisTemplate.delete(VERIFIED_PREFIX + dto.getMail());
@@ -222,7 +222,7 @@ public class AuthService {
             throw new AccountException(AccountErrorCode.DUPLICATE_NICKNAME);
     }
 
-    private void wayPointSave(List<Long> wayPoints, AccountPlace accountPlace){
+    private void saveWayPoints(List<Long> wayPoints, AccountPlace accountPlace){
         if (wayPoints != null) {
             for (int i = 0; i < wayPoints.size(); i++) {
                 Long wayPointPlaceId = wayPoints.get(i);

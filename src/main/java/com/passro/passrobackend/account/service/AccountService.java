@@ -39,6 +39,7 @@ public class AccountService {
     private final DeliveryRepository deliveryRepository;
     private final ReviewService reviewService;
     private final S3Service s3Service;
+    private final MailSenderService mailSenderService;
 
     private final AccountRepository accountRepository;
     private final UniversityRepository universityRepository;
@@ -82,135 +83,8 @@ public class AccountService {
     private static final String REFRESH_PREFIX = "refresh:token:";
 
 
-    public void sendMailMessageSignUpOrShipperSelect(AuthReqDTO.SendMail dto) {
-        String mail = dto.getMail();
-
-        if(dto.isStudent())
-            validateUniversityMail(mail);
-
-        if (accountRepository.existsByMail(mail))
-            throw new AccountException(AccountErrorCode.DUPLICATE_MAIL);
-
-        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(RESEND_COOLDOWN_PREFIX + mail)))
-            throw new AccountException(AccountErrorCode.TOO_FAST);
-
-        String code = generateCode();
-
-        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
-        // 메일을 받을 수신자 설정
-        simpleMailMessage.setTo(mail);
-        // 메일의 제목 설정
-        simpleMailMessage.setSubject("[Passro] 이메일 인증 코드");
-        // 메일의 내용 설정
-        simpleMailMessage.setText("인증 코드: " + code + "\n5분 이내에 입력해주세요.");
-
-        asyncMailService.send(simpleMailMessage);
-
-        stringRedisTemplate.opsForValue().set(CODE_PREFIX + mail, code, CODE_TTL);
-        stringRedisTemplate.opsForValue().set(RESEND_COOLDOWN_PREFIX + mail, "true", RESEND_COOLDOWN_TTL);
-    }
-
     public boolean isNicknameAvailable(String nickname) {
         return !accountRepository.existsByNickname(nickname);
-    }
-
-    public void sendMailMessageAndEditPassword(Long accountId) {
-
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
-
-        String mail = account.getMail();
-
-        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(RESEND_COOLDOWN_PREFIX + mail)))
-            throw new AccountException(AccountErrorCode.TOO_FAST);
-
-        if(Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId)))
-            throw new AccountException(AccountErrorCode.TOO_FAST);
-
-        String code = generateCode();
-
-        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
-        // 메일을 받을 수신자 설정
-        simpleMailMessage.setTo(mail);
-        // 메일의 제목 설정
-        simpleMailMessage.setSubject("[Passro] 이메일 인증 코드");
-        // 메일의 내용 설정
-        simpleMailMessage.setText("인증 코드: " + code + "\n5분 이내에 입력해주세요.");
-
-        asyncMailService.send(simpleMailMessage);
-
-        stringRedisTemplate.opsForValue().set(CODE_PREFIX + mail, code, CODE_TTL);
-        stringRedisTemplate.opsForValue().set(RESEND_COOLDOWN_PREFIX + mail, "true", RESEND_COOLDOWN_TTL);
-    }
-
-    private void validateUniversityMail(String mail){
-        int atIndex = mail.indexOf("@");
-        if (atIndex == -1 || atIndex == mail.length() - 1)
-            throw new AccountException(AccountErrorCode.INVALID_MAIL_DOMAIN);
-
-        String domain = mail.substring(atIndex + 1).toLowerCase();
-
-        boolean allowed = universityRepository.findAll().stream()
-                .anyMatch(university -> {
-                    String registered = university.getMailDomain().toLowerCase();
-                    return domain.equals(registered) || domain.endsWith("." + registered);
-                });
-
-        if (!allowed)
-            throw new AccountException(AccountErrorCode.INVALID_MAIL_DOMAIN);
-    }
-
-    private String generateCode(){
-        int code = 100000 + SECURE_RANDOM.nextInt(900000);
-        return String.valueOf(code);
-    }
-
-    public void confirmCode(AuthReqDTO.ConfirmCode dto){
-        String mail = dto.getMail();
-        String code = dto.getCode();
-
-        String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX+mail);
-
-        savedCodeConfirm(code, savedCode);
-
-        stringRedisTemplate.delete(CODE_PREFIX + mail);
-        stringRedisTemplate.opsForValue().set(VERIFIED_PREFIX + mail, "true", VERIFIED_TTL);
-
-    }
-
-    public void confirmUniversityCode(AuthReqDTO.ConfirmCode dto, Long accountId){
-        String mail = dto.getMail();
-        String code = dto.getCode();
-
-        String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX+mail);
-
-        savedCodeConfirm(code, savedCode);
-
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(()->new AccountException(AccountErrorCode.NOT_FOUND));
-
-        account.certify();
-
-        accountRepository.save(account);
-
-        stringRedisTemplate.delete(CODE_PREFIX + mail);
-    }
-
-
-
-
-
-
-
-
-
-
-
-    private void savedCodeConfirm(String code, String savedCode){
-        if(savedCode==null)
-            throw new AccountException(AccountErrorCode.MAIL_CODE_EXPIRED);
-        if(!savedCode.equals(code))
-            throw new AccountException(AccountErrorCode.MAIL_CODE_MISMATCH);
     }
 
     public AccountResDTO.ShipperMyPage myShipperPage(Long accountId){
@@ -313,7 +187,7 @@ public class AccountService {
 
         String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX + mail);
 
-        savedCodeConfirm(code, savedCode);
+        mailSenderService.savedCodeConfirm(code, savedCode);
 
         if (passwordEncoder.matches(dto.getPassword(), account.getPassword()))
             throw new AccountException(AccountErrorCode.SAME_PASSWORD);
