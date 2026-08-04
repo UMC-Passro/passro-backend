@@ -64,9 +64,15 @@ public class AuthService {
     public void signup(AuthReqDTO.Signup dto) {
         String confirmStatus = stringRedisTemplate.opsForValue().get(VERIFIED_PREFIX + dto.getMail());
 
-        validateCodeConfirmed(confirmStatus);
-        validateMailNotDuplicated(dto.getMail());
-        validateNicknameNotDuplicated(dto.getNickname());
+        if (confirmStatus == null || !confirmStatus.equals("true"))
+            throw new AccountException(AccountErrorCode.MAIL_NOT_CONFIRM);
+
+
+        if (accountRepository.existsByMail(dto.getMail()))
+            throw new AccountException(AccountErrorCode.DUPLICATE_MAIL);
+
+        if (accountRepository.existsByNickname(dto.getNickname()))
+            throw new AccountException(AccountErrorCode.DUPLICATE_NICKNAME);
 
         String password = passwordEncoder.encode(dto.getPassword());
 
@@ -138,7 +144,7 @@ public class AuthService {
             throw new AccountException(AccountErrorCode.INVALID_REFRESH_TOKEN);
 
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(()-> new AccountException(AccountErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
 
         return issueTokens(account);
     }
@@ -187,21 +193,6 @@ public class AuthService {
     public Place getPlace(Long stationId) {
         return placeRepository.findById(stationId)
                 .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
-    }
-
-    public void validateCodeConfirmed(String confirmStatus) {
-        if (confirmStatus == null || !confirmStatus.equals("true"))
-            throw new AccountException(AccountErrorCode.MAIL_NOT_CONFIRM);
-    }
-
-    public void validateMailNotDuplicated(String mail) {
-        if (accountRepository.existsByMail(mail))
-            throw new AccountException(AccountErrorCode.DUPLICATE_MAIL);
-    }
-
-    public void validateNicknameNotDuplicated(String nickname) {
-        if (accountRepository.existsByNickname(nickname))
-            throw new AccountException(AccountErrorCode.DUPLICATE_NICKNAME);
     }
 
     private void saveWayPoints(List<Long> wayPoints, AccountPlace accountPlace) {

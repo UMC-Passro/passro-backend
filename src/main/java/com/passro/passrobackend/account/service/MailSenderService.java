@@ -46,7 +46,8 @@ public class MailSenderService {
         if (dto.isStudent())
             validateUniversityMail(mail);
 
-        authService.validateMailNotDuplicated(mail);
+        if (accountRepository.existsByMail(mail))
+            throw new AccountException(AccountErrorCode.DUPLICATE_MAIL);
 
         sendMail(mail);
     }
