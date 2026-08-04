@@ -84,11 +84,9 @@ public class AuthService {
     public void signup(AuthReqDTO.Signup dto){
         String confirmStatus = stringRedisTemplate.opsForValue().get(VERIFIED_PREFIX+dto.getMail());
 
-        isCodeConfirm(confirmStatus);
-
-        isDuplicateMail(dto.getMail());
-
-        isDuplicateNickname(dto.getNickname());
+        validateCodeConfirmed(confirmStatus);
+        validateMailNotDuplicated(dto.getMail());
+        validateNicknameNotDuplicated(dto.getNickname());
 
         String password = passwordEncoder.encode(dto.getPassword());
 
@@ -204,7 +202,7 @@ public class AuthService {
         return password.toString();
     }
 
-    private void isCodeConfirm(String confirmStatus){
+    private void validateCodeConfirmed(String confirmStatus){
         if(confirmStatus==null || !confirmStatus.equals("true"))
             throw new AccountException(AccountErrorCode.MAIL_NOT_CONFIRM);
     }
@@ -214,12 +212,12 @@ public class AuthService {
                 .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND_SUBWAY));
     }
 
-    private void isDuplicateMail(String mail){
+    private void validateMailNotDuplicated(String mail){
         if(accountRepository.existsByMail(mail))
             throw new AccountException(AccountErrorCode.DUPLICATE_MAIL);
     }
 
-    private void isDuplicateNickname(String nickname){
+    private void validateNicknameNotDuplicated(String nickname){
         if(accountRepository.existsByNickname(nickname))
             throw new AccountException(AccountErrorCode.DUPLICATE_NICKNAME);
     }
