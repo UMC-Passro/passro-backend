@@ -3,7 +3,9 @@ package com.passro.passrobackend.chat.service;
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.chat.dto.ChatMessageRequestDto;
 import com.passro.passrobackend.chat.dto.ChatMessageResponseDto;
+import com.passro.passrobackend.chat.dto.ChatPartnerDto;
 import com.passro.passrobackend.chat.dto.ChatRoomInfoResponseDto;
+import com.passro.passrobackend.chat.dto.ChatRoomListItemResponseDto;
 import com.passro.passrobackend.chat.entity.ChatMessage;
 import com.passro.passrobackend.chat.exception.ChatException;
 import com.passro.passrobackend.chat.exception.code.ChatErrorCode;
@@ -15,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -90,6 +93,40 @@ public class ChatService {
                 delivery.getDest() != null ? delivery.getDest().getSubwayStationName() : null,
                 delivery.getStatus()
         );
+    }
+
+    // 채팅방 목록 조회 (사용자가 참여 중인 모든 채팅방, 최근 메시지 순 정렬)
+    @Transactional(readOnly = true)
+    public List<ChatRoomListItemResponseDto> getChatRoomList(Account account) {
+        List<Delivery> deliveries = deliveryRepository.findAllActiveChatRoomsByAccount(
+                account, List.of(DeliveryState.WAIT, DeliveryState.CANCEL));
+
+        return deliveries.stream()
+                .map(delivery -> {
+                    Account partner = delivery.getSender().getId().equals(account.getId())
+                            ? delivery.getShipper()
+                            : delivery.getSender();
+
+                    ChatMessage lastMsg = chatMessageRepository
+                            .findTopByDelivery_IdOrderByCreatedAtDesc(delivery.getId())
+                            .orElse(null);
+
+                    long unreadCount = chatMessageRepository
+                            .countByDelivery_IdAndSender_IdNotAndIsReadFalse(delivery.getId(), account.getId());
+
+                    return new ChatRoomListItemResponseDto(
+                            delivery.getId(),
+                            ChatPartnerDto.from(partner),
+                            delivery.getDeliveryGoodInfo() != null ? delivery.getDeliveryGoodInfo().getName() : null,
+                            lastMsg != null ? lastMsg.getContent() : null,
+                            lastMsg != null ? lastMsg.getCreatedAt() : null,
+                            unreadCount
+                    );
+                })
+                .sorted(Comparator.comparing(
+                        ChatRoomListItemResponseDto::lastMessageAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
     }
 
     // 메시지 전송
