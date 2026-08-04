@@ -6,6 +6,7 @@ import com.passro.passrobackend.delivery.entity.DeliveryLog;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.place.entity.Place;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,9 +19,12 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(types = "object", description = "발송 배송 상세 응답")
 public class SenderDeliveryDetailDto {
     private Long id;
     private String name;
+    private Place originPlace;
+    private Place destPlace;
     private DeliveryState status; // 현재 배송 상태
     private ShipperInfo shipperInfo; // 배송자 정보
     private List<DeliveryLogInfo> deliveryTimeLine; // 배송 타임라인
@@ -75,6 +79,8 @@ public class SenderDeliveryDetailDto {
                 .name(delivery.getDeliveryGoodInfo() != null
                         ? delivery.getDeliveryGoodInfo().getName()
                         : null)
+                .originPlace(delivery.getOrigin())
+                .destPlace(delivery.getDest())
                 .status(delivery.getStatus())
                 .shipperInfo(ShipperInfo.fromAccount(delivery.getShipper()))
                 .deliveryTimeLine(logs != null ? logs.stream().map(DeliveryLogInfo::fromEntity).toList() : List.of())

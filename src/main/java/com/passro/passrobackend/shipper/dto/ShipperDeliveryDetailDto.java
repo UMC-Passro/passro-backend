@@ -6,6 +6,7 @@ import com.passro.passrobackend.delivery.entity.DeliveryLog;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.place.entity.Place;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.*;
@@ -14,6 +15,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 @Getter
+@Schema(types = "object", description = "배송기사 배송 상세 응답")
 public class ShipperDeliveryDetailDto {
     private Long id;
     private String name;

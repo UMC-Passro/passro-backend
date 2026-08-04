@@ -2,6 +2,8 @@ package com.passro.passrobackend.account.service;
 
 import com.passro.passrobackend.account.dto.accountDTO.AccountReqDTO;
 import com.passro.passrobackend.account.dto.accountDTO.AccountResDTO;
+import com.passro.passrobackend.account.dto.authDTO.AuthReqDTO;
+import com.passro.passrobackend.account.dto.authDTO.AuthResDTO;
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.account.entity.AccountPlace;
 import com.passro.passrobackend.account.entity.WayPoint;
@@ -55,6 +57,7 @@ public class AccountService {
     private static final Duration EDIT_COOLDOWN_TTL = Duration.ofMinutes(5);
 
 
+
     public boolean isNicknameAvailable(String nickname) {
         return !accountRepository.existsByNickname(nickname);
     }
@@ -97,7 +100,6 @@ public class AccountService {
 
     @Transactional
     public void editMyInfo(AccountReqDTO.EditMyInfo dto, Long accountId) {
-
         if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_INFO_COOLDOWN_PREFIX + accountId)))
             throw new AccountException(AccountErrorCode.TOO_FAST);
 

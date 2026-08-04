@@ -31,18 +31,22 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ShipperMatchingService {
 
+    private static final int MINUTES_PER_ROUTE_WEIGHT = 3;
+
     private final DeliveryRepository deliveryRepository;
     private final AccountPlaceRepository accountPlaceRepository;
     private final WayPointRepository wayPointRepository;
     private final SubwayService subwayService;
 
     // 배송기사의 동선과 권역을 기반으로 5단계 우선순위 정렬 및 권역 필터링이 적용된 매칭 대기 배송 목록 조회
-    public List<Delivery> listMatchRequestedWithPriority(Account shipper) {
+    public List<MatchedDelivery> listMatchRequestedWithPriority(Account shipper) {
         Optional<AccountPlace> accountPlaceOpt = accountPlaceRepository.findByAccount(shipper);
         if (accountPlaceOpt.isEmpty()) {
             // 동선 정보가 등록되지 않은 배송기사인 경우 전체 대기 목록 반환 (약관 동의 건만)
             return deliveryRepository.findAllByStatus(DeliveryState.WAIT).stream()
                     .filter(delivery -> Boolean.TRUE.equals(delivery.getTerms()))
+                    .map(this::estimateDeliverySafely)
+                    .filter(Objects::nonNull)
                     .toList();
         }
 
@@ -96,11 +100,28 @@ public class ShipperMatchingService {
                 .filter(Objects::nonNull) // SubwayService 연산 중 예외 발생건 또는 권역 불일치건 건너뜀
                 .sorted(Comparator
                         .comparingInt(EvaluatedDelivery::priorityRank)
-                        .thenComparingInt(EvaluatedDelivery::weight)
+                        .thenComparingInt(EvaluatedDelivery::sortingWeight)
                         .thenComparing(ed -> ed.delivery().getCreatedAt(), Comparator.reverseOrder())
                 )
-                .map(EvaluatedDelivery::delivery)
+                .map(evaluated -> new MatchedDelivery(
+                        evaluated.delivery(), toEstimatedTimeMinutes(evaluated.routeWeight())))
                 .toList();
+    }
+
+    private MatchedDelivery estimateDeliverySafely(Delivery delivery) {
+        if (delivery == null || delivery.getOrigin() == null || delivery.getDest() == null) {
+            return null;
+        }
+
+        try {
+            int routeWeight = subwayService.findShortestRoute(
+                    delivery.getOrigin(), null, delivery.getDest()).getShortestDistance();
+            return new MatchedDelivery(delivery, toEstimatedTimeMinutes(routeWeight));
+        } catch (Exception e) {
+            log.warn("예상시간 계산 중 예외가 발생하여 배송건을 건너뜁니다 - Delivery ID: {}, Error: {}",
+                    delivery.getId(), e.getMessage());
+            return null;
+        }
     }
 
     // SubwayService 연산 시 예외가 발생하면 해당 배송건을 건너뛰도록 null 반환
@@ -119,13 +140,12 @@ public class ShipperMatchingService {
             // 2) 우선순위 5단계 판별
             MatchingPriority priority = evaluatePriority(delivery, shipperStartId, shipperDestId, passThroughPlaceIds);
 
-            // 3) 5순위일 경우 가중치(이동거리) 산출
-            int weight = 0;
-            if (priority == MatchingPriority.RANK_5) {
-                weight = subwayService.findShortestRoute(delivery.getOrigin(), null, delivery.getDest()).getShortestDistance();
-            }
+            // 3) 예상시간 및 5순위 정렬에 사용할 배송 경로 가중치 산출
+            int routeWeight = subwayService.findShortestRoute(
+                    delivery.getOrigin(), null, delivery.getDest()).getShortestDistance();
+            int sortingWeight = priority == MatchingPriority.RANK_5 ? routeWeight : 0;
 
-            return new EvaluatedDelivery(delivery, priority.getRank(), weight);
+            return new EvaluatedDelivery(delivery, priority.getRank(), sortingWeight, routeWeight);
         } catch (Exception e) {
             log.warn("SubwayService 연산 중 예외 발생으로 해당 배송건 건너뜀 - Delivery ID: {}, Error: {}", delivery.getId(), e.getMessage());
             return null;
@@ -167,5 +187,15 @@ public class ShipperMatchingService {
         return MatchingPriority.RANK_5;
     }
 
-    private record EvaluatedDelivery(Delivery delivery, int priorityRank, int weight) {}
+    private int toEstimatedTimeMinutes(int routeWeight) {
+        return routeWeight * MINUTES_PER_ROUTE_WEIGHT;
+    }
+
+    public record MatchedDelivery(Delivery delivery, int estimatedTimeMinutes) {}
+
+    private record EvaluatedDelivery(
+            Delivery delivery,
+            int priorityRank,
+            int sortingWeight,
+            int routeWeight) {}
 }
