@@ -11,15 +11,18 @@ import java.util.Optional;
 
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
-    boolean existsByEmail(String email);
+    boolean existsByMail(String mail);
 
     boolean existsByNickname(String nickname);
 
-    Optional <Account> findByEmail(String email);
+    boolean existsByPhoneNumber(String phoneNumber);
 
-    Optional<Account> findFirstByNameAndPhone(String name, String phone);
+    Optional <Account> findByMail(String mail);
 
-    Optional<Account> findFirstByNameAndPhoneAndEmail(String name, String phone, String email);
+    Optional<Account> findFirstByNameAndPhoneNumber(String name, String phoneNumber);
+
+    Optional<Account> findFirstByNameAndPhoneNumberAndMail(String name, String phoneNumber, String mail);
+
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM Account a WHERE a.id = :id")

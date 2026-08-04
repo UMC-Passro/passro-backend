@@ -28,4 +28,9 @@ public class AccountPlace {
     @ManyToOne
     @JoinColumn(name = "destination_place_id")
     private Place destinationPlace;
+
+    public void changePlace(Place startPlace, Place destinationPlace){
+        this.startPlace = startPlace;
+        this.destinationPlace = destinationPlace;
+    }
 }

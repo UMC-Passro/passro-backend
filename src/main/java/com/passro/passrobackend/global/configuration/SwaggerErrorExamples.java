@@ -14,7 +14,7 @@ public final class SwaggerErrorExamples {
             "{\"success\":false,\"code\":\"ACCOUNT400_2\",\"message\":\"인증 코드가 일치하지 않습니다.\",\"result\":null}";
     public static final String ACCOUNT_MAIL_NOT_CONFIRMED =
             "{\"success\":false,\"code\":\"ACCOUNT400_3\",\"message\":\"인증되지 않은 이메일입니다.\",\"result\":null}";
-    public static final String ACCOUNT_DUPLICATE_EMAIL =
+    public static final String ACCOUNT_DUPLICATE_MAIL =
             "{\"success\":false,\"code\":\"ACCOUNT400_4\",\"message\":\"이미 사용 중인 이메일입니다.\",\"result\":null}";
     public static final String ACCOUNT_DUPLICATE_NICKNAME =
             "{\"success\":false,\"code\":\"ACCOUNT400_5\",\"message\":\"이미 사용 중인 닉네임입니다.\",\"result\":null}";

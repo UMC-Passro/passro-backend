@@ -3,6 +3,9 @@ package com.passro.passrobackend.sender.controller;
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.global.response.APIResponse;
 import com.passro.passrobackend.delivery.dto.DeliveryStatusUpdateRequestDto;
+import com.passro.passrobackend.delivery.enums.DeliveryState;
+import com.passro.passrobackend.delivery.location.dto.ShipperLocationResponseDto;
+import com.passro.passrobackend.delivery.location.service.ShipperLocationService;
 import com.passro.passrobackend.sender.code.SenderSuccessCode;
 import com.passro.passrobackend.sender.dto.SenderDeliveryCreateRequestDto;
 import com.passro.passrobackend.sender.dto.SenderDeliveryDetailDto;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,23 +47,39 @@ public class SenderController {
 
     private final SenderQueryService senderQueryService;
     private final SenderCommandService senderCommandService;
+    private final ShipperLocationService shipperLocationService;
+
+    @GetMapping("/{deliveryId}/shipper-location")
+    @Operation(summary = "배송기사 현재 위치 조회", description = "발송자가 배송 중인 본인 배송의 배송기사 위치를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "위치 조회 성공", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "400", description = "배송 중 상태가 아님"),
+            @ApiResponse(responseCode = "403", description = "배송 접근 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "배송 또는 위치 정보를 찾을 수 없음")
+    })
+    public APIResponse<ShipperLocationResponseDto> getShipperLocation(
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
+            @Parameter(description = "배송 ID", example = "1") @PathVariable Long deliveryId) {
+        return APIResponse.onSuccess(
+                SenderSuccessCode.OK, shipperLocationService.getLocation(account, deliveryId));
+    }
 
     // 발송자 배송 조회
     @GetMapping
     @Operation(summary = "내 배송 목록 조회", description = "로그인한 발송자가 요청한 배송 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
-            content = @Content(examples = @ExampleObject(name = "SENDER200_1", summary = "배송 목록 조회 성공", value = SENDER_LIST)))
+    @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true)
     public APIResponse<List<SenderDeliveryListDto>> getSenders(
-            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
-        return APIResponse.onSuccess(SenderSuccessCode.OK, senderQueryService.getSenders(account));
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
+            @Parameter(description = "배송 상태 필터", example = "DELIVERING")
+            @RequestParam(required = false) DeliveryState status) {
+        return APIResponse.onSuccess(SenderSuccessCode.OK, senderQueryService.getSenders(account, status));
     }
 
     // 발송자 배송 단건 조회
     @GetMapping("/{deliveryId}")
     @Operation(summary = "배송 상세 조회", description = "본인이 요청한 배송의 현재 상태와 진행 이력을 조회합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
-                    content = @Content(examples = @ExampleObject(name = "SENDER200_1", summary = "배송 상세 조회 성공", value = SENDER_DETAIL))),
+            @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true),
             @ApiResponse(responseCode = "403", description = "해당 배송에 접근할 권한이 없음",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
                             examples = @ExampleObject(name = "DELIVERY403_1", summary = "배송 접근 권한 없음", value = DELIVERY_FORBIDDEN))),

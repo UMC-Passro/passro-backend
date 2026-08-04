@@ -53,7 +53,7 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.code").value("ACCOUNT200_1"));
         verify(mailSender, timeout(1000)).send(any(SimpleMailMessage.class));
 
-        String code = redisTemplate.opsForValue().get("email:verify:code:" + email);
+        String code = redisTemplate.opsForValue().get("mail:verify:code:" + email);
         assertThat(code).matches("\\d{6}");
 
         mockMvc.perform(post("/auth/mail/confirm")
@@ -65,6 +65,7 @@ class AuthIntegrationTest extends IntegrationTestSupport {
 //                        .contentType(MediaType.APPLICATION_JSON)
 //                        .content(signupBody(email, password, nickname)))
 //                .andExpect(status().isOk());
+
 
 //        Account account = accountRepository.findByEmail(email).orElseThrow();
 //        assertThat(passwordEncoder.matches(password, account.getPassword())).isTrue();
@@ -115,7 +116,7 @@ class AuthIntegrationTest extends IntegrationTestSupport {
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginBody(account.getEmail(), "wrong-password")))
+                        .content(loginBody(account.getMail(), "wrong-password")))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("ACCOUNT401_1"));
 
@@ -162,11 +163,11 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                         .content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COMMON400"))
-                .andExpect(jsonPath("$.result.email").exists())
+                .andExpect(jsonPath("$.result.mail").exists())
                 .andExpect(jsonPath("$.result.password").exists())
                 .andExpect(jsonPath("$.result.nickname").exists())
                 .andExpect(jsonPath("$.result.name").exists())
-                .andExpect(jsonPath("$.result.phone").exists())
+                .andExpect(jsonPath("$.result.phoneNumber").exists())
                 .andExpect(jsonPath("$.result.birth").exists())
                 .andExpect(jsonPath("$.result.sourceStationId").exists())
                 .andExpect(jsonPath("$.result.destinationStationId").exists());
@@ -193,9 +194,9 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                         .content(request))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COMMON400"))
-                .andExpect(jsonPath("$.result.email").exists())
+                .andExpect(jsonPath("$.result.mail").exists())
                 .andExpect(jsonPath("$.result.password").exists())
-                .andExpect(jsonPath("$.result.phone").exists())
+                .andExpect(jsonPath("$.result.phoneNumber").exists())
                 .andExpect(jsonPath("$.result.birth").exists())
                 .andExpect(jsonPath("$.result.sourceStationId").exists())
                 .andExpect(jsonPath("$.result.destinationStationId").exists());
@@ -204,7 +205,7 @@ class AuthIntegrationTest extends IntegrationTestSupport {
     private void saveUniversityDomain() {
         universityRepository.saveAndFlush(University.builder()
                 .name("Passro University " + UUID.randomUUID())
-                .emailDomain("passro.test")
+                .mailDomain("passro.test")
                 .build());
     }
 
@@ -222,8 +223,8 @@ class AuthIntegrationTest extends IntegrationTestSupport {
                 """.formatted(email, password, nickname);
     }
 
-    private String loginBody(String email, String password) {
-        return "{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}";
+    private String loginBody(String mail, String password) {
+        return "{\"mail\":\"" + mail + "\",\"password\":\"" + password + "\"}";
     }
 
     private JsonNode json(MvcResult result) throws Exception {

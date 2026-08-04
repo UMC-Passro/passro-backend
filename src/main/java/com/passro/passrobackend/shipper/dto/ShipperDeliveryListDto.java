@@ -4,6 +4,7 @@ import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.place.entity.Place;
+import java.time.LocalDateTime;
 import lombok.*;
 
 @AllArgsConstructor
@@ -22,6 +23,8 @@ public class ShipperDeliveryListDto {
 
     private DeliveryState deliveryState;
     private String memo;
+    private LocalDateTime createdAt;
+    private Integer estimatedTimeMinutes;
 
     @Getter
     @Builder
@@ -68,6 +71,10 @@ public class ShipperDeliveryListDto {
     }
 
     public static ShipperDeliveryListDto fromDelivery(Delivery delivery) {
+        return fromDelivery(delivery, null);
+    }
+
+    public static ShipperDeliveryListDto fromDelivery(Delivery delivery, Integer estimatedTimeMinutes) {
         return ShipperDeliveryListDto.builder()
                 .id(delivery.getId())
                 .name(delivery.getDeliveryGoodInfo() != null
@@ -79,6 +86,8 @@ public class ShipperDeliveryListDto {
                 .destPlace(delivery.getDest())
                 .memo(delivery.getMemo())
                 .deliveryState(delivery.getStatus())
+                .createdAt(delivery.getCreatedAt())
+                .estimatedTimeMinutes(estimatedTimeMinutes)
                 .build();
     }
 }

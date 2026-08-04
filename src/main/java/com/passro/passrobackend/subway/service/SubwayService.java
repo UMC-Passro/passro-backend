@@ -11,6 +11,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,12 +36,16 @@ import org.springframework.stereotype.Service;
 public class SubwayService {
 
     private static final String SUBWAY_DATA_PATH = "subway_station_data.csv";
+    private static final String SUBWAY_BRANCH_EDGE_DATA_PATH = "subway_branch_edges.csv";
     private static final Charset SUBWAY_DATA_CHARSET = Charset.forName("MS949");
+    private static final Charset SUBWAY_BRANCH_EDGE_DATA_CHARSET = StandardCharsets.UTF_8;
     private static final String CAPITAL_REGION = "수도권";
     private static final String REGION_COLUMN = "권역명";
     private static final String ROUTE_COLUMN = "노선명";
     private static final String ORDER_COLUMN = "순번";
     private static final String STATION_COLUMN = "역명";
+    private static final String SOURCE_STATION_COLUMN = "출발역";
+    private static final String TARGET_STATION_COLUMN = "도착역";
     private static final int DEFAULT_EDGE_COST = 1;
 
     private final PlaceRepository placeRepository;
@@ -57,6 +62,7 @@ public class SubwayService {
 
         createNodes(records, placeIds);
         connectStationsOnSameRoute(records);
+        connectBranchStations(readBranchEdgeRecords());
         connectTransferStations();
 
         log.info("지하철 그래프를 생성했습니다. nodes={}, directedEdges={}",
@@ -292,16 +298,23 @@ public class SubwayService {
 
             for (Map.Entry<Integer, List<SubwayNode>> entry : stationsByOrder.entrySet()) {
                 int currentOrder = entry.getKey();
-                if (previousOrder != null && currentOrder == previousOrder + 1) {
-                    for (SubwayNode previousNode : previousNodes) {
-                        for (SubwayNode currentNode : entry.getValue()) {
-                            connectBidirectionally(previousNode, currentNode, false);
-                        }
-                    }
+                if (previousOrder != null
+                        && currentOrder == previousOrder + 1
+                        && previousNodes.size() == 1
+                        && entry.getValue().size() == 1) {
+                    connectBidirectionally(previousNodes.getFirst(), entry.getValue().getFirst(), false);
                 }
                 previousOrder = currentOrder;
                 previousNodes = entry.getValue();
             }
+        }
+    }
+
+    private void connectBranchStations(List<BranchEdgeRecord> records) {
+        for (BranchEdgeRecord record : records) {
+            SubwayNode source = getRequiredNode(record.routeName(), record.sourceStationName());
+            SubwayNode target = getRequiredNode(record.routeName(), record.targetStationName());
+            connectBidirectionally(source, target, false);
         }
     }
 
@@ -418,6 +431,63 @@ public class SubwayService {
         }
     }
 
+    private List<BranchEdgeRecord> readBranchEdgeRecords() {
+        ClassPathResource resource = new ClassPathResource(SUBWAY_BRANCH_EDGE_DATA_PATH);
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(resource.getInputStream(), SUBWAY_BRANCH_EDGE_DATA_CHARSET))) {
+            String headerLine = reader.readLine();
+            if (headerLine == null) {
+                throw new IllegalStateException("지하철 분기 간선 CSV 파일이 비어 있습니다: "
+                        + SUBWAY_BRANCH_EDGE_DATA_PATH);
+            }
+
+            List<String> headers = parseCsvLine(removeBom(headerLine));
+            int regionIndex = findColumnIndex(headers, REGION_COLUMN);
+            int routeIndex = findColumnIndex(headers, ROUTE_COLUMN);
+            int sourceStationIndex = findColumnIndex(headers, SOURCE_STATION_COLUMN);
+            int targetStationIndex = findColumnIndex(headers, TARGET_STATION_COLUMN);
+            int requiredColumnCount = Math.max(
+                    Math.max(regionIndex, routeIndex), Math.max(sourceStationIndex, targetStationIndex)) + 1;
+
+            List<BranchEdgeRecord> records = new ArrayList<>();
+            String line;
+            int lineNumber = 1;
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+                if (line.isBlank()) {
+                    continue;
+                }
+
+                List<String> columns = parseCsvLine(line);
+                if (columns.size() < requiredColumnCount) {
+                    throw new IllegalStateException(
+                            "지하철 분기 간선 CSV " + lineNumber + "행의 컬럼 수가 부족합니다.");
+                }
+
+                String regionName = columns.get(regionIndex).trim();
+                String originalRouteName = columns.get(routeIndex).trim();
+                String sourceStationName = columns.get(sourceStationIndex).trim();
+                String targetStationName = columns.get(targetStationIndex).trim();
+                if (regionName.isEmpty() || originalRouteName.isEmpty()
+                        || sourceStationName.isEmpty() || targetStationName.isEmpty()) {
+                    throw new IllegalStateException(
+                            "지하철 분기 간선 CSV " + lineNumber + "행의 값이 비어 있습니다.");
+                }
+
+                records.add(new BranchEdgeRecord(
+                        normalizeRouteName(regionName, originalRouteName),
+                        sourceStationName,
+                        targetStationName));
+            }
+            return records;
+        } catch (IOException exception) {
+            throw new IllegalStateException(
+                    "지하철 분기 간선 CSV 파일을 읽을 수 없습니다: " + SUBWAY_BRANCH_EDGE_DATA_PATH,
+                    exception);
+        }
+    }
+
     private String normalizeRouteName(String regionName, String routeName) {
         return CAPITAL_REGION.equals(regionName) ? routeName : regionName + " " + routeName;
     }
@@ -474,6 +544,9 @@ public class SubwayService {
     }
 
     private record StationRecord(String regionName, String routeName, int order, String stationName) {
+    }
+
+    private record BranchEdgeRecord(String routeName, String sourceStationName, String targetStationName) {
     }
 
     private record RouteCandidate(SubwayNode node, int distance, int transferCount) {

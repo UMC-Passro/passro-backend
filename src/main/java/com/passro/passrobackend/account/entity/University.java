@@ -19,5 +19,5 @@ public class University {
     private String name;
 
     @Column(nullable = false, unique = true, length = 100)
-    private String emailDomain;
+    private String mailDomain;
 }

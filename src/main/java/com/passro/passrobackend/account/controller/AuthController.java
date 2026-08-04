@@ -24,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import software.amazon.awssdk.core.internal.http.pipeline.stages.ApplyUserAgentStage;
 
 import static com.passro.passrobackend.global.configuration.SwaggerErrorExamples.*;
 import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.ACCOUNT_OK;
@@ -55,7 +56,7 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "유효하지 않은 이메일 또는 이미 가입된 이메일",
                     content = @Content(schema = @Schema(implementation = APIResponse.class), examples = {
                             @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION),
-                            @ExampleObject(name = "ACCOUNT400_4", summary = "이메일 중복", value = ACCOUNT_DUPLICATE_EMAIL),
+                            @ExampleObject(name = "ACCOUNT400_4", summary = "이메일 중복", value = ACCOUNT_DUPLICATE_MAIL),
                             @ExampleObject(name = "ACCOUNT400_6", summary = "대학교 이메일이 아님", value = ACCOUNT_INVALID_EMAIL_DOMAIN)
                     })),
             @ApiResponse(responseCode = "429", description = "인증 메일 재발송 제한",
@@ -64,7 +65,7 @@ public class AuthController {
     })
     public APIResponse<Void> mailSend(@Valid @RequestBody AuthReqDTO.SendMail dto){
         BaseSuccessCode code = AccountSuccessCode.OK;
-        accountService.sendMailMessage(dto);
+        accountService.sendMailMessageSignUpOrShipperSelect(dto);
         return APIResponse.onSuccess(code, null);
     }
 
@@ -113,7 +114,7 @@ public class AuthController {
                     content = @Content(schema = @Schema(implementation = APIResponse.class), examples = {
                             @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION),
                             @ExampleObject(name = "ACCOUNT400_3", summary = "이메일 미인증", value = ACCOUNT_MAIL_NOT_CONFIRMED),
-                            @ExampleObject(name = "ACCOUNT400_4", summary = "이메일 중복", value = ACCOUNT_DUPLICATE_EMAIL),
+                            @ExampleObject(name = "ACCOUNT400_4", summary = "이메일 중복", value = ACCOUNT_DUPLICATE_MAIL),
                             @ExampleObject(name = "ACCOUNT400_5", summary = "닉네임 중복", value = ACCOUNT_DUPLICATE_NICKNAME)
                     }))
     })

@@ -75,6 +75,8 @@ class SenderDeliveryIntegrationTest extends IntegrationTestSupport {
                         .header("Authorization", bearer(token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.id").value(deliveryId))
+                .andExpect(jsonPath("$.result.originPlace.id").value(sourceId))
+                .andExpect(jsonPath("$.result.destPlace.id").value(destId))
                 .andExpect(jsonPath("$.result.status").value("WAIT"))
                 .andExpect(jsonPath("$.result.deliveryTimeLine[0].type").value("SEND_REQUEST"));
 
@@ -142,6 +144,29 @@ class SenderDeliveryIntegrationTest extends IntegrationTestSupport {
         assertThat(deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(canceled))
                 .extracting(log -> log.getType())
                 .containsExactly(DeliveryLogType.SEND_REQUEST, DeliveryLogType.CANCELED);
+    }
+
+    @Test
+    void senderCanFilterDeliveriesByStatusAndReadCreatedAt() throws Exception {
+        Account sender = createAccount("filter-sender");
+        String token = accessToken(sender);
+        long waitingDeliveryId = createDelivery(token, "Waiting item", sourceId, destId);
+        long deliveredDeliveryId = createDelivery(token, "Delivered item", sourceId, destId);
+
+        Delivery delivered = deliveryRepository.findById(deliveredDeliveryId).orElseThrow();
+        delivered.setStatus(DeliveryState.DELIVERED);
+        deliveryRepository.saveAndFlush(delivered);
+
+        mockMvc.perform(get("/sender")
+                        .param("status", "DELIVERED")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.length()").value(1))
+                .andExpect(jsonPath("$.result[0].deliveryId").value(deliveredDeliveryId))
+                .andExpect(jsonPath("$.result[0].status").value("DELIVERED"))
+                .andExpect(jsonPath("$.result[0].createdAt").isNotEmpty());
+
+        assertThat(waitingDeliveryId).isNotEqualTo(deliveredDeliveryId);
     }
 
     @Test

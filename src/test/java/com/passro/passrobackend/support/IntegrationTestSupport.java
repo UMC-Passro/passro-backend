@@ -75,12 +75,15 @@ public abstract class IntegrationTestSupport {
 
     protected Account createAccount(String prefix) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String cleanPrefix = prefix.replace("-", "");
+        String phoneDigits = String.format("%08d", Math.abs(suffix.hashCode()) % 100000000);
+
         return accountRepository.saveAndFlush(Account.builder()
-                .email(prefix + "-" + suffix + "@passro.test")
+                .mail(prefix + "-" + suffix + "@passro.test")
                 .password(passwordEncoder.encode("Passro123!"))
-                .nickname(prefix + "-" + suffix)
+                .nickname(cleanPrefix + suffix)
                 .name(prefix)
-                .phone("01012345678")
+                .phoneNumber("010-" + phoneDigits.substring(0, 4) + "-" + phoneDigits.substring(4))
                 .birth(LocalDate.of(2000, 1, 1))
                 .certified(true)
                 .point(0L)

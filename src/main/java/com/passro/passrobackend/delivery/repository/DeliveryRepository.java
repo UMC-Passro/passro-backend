@@ -28,6 +28,11 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
     List<Delivery> findAllByStatus(@Param("status") DeliveryState status);
 
     // 배송기사별 배정된 배송 목록 조회 메서드
+
+    long countByShipper(Account shipper);
+
+    boolean existsByShipperAndStatus(Account shipper, DeliveryState status);
+
     @Query("""
         SELECT d
         FROM Delivery d
@@ -37,6 +42,19 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
         WHERE d.shipper = :shipper
     """)
     List<Delivery> findAllByShipper(@Param("shipper") Account shipper);
+
+    @Query("""
+        SELECT d
+        FROM Delivery d
+        LEFT JOIN FETCH d.origin
+        LEFT JOIN FETCH d.dest
+        LEFT JOIN FETCH d.deliveryGoodInfo
+        WHERE d.shipper = :shipper
+          AND d.status = :status
+    """)
+    List<Delivery> findAllByShipperAndStatus(
+            @Param("shipper") Account shipper,
+            @Param("status") DeliveryState status);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT d FROM Delivery d WHERE d.id = :id")
@@ -52,6 +70,7 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
     """)
     List<Delivery> findAllBySender(@Param("sender") Account sender);
 
+
     // 사용자가 참여 중인 활성 채팅방 목록 조회 (WAIT, CANCEL 제외)
     @Query("""
         SELECT d
@@ -66,4 +85,18 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
             @Param("account") Account account,
             @Param("excludedStatuses") Collection<DeliveryState> excludedStatuses
     );
+
+    @Query("""
+        SELECT d
+        FROM Delivery d
+        LEFT JOIN FETCH d.origin
+        LEFT JOIN FETCH d.dest
+        LEFT JOIN FETCH d.deliveryGoodInfo
+        WHERE d.sender = :sender
+          AND d.status = :status
+    """)
+    List<Delivery> findAllBySenderAndStatus(
+            @Param("sender") Account sender,
+            @Param("status") DeliveryState status);
+    long countBySender(Account sender);
 }

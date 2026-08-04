@@ -13,6 +13,7 @@ import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.shipper.service.ShipperMatchingService;
+import com.passro.passrobackend.shipper.service.ShipperMatchingService.MatchedDelivery;
 import com.passro.passrobackend.subway.dto.SubwayRouteResponseDto;
 import com.passro.passrobackend.subway.dto.SubwayStationResponseDto;
 import com.passro.passrobackend.subway.service.SubwayService;
@@ -109,16 +110,26 @@ class ShipperMatchingServiceTest {
                 .willReturn(new SubwayRouteResponseDto(15, 0, List.of()));
         given(subwayService.findShortestRoute(outsidePlace3, null, outsidePlace2))
                 .willReturn(new SubwayRouteResponseDto(5, 0, List.of()));
+        given(subwayService.findShortestRoute(startPlace, null, destPlace))
+                .willReturn(new SubwayRouteResponseDto(10, 0, List.of()));
+        given(subwayService.findShortestRoute(startPlace, null, outsidePlace1))
+                .willReturn(new SubwayRouteResponseDto(12, 0, List.of()));
+        given(subwayService.findShortestRoute(passThroughPlace1, null, passThroughPlace2))
+                .willReturn(new SubwayRouteResponseDto(4, 0, List.of()));
+        given(subwayService.findShortestRoute(passThroughPlace1, null, outsidePlace1))
+                .willReturn(new SubwayRouteResponseDto(8, 0, List.of()));
 
         // When
-        List<Delivery> result = shipperMatchingService.listMatchRequestedWithPriority(shipper);
+        List<MatchedDelivery> result = shipperMatchingService.listMatchRequestedWithPriority(shipper);
 
         // Then
         // 1. 부산 권역 배송건(ID 7)은 제외되어 총 6건이어야 함
         assertThat(result).hasSize(6);
         // 2. 정렬 순서 검증: Rank 1 -> Rank 2 -> Rank 3 -> Rank 4 -> Rank 5 (Near, distance 5) -> Rank 5 (Far, distance 15)
-        assertThat(result).extracting(Delivery::getId)
+        assertThat(result).extracting(resultItem -> resultItem.delivery().getId())
                 .containsExactly(1L, 2L, 3L, 4L, 6L, 5L);
+        assertThat(result).extracting(MatchedDelivery::estimatedTimeMinutes)
+                .containsExactly(30, 36, 12, 24, 15, 45);
     }
 
     @Test
@@ -148,6 +159,8 @@ class ShipperMatchingServiceTest {
                 new SubwayStationResponseDto(20L, "수도권", "1호선", "B역")
         ));
         given(subwayService.findShortestRoute(startPlace, List.of(), destPlace)).willReturn(shipperRoute);
+        given(subwayService.findShortestRoute(startPlace, null, destPlace))
+                .willReturn(new SubwayRouteResponseDto(7, 0, List.of()));
 
         Delivery validDelivery = Delivery.builder().id(1L).origin(startPlace).dest(destPlace).status(DeliveryState.WAIT).terms(true).build();
         Delivery errorDelivery = Delivery.builder().id(2L).origin(errorPlace).dest(destPlace).status(DeliveryState.WAIT).terms(true).build();
@@ -155,12 +168,13 @@ class ShipperMatchingServiceTest {
         given(deliveryRepository.findAllByStatus(DeliveryState.WAIT)).willReturn(List.of(errorDelivery, validDelivery));
 
         // When
-        List<Delivery> result = shipperMatchingService.listMatchRequestedWithPriority(shipper);
+        List<MatchedDelivery> result = shipperMatchingService.listMatchRequestedWithPriority(shipper);
 
         // Then
         // 예외가 발생한 ID 2번 배송건은 건너뛰고 정상건 1번만 반환됨
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(1L);
+        assertThat(result.get(0).delivery().getId()).isEqualTo(1L);
+        assertThat(result.get(0).estimatedTimeMinutes()).isEqualTo(21);
     }
 
     @Test
@@ -170,16 +184,23 @@ class ShipperMatchingServiceTest {
         Account shipper = Account.builder().id(1L).build();
         given(accountPlaceRepository.findByAccount(shipper)).willReturn(Optional.empty());
 
-        Delivery delivery1 = Delivery.builder().id(1L).status(DeliveryState.WAIT).terms(true).build();
-        Delivery delivery2 = Delivery.builder().id(2L).status(DeliveryState.WAIT).terms(true).build();
+        Place origin = Place.builder().id(10L).build();
+        Place destination = Place.builder().id(20L).build();
+        Delivery delivery1 = Delivery.builder().id(1L).origin(origin).dest(destination).status(DeliveryState.WAIT).terms(true).build();
+        Delivery delivery2 = Delivery.builder().id(2L).origin(origin).dest(destination).status(DeliveryState.WAIT).terms(true).build();
         given(deliveryRepository.findAllByStatus(DeliveryState.WAIT)).willReturn(List.of(delivery1, delivery2));
+        given(subwayService.findShortestRoute(origin, null, destination))
+                .willReturn(new SubwayRouteResponseDto(6, 0, List.of()));
 
         // When
-        List<Delivery> result = shipperMatchingService.listMatchRequestedWithPriority(shipper);
+        List<MatchedDelivery> result = shipperMatchingService.listMatchRequestedWithPriority(shipper);
 
         // Then
         assertThat(result).hasSize(2);
-        assertThat(result).containsExactly(delivery1, delivery2);
+        assertThat(result).extracting(MatchedDelivery::delivery)
+                .containsExactly(delivery1, delivery2);
+        assertThat(result).extracting(MatchedDelivery::estimatedTimeMinutes)
+                .containsExactly(18, 18);
     }
 
     @Test
@@ -199,7 +220,7 @@ class ShipperMatchingServiceTest {
         given(subwayService.getRegionByPlaceId(10L)).willThrow(new IllegalStateException("출발역 권역 정보 없음"));
 
         // When
-        List<Delivery> result = shipperMatchingService.listMatchRequestedWithPriority(shipper);
+        List<MatchedDelivery> result = shipperMatchingService.listMatchRequestedWithPriority(shipper);
 
         // Then
         assertThat(result).isEmpty();
