@@ -93,26 +93,20 @@ public class SenderController {
         return APIResponse.onSuccess(SenderSuccessCode.OK, senderQueryService.getDeliveryDetail(account, deliveryId));
     }
 
-    // 결제 금액 조회
-    @GetMapping("/{deliveryId}/payment")
-    @Operation(summary = "배송 결제 금액 조회", description = "배송의 기본·거리·무게 포인트와 총 결제 포인트를 조회합니다.")
+    // 결제 금액 계산
+    @GetMapping("/payment")
+    @Operation(summary = "배송 결제 금액 계산", description = "배송 요청 생성 전, 출발역·도착역·물품 크기를 기반으로 기본·거리·무게 및 총 결제 포인트를 계산합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true,
-                    content = @Content(examples = @ExampleObject(name = "SENDER200_1", summary = "결제 금액 조회 성공", value = SENDER_PAYMENT))),
-            @ApiResponse(responseCode = "403", description = "해당 배송에 접근할 권한이 없음",
-                    content = @Content(schema = @Schema(implementation = APIResponse.class),
-                            examples = @ExampleObject(name = "DELIVERY403_1", summary = "배송 접근 권한 없음", value = DELIVERY_FORBIDDEN))),
-            @ApiResponse(responseCode = "404", description = "배송 또는 결제 포인트 정보를 찾을 수 없음",
-                    content = @Content(schema = @Schema(implementation = APIResponse.class),
-                            examples = {
-                                    @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND),
-                                    @ExampleObject(name = "DELIVERY404_3", summary = "결제 포인트 정보 없음", value = DELIVERY_POINT_NOT_FOUND)
-                            }))
+            @ApiResponse(responseCode = "200", description = "계산 성공", useReturnTypeSchema = true,
+                    content = @Content(examples = @ExampleObject(name = "SENDER200_1", summary = "결제 금액 계산 성공", value = SENDER_PAYMENT))),
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패"),
+            @ApiResponse(responseCode = "404", description = "장소 또는 경로 정보를 찾을 수 없음")
     })
     public APIResponse<SenderPaymentAmountDto> getPaymentAmount(
-            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
-            @Parameter(description = "배송 ID", example = "1") @PathVariable Long deliveryId) {
-        return APIResponse.onSuccess(SenderSuccessCode.OK, senderQueryService.getPaymentAmount(account, deliveryId));
+            @Parameter(description = "출발역 Place ID", example = "101") @RequestParam Long sourceStationId,
+            @Parameter(description = "도착역 Place ID", example = "420") @RequestParam Long destinationStationId,
+            @Parameter(description = "물품 크기 (S, M, L)", example = "M") @RequestParam String size) {
+        return APIResponse.onSuccess(SenderSuccessCode.OK, senderQueryService.getPaymentAmount(sourceStationId, destinationStationId, size));
     }
 
     // 배송 요청
