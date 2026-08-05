@@ -24,12 +24,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import com.passro.passrobackend.chat.dto.ChatRoomListItemResponseDto;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
@@ -69,6 +74,165 @@ class ChatServiceTest {
         given(delivery.getSender()).willReturn(sender);
         given(delivery.getShipper()).willReturn(shipper);
         given(delivery.getStatus()).willReturn(DeliveryState.MATCHED);
+    }
+
+    // ──────────────────────────────────────────────
+    // 채팅방 목록 조회
+    // ──────────────────────────────────────────────
+    @Nested
+    @DisplayName("채팅방 목록 조회")
+    class GetChatRoomList {
+
+        @Test
+        @DisplayName("sender로 참여한 경우 partner는 shipper")
+        void asSender_partnerIsShipper() {
+            DeliveryGoodInfo goodInfo = mock(DeliveryGoodInfo.class);
+            given(goodInfo.getName()).willReturn("노트북");
+            given(delivery.getDeliveryGoodInfo()).willReturn(goodInfo);
+
+            ChatMessage lastMsg = mock(ChatMessage.class);
+            given(lastMsg.getContent()).willReturn("도착했어요");
+            given(lastMsg.getCreatedAt()).willReturn(LocalDateTime.now());
+
+            given(deliveryRepository.findAllActiveChatRoomsByAccount(eq(sender), any())).willReturn(List.of(delivery));
+            given(chatMessageRepository.findTopByDelivery_IdOrderByCreatedAtDesc(1L)).willReturn(Optional.of(lastMsg));
+            given(chatMessageRepository.countByDelivery_IdAndSender_IdNotAndIsReadFalse(1L, 1L)).willReturn(0L);
+
+            List<ChatRoomListItemResponseDto> result = chatService.getChatRoomList(sender);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).partner().id()).isEqualTo(2L);
+            assertThat(result.get(0).partner().nickname()).isEqualTo("shipper닉네임");
+            assertThat(result.get(0).itemName()).isEqualTo("노트북");
+            assertThat(result.get(0).lastMessage()).isEqualTo("도착했어요");
+            assertThat(result.get(0).unreadCount()).isEqualTo(0L);
+        }
+
+        @Test
+        @DisplayName("shipper로 참여한 경우 partner는 sender")
+        void asShipper_partnerIsSender() {
+            given(deliveryRepository.findAllActiveChatRoomsByAccount(eq(shipper), any())).willReturn(List.of(delivery));
+            given(chatMessageRepository.findTopByDelivery_IdOrderByCreatedAtDesc(1L)).willReturn(Optional.empty());
+            given(chatMessageRepository.countByDelivery_IdAndSender_IdNotAndIsReadFalse(1L, 2L)).willReturn(0L);
+
+            List<ChatRoomListItemResponseDto> result = chatService.getChatRoomList(shipper);
+
+            assertThat(result.get(0).partner().id()).isEqualTo(1L);
+            assertThat(result.get(0).partner().nickname()).isEqualTo("sender닉네임");
+        }
+
+        @Test
+        @DisplayName("메시지 없는 채팅방은 lastMessage와 lastMessageAt이 null")
+        void noMessages_lastMessageIsNull() {
+            given(deliveryRepository.findAllActiveChatRoomsByAccount(eq(sender), any())).willReturn(List.of(delivery));
+            given(chatMessageRepository.findTopByDelivery_IdOrderByCreatedAtDesc(1L)).willReturn(Optional.empty());
+            given(chatMessageRepository.countByDelivery_IdAndSender_IdNotAndIsReadFalse(1L, 1L)).willReturn(0L);
+
+            List<ChatRoomListItemResponseDto> result = chatService.getChatRoomList(sender);
+
+            assertThat(result.get(0).lastMessage()).isNull();
+            assertThat(result.get(0).lastMessageAt()).isNull();
+        }
+
+        @Test
+        @DisplayName("안읽은 메시지 수가 정확히 반영된다")
+        void unreadCountIsReflected() {
+            ChatMessage lastMsg = mock(ChatMessage.class);
+            given(lastMsg.getContent()).willReturn("읽어주세요");
+            given(lastMsg.getCreatedAt()).willReturn(LocalDateTime.now());
+
+            given(deliveryRepository.findAllActiveChatRoomsByAccount(eq(sender), any())).willReturn(List.of(delivery));
+            given(chatMessageRepository.findTopByDelivery_IdOrderByCreatedAtDesc(1L)).willReturn(Optional.of(lastMsg));
+            given(chatMessageRepository.countByDelivery_IdAndSender_IdNotAndIsReadFalse(1L, 1L)).willReturn(3L);
+
+            List<ChatRoomListItemResponseDto> result = chatService.getChatRoomList(sender);
+
+            assertThat(result.get(0).unreadCount()).isEqualTo(3L);
+        }
+
+        @Test
+        @DisplayName("최근 메시지 순 내림차순으로 정렬된다")
+        void sortedByLastMessageAtDesc() {
+            Delivery d1 = mock(Delivery.class);
+            Delivery d2 = mock(Delivery.class);
+            given(d1.getId()).willReturn(10L);
+            given(d1.getSender()).willReturn(sender);
+            given(d1.getShipper()).willReturn(shipper);
+            given(d2.getId()).willReturn(20L);
+            given(d2.getSender()).willReturn(sender);
+            given(d2.getShipper()).willReturn(shipper);
+
+            LocalDateTime older = LocalDateTime.now().minusHours(2);
+            LocalDateTime newer = LocalDateTime.now();
+
+            ChatMessage msg1 = mock(ChatMessage.class);
+            given(msg1.getContent()).willReturn("오래된 메시지");
+            given(msg1.getCreatedAt()).willReturn(older);
+
+            ChatMessage msg2 = mock(ChatMessage.class);
+            given(msg2.getContent()).willReturn("최신 메시지");
+            given(msg2.getCreatedAt()).willReturn(newer);
+
+            given(deliveryRepository.findAllActiveChatRoomsByAccount(eq(sender), any())).willReturn(List.of(d1, d2));
+            given(chatMessageRepository.findTopByDelivery_IdOrderByCreatedAtDesc(10L)).willReturn(Optional.of(msg1));
+            given(chatMessageRepository.findTopByDelivery_IdOrderByCreatedAtDesc(20L)).willReturn(Optional.of(msg2));
+            given(chatMessageRepository.countByDelivery_IdAndSender_IdNotAndIsReadFalse(anyLong(), eq(1L))).willReturn(0L);
+
+            List<ChatRoomListItemResponseDto> result = chatService.getChatRoomList(sender);
+
+            assertThat(result.get(0).deliveryId()).isEqualTo(20L);
+            assertThat(result.get(1).deliveryId()).isEqualTo(10L);
+        }
+
+        @Test
+        @DisplayName("메시지 없는 채팅방은 메시지 있는 채팅방보다 뒤에 정렬된다")
+        void noMessageRoom_sortedLast() {
+            Delivery d1 = mock(Delivery.class); // 메시지 있음
+            Delivery d2 = mock(Delivery.class); // 메시지 없음
+            given(d1.getId()).willReturn(10L);
+            given(d1.getSender()).willReturn(sender);
+            given(d1.getShipper()).willReturn(shipper);
+            given(d2.getId()).willReturn(20L);
+            given(d2.getSender()).willReturn(sender);
+            given(d2.getShipper()).willReturn(shipper);
+
+            ChatMessage msg = mock(ChatMessage.class);
+            given(msg.getContent()).willReturn("안녕하세요");
+            given(msg.getCreatedAt()).willReturn(LocalDateTime.now());
+
+            given(deliveryRepository.findAllActiveChatRoomsByAccount(eq(sender), any())).willReturn(List.of(d2, d1));
+            given(chatMessageRepository.findTopByDelivery_IdOrderByCreatedAtDesc(10L)).willReturn(Optional.of(msg));
+            given(chatMessageRepository.findTopByDelivery_IdOrderByCreatedAtDesc(20L)).willReturn(Optional.empty());
+            given(chatMessageRepository.countByDelivery_IdAndSender_IdNotAndIsReadFalse(anyLong(), eq(1L))).willReturn(0L);
+
+            List<ChatRoomListItemResponseDto> result = chatService.getChatRoomList(sender);
+
+            assertThat(result.get(0).deliveryId()).isEqualTo(10L);
+            assertThat(result.get(1).deliveryId()).isEqualTo(20L);
+        }
+
+        @Test
+        @DisplayName("참여 중인 채팅방이 없으면 빈 목록 반환")
+        void noChatRooms_returnsEmpty() {
+            given(deliveryRepository.findAllActiveChatRoomsByAccount(eq(sender), any())).willReturn(List.of());
+
+            List<ChatRoomListItemResponseDto> result = chatService.getChatRoomList(sender);
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("deliveryGoodInfo가 없으면 itemName은 null")
+        void noGoodInfo_itemNameIsNull() {
+            given(delivery.getDeliveryGoodInfo()).willReturn(null);
+            given(deliveryRepository.findAllActiveChatRoomsByAccount(eq(sender), any())).willReturn(List.of(delivery));
+            given(chatMessageRepository.findTopByDelivery_IdOrderByCreatedAtDesc(1L)).willReturn(Optional.empty());
+            given(chatMessageRepository.countByDelivery_IdAndSender_IdNotAndIsReadFalse(1L, 1L)).willReturn(0L);
+
+            List<ChatRoomListItemResponseDto> result = chatService.getChatRoomList(sender);
+
+            assertThat(result.get(0).itemName()).isNull();
+        }
     }
 
     // ──────────────────────────────────────────────
