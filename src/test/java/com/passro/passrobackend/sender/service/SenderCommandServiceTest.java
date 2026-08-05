@@ -198,7 +198,7 @@ class SenderCommandServiceTest {
         String finalKey = "delivery-images/123e4567-e89b-12d3-a456-426614174001.jpg";
         given(senderDeliveryValidator.getDeliveryForUpdateAndValidateOwnership(100L, sender))
                 .willReturn(delivery);
-        given(s3Service.finalizeUploadedImage(uploadKey)).willReturn(finalKey);
+        given(s3Service.finalizeUploadedImage(uploadKey, "delivery-images/")).willReturn(finalKey);
 
         senderCommandService.completeDelivery(sender, 100L, uploadKey);
 

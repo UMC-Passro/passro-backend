@@ -11,6 +11,7 @@ import com.passro.passrobackend.report.dto.MyReportListResponseDto;
 import com.passro.passrobackend.report.dto.ReportCreateRequestDto;
 import com.passro.passrobackend.report.dto.ReportStatusUpdateRequestDto;
 import com.passro.passrobackend.report.entity.Report;
+import com.passro.passrobackend.report.entity.ReportImage;
 import com.passro.passrobackend.report.enums.ReportReason;
 import com.passro.passrobackend.report.enums.ReportStatus;
 import com.passro.passrobackend.report.enums.ReportTargetType;
@@ -18,30 +19,31 @@ import com.passro.passrobackend.report.exception.ReportException;
 import com.passro.passrobackend.report.exception.code.ReportErrorCode;
 import com.passro.passrobackend.report.repository.ReportImageRepository;
 import com.passro.passrobackend.report.repository.ReportRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ReportServiceImplTest {
 
     @Mock
@@ -60,25 +62,13 @@ class ReportServiceImplTest {
     @InjectMocks
     private ReportServiceImpl reportService;
 
-    private Account reporter;
-    private Account counterparty;
-    private Account outsider;
-    private Delivery delivery;
-    private ChatMessage chatMessage;
-
-    @BeforeEach
-    void setUp() {
-        reporter = mockAccount(1L);
-        counterparty = mockAccount(2L);
-        outsider = mockAccount(999L);
-
-        delivery = mockDelivery(10L, reporter, counterparty);
-        chatMessage = mockChatMessage(100L, delivery, counterparty);
-    }
-
     @Test
     void createDeliveryReport_success() {
         // given
+        Account reporter = mockAccount(1L);
+        Account counterparty = mockAccount(2L);
+        Delivery delivery = mockDelivery(10L, reporter, counterparty);
+
         ReportCreateRequestDto request = new ReportCreateRequestDto(
                 ReportTargetType.DELIVERY,
                 ReportReason.FRAUD,
@@ -101,13 +91,18 @@ class ReportServiceImplTest {
         // then
         assertThat(response).isNotNull();
         verify(reportRepository).save(any(Report.class));
-        verify(reportImageRepository, never()).save(any());
+        verify(reportImageRepository, never()).save(any(ReportImage.class));
         verify(s3Service, never()).finalizeUploadedImage(anyString(), anyString());
     }
 
     @Test
     void createChatMessageReport_success() {
         // given
+        Account reporter = mockAccount(1L);
+        Account counterparty = mockAccount(2L);
+        Delivery delivery = mockDelivery(10L, reporter, counterparty);
+        ChatMessage chatMessage = mockChatMessage(100L, delivery, counterparty);
+
         ReportCreateRequestDto request = new ReportCreateRequestDto(
                 ReportTargetType.CHAT_MESSAGE,
                 ReportReason.ABUSE,
@@ -135,6 +130,10 @@ class ReportServiceImplTest {
     @Test
     void createAccountReport_success() {
         // given
+        Account reporter = mockAccount(1L);
+        Account counterparty = mockAccount(2L);
+        Delivery delivery = mockDelivery(10L, reporter, counterparty);
+
         ReportCreateRequestDto request = new ReportCreateRequestDto(
                 ReportTargetType.ACCOUNT,
                 ReportReason.ABUSE,
@@ -163,6 +162,10 @@ class ReportServiceImplTest {
     @Test
     void createReport_success_withImages_finalizeToReportImagesDirectory() {
         // given
+        Account reporter = mockAccount(1L);
+        Account counterparty = mockAccount(2L);
+        Delivery delivery = mockDelivery(10L, reporter, counterparty);
+
         List<String> imageKeys = List.of(
                 "uploads/images/123e4567-e89b-12d3-a456-426614174000.jpg",
                 "uploads/images/123e4567-e89b-12d3-a456-426614174001.jpg"
@@ -185,19 +188,26 @@ class ReportServiceImplTest {
                 .willAnswer(invocation -> invocation.getArgument(0));
         given(s3Service.finalizeUploadedImage(anyString(), eq("report-images/")))
                 .willReturn("report-images/final-image.jpg");
+        given(reportImageRepository.save(any(ReportImage.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(s3Service.finalizeUploadedImage(anyString(), eq("report-images/")))
+                .willReturn("report-images/final-image-1.jpg", "report-images/final-image-2.jpg");
 
         // when
-        reportService.createReport(reporter, request);
+        var response = reportService.createReport(reporter, request);
 
         // then
+        assertThat(response).isNotNull();
         verify(s3Service, times(2))
                 .finalizeUploadedImage(anyString(), eq("report-images/"));
-        verify(reportImageRepository, times(2)).save(any());
+        verify(reportImageRepository, times(2)).save(any(ReportImage.class));
     }
 
     @Test
     void createReport_fail_whenOtherWithoutDetail() {
         // given
+        Account reporter = mockAccount(1L);
+
         ReportCreateRequestDto request = new ReportCreateRequestDto(
                 ReportTargetType.DELIVERY,
                 ReportReason.OTHER,
@@ -218,6 +228,8 @@ class ReportServiceImplTest {
     @Test
     void createReport_fail_whenImageCountExceedsLimit() {
         // given
+        Account reporter = mockAccount(1L);
+
         ReportCreateRequestDto request = new ReportCreateRequestDto(
                 ReportTargetType.DELIVERY,
                 ReportReason.FRAUD,
@@ -238,6 +250,11 @@ class ReportServiceImplTest {
     @Test
     void createDeliveryReport_fail_whenReporterIsNotParticipant() {
         // given
+        Account reporter = mockAccount(1L);
+        Account counterparty = mockAccount(2L);
+        Account outsider = mockAccount(999L);
+        Delivery delivery = mockDelivery(10L, reporter, counterparty);
+
         ReportCreateRequestDto request = new ReportCreateRequestDto(
                 ReportTargetType.DELIVERY,
                 ReportReason.FRAUD,
@@ -260,6 +277,9 @@ class ReportServiceImplTest {
     @Test
     void createChatMessageReport_fail_whenReportingOwnMessage() {
         // given
+        Account reporter = mockAccount(1L);
+        Account counterparty = mockAccount(2L);
+        Delivery delivery = mockDelivery(10L, reporter, counterparty);
         ChatMessage myMessage = mockChatMessage(101L, delivery, reporter);
 
         ReportCreateRequestDto request = new ReportCreateRequestDto(
@@ -284,6 +304,10 @@ class ReportServiceImplTest {
     @Test
     void createAccountReport_fail_whenReportingSelf() {
         // given
+        Account reporter = mockAccount(1L);
+        Account counterparty = mockAccount(2L);
+        Delivery delivery = mockDelivery(10L, reporter, counterparty);
+
         ReportCreateRequestDto request = new ReportCreateRequestDto(
                 ReportTargetType.ACCOUNT,
                 ReportReason.ABUSE,
@@ -307,6 +331,10 @@ class ReportServiceImplTest {
     @Test
     void createReport_fail_whenAlreadyExistsByExistsCheck() {
         // given
+        Account reporter = mockAccount(1L);
+        Account counterparty = mockAccount(2L);
+        Delivery delivery = mockDelivery(10L, reporter, counterparty);
+
         ReportCreateRequestDto request = new ReportCreateRequestDto(
                 ReportTargetType.DELIVERY,
                 ReportReason.FRAUD,
@@ -327,12 +355,16 @@ class ReportServiceImplTest {
                 .extracting(e -> ((ReportException) e).getCode())
                 .isEqualTo(ReportErrorCode.REPORT_ALREADY_EXISTS);
 
-        verify(reportRepository, never()).save(any());
+        verify(reportRepository, never()).save(any(Report.class));
     }
 
     @Test
     void createReport_fail_whenDataIntegrityViolationOccurs() {
         // given
+        Account reporter = mockAccount(1L);
+        Account counterparty = mockAccount(2L);
+        Delivery delivery = mockDelivery(10L, reporter, counterparty);
+
         ReportCreateRequestDto request = new ReportCreateRequestDto(
                 ReportTargetType.DELIVERY,
                 ReportReason.FRAUD,
@@ -359,8 +391,25 @@ class ReportServiceImplTest {
     @Test
     void getMyReports_success() {
         // given
-        Report report1 = mock(Report.class);
-        Report report2 = mock(Report.class);
+        Account reporter = mockAccount(1L);
+
+        Report report1 = mockReportForList(
+                1L,
+                ReportTargetType.DELIVERY,
+                10L,
+                ReportReason.FRAUD,
+                "신고 1",
+                ReportStatus.PENDING
+        );
+
+        Report report2 = mockReportForList(
+                2L,
+                ReportTargetType.ACCOUNT,
+                2L,
+                ReportReason.ABUSE,
+                "신고 2",
+                ReportStatus.RESOLVED
+        );
 
         Page<Report> page = new PageImpl<>(
                 List.of(report1, report2),
@@ -430,5 +479,25 @@ class ReportServiceImplTest {
         given(chatMessage.getDelivery()).willReturn(delivery);
         given(chatMessage.getSender()).willReturn(sender);
         return chatMessage;
+    }
+
+    private Report mockReportForList(
+            Long id,
+            ReportTargetType targetType,
+            Long targetId,
+            ReportReason reason,
+            String detail,
+            ReportStatus status
+    ) {
+        Report report = mock(Report.class);
+        given(report.getId()).willReturn(id);
+        given(report.getTargetType()).willReturn(targetType);
+        given(report.getTargetId()).willReturn(targetId);
+        given(report.getReason()).willReturn(reason);
+        given(report.getDetail()).willReturn(detail);
+        given(report.getStatus()).willReturn(status);
+        given(report.getCreatedAt()).willReturn(LocalDateTime.now());
+        given(report.getImages()).willReturn(Collections.emptyList());
+        return report;
     }
 }
