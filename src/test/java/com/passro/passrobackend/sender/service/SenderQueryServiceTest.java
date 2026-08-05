@@ -5,20 +5,22 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.delivery.configuration.DeliveryPointProperties;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
 import com.passro.passrobackend.delivery.entity.DeliveryLog;
-import com.passro.passrobackend.delivery.entity.DeliveryPoint;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
-import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.sender.dto.SenderDeliveryDetailDto;
 import com.passro.passrobackend.sender.dto.SenderDeliveryListDto;
 import com.passro.passrobackend.sender.dto.SenderPaymentAmountDto;
+import com.passro.passrobackend.subway.dto.SubwayRouteResponseDto;
+import com.passro.passrobackend.subway.dto.SubwayStationResponseDto;
+import com.passro.passrobackend.subway.service.SubwayService;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +41,12 @@ class SenderQueryServiceTest {
 
     @Mock
     private SenderDeliveryValidator senderDeliveryValidator;
+
+    @Mock
+    private SubwayService subwayService;
+
+    @Mock
+    private DeliveryPointProperties deliveryPointProperties;
 
     @InjectMocks
     private SenderQueryService senderQueryService;
@@ -150,45 +158,71 @@ class SenderQueryServiceTest {
     }
 
     @Test
-    @DisplayName("발송 금액 정보 조회 성공")
-    void getPaymentAmount_success() {
+    @DisplayName("발송 금액 정보 계산 성공 - S 사이즈, 10정거장 이하 (기본 요금 2000원)")
+    void getPaymentAmount_success_sizeS_under10Stations() {
         // Given
-        Account sender = Account.builder().id(1L).build();
-        Delivery delivery = Delivery.builder().id(100L).sender(sender).build();
-        DeliveryPoint point = DeliveryPoint.builder()
-                .id(10L)
-                .base_point(1000L)
-                .distance_point(500L)
-                .weight_point(300L)
-                .build();
-        delivery.attachPoint(point);
+        SubwayStationResponseDto s1 = new SubwayStationResponseDto(1L, "수도권", "2호선", "역1");
+        SubwayStationResponseDto s2 = new SubwayStationResponseDto(2L, "수도권", "2호선", "역2");
+        SubwayRouteResponseDto route = new SubwayRouteResponseDto(1, 0, List.of(s1, s2));
 
-        given(senderDeliveryValidator.getDeliveryAndValidateOwnership(100L, sender)).willReturn(delivery);
+        given(subwayService.findShortestRouteByPlaceIds(101L, null, 420L)).willReturn(route);
+        given(deliveryPointProperties.getBase()).willReturn(2000L);
+        given(deliveryPointProperties.pointForRoute(1)).willReturn(0L);
+        given(deliveryPointProperties.pointForSize("S")).willReturn(0L);
 
         // When
-        SenderPaymentAmountDto result = senderQueryService.getPaymentAmount(sender, 100L);
+        SenderPaymentAmountDto result = senderQueryService.getPaymentAmount(101L, 420L, "S");
 
         // Then
-        assertThat(result.getId()).isEqualTo(10L);
-        assertThat(result.getBasePoint()).isEqualTo(1000L);
-        assertThat(result.getDistancePoint()).isEqualTo(500L);
-        assertThat(result.getWeightPoint()).isEqualTo(300L);
-        assertThat(result.getTotalPoint()).isEqualTo(1800L);
+        assertThat(result.getBasePoint()).isEqualTo(2000L);
+        assertThat(result.getDistancePoint()).isEqualTo(0L);
+        assertThat(result.getWeightPoint()).isEqualTo(0L);
+        assertThat(result.getTotalPoint()).isEqualTo(2000L);
     }
 
     @Test
-    @DisplayName("발송 금액 정보가 없으면 DELIVERY_POINT_NOT_FOUND 예외가 발생한다")
-    void getPaymentAmount_pointNotFound() {
+    @DisplayName("발송 금액 정보 계산 성공 - L 사이즈, 10정거장 초과 (+200원, +1000원)")
+    void getPaymentAmount_success_sizeL_over10Stations() {
         // Given
-        Account sender = Account.builder().id(1L).build();
-        Delivery delivery = Delivery.builder().id(100L).sender(sender).build();
+        List<SubwayStationResponseDto> stations = List.of(
+                new SubwayStationResponseDto(1L, "수도권", "2호선", "역1"),
+                new SubwayStationResponseDto(2L, "수도권", "2호선", "역2"),
+                new SubwayStationResponseDto(3L, "수도권", "2호선", "역3"),
+                new SubwayStationResponseDto(4L, "수도권", "2호선", "역4"),
+                new SubwayStationResponseDto(5L, "수도권", "2호선", "역5"),
+                new SubwayStationResponseDto(6L, "수도권", "2호선", "역6"),
+                new SubwayStationResponseDto(7L, "수도권", "2호선", "역7"),
+                new SubwayStationResponseDto(8L, "수도권", "2호선", "역8"),
+                new SubwayStationResponseDto(9L, "수도권", "2호선", "역9"),
+                new SubwayStationResponseDto(10L, "수도권", "2호선", "역10"),
+                new SubwayStationResponseDto(11L, "수도권", "2호선", "역11"),
+                new SubwayStationResponseDto(12L, "수도권", "2호선", "역12")
+        );
+        SubwayRouteResponseDto route = new SubwayRouteResponseDto(11, 0, stations);
 
-        given(senderDeliveryValidator.getDeliveryAndValidateOwnership(100L, sender)).willReturn(delivery);
+        given(subwayService.findShortestRouteByPlaceIds(101L, null, 420L)).willReturn(route);
+        given(deliveryPointProperties.getBase()).willReturn(2000L);
+        given(deliveryPointProperties.pointForRoute(11)).willReturn(200L);
+        given(deliveryPointProperties.pointForSize("L")).willReturn(1000L);
+
+        // When
+        SenderPaymentAmountDto result = senderQueryService.getPaymentAmount(101L, 420L, "L");
+
+        // Then
+        assertThat(result.getBasePoint()).isEqualTo(2000L);
+        assertThat(result.getDistancePoint()).isEqualTo(200L);
+        assertThat(result.getWeightPoint()).isEqualTo(1000L);
+        assertThat(result.getTotalPoint()).isEqualTo(3200L);
+    }
+
+    @Test
+    @DisplayName("유효하지 않은 장소 ID 지정 시 DeliveryException이 발생한다")
+    void getPaymentAmount_invalidPlace() {
+        // Given
+        given(subwayService.findShortestRouteByPlaceIds(999L, null, 420L)).willThrow(new IllegalArgumentException());
 
         // When & Then
-        assertThatThrownBy(() -> senderQueryService.getPaymentAmount(sender, 100L))
-                .isInstanceOf(DeliveryException.class)
-                .extracting(e -> ((DeliveryException) e).getCode())
-                .isEqualTo(DeliveryErrorCode.DELIVERY_POINT_NOT_FOUND);
+        assertThatThrownBy(() -> senderQueryService.getPaymentAmount(999L, 420L, "M"))
+                .isInstanceOf(DeliveryException.class);
     }
 }

@@ -19,4 +19,12 @@ public class SubwayRouteResponseDto {
 
     @Schema(description = "출발역부터 도착역까지 순서대로 정렬된 역 목록")
     private List<SubwayStationResponseDto> stations;
+
+    /**
+     * 환승 횟수가 차감된 순수 이동 정거장 수 계산
+     */
+    public int getTravelStationCount() {
+        int graphEdges = Math.max(0, stations == null ? 0 : stations.size() - 1);
+        return Math.max(0, graphEdges - transferCount);
+    }
 }

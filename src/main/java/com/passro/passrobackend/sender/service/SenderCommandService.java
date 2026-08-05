@@ -113,7 +113,7 @@ public class SenderCommandService {
         DeliveryPoint pointInfo = DeliveryPoint.builder()
                 .base_point(deliveryPointProperties.getBase())
                 .distance_point(deliveryPointProperties.pointForRoute(
-                        countTravelStations(route)))
+                        route.getTravelStationCount()))
                 .weight_point(deliveryPointProperties.pointForSize(normalizedSize))
                 .build();
 
@@ -172,11 +172,6 @@ public class SenderCommandService {
         long distancePoint = point.getDistance_point() == null ? 0L : point.getDistance_point();
         long weightPoint = point.getWeight_point() == null ? 0L : point.getWeight_point();
         return Math.addExact(Math.addExact(basePoint, distancePoint), weightPoint);
-    }
-
-    private int countTravelStations(SubwayRouteResponseDto route) {
-        int graphEdges = Math.max(0, route.getStations().size() - 1);
-        return Math.max(0, graphEdges - route.getTransferCount());
     }
 
     private String validateUploadedImage(String imageKey) {

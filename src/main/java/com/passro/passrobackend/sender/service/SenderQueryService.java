@@ -1,24 +1,30 @@
 package com.passro.passrobackend.sender.service;
 
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.delivery.configuration.DeliveryPointProperties;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryLog;
-import com.passro.passrobackend.delivery.entity.DeliveryPoint;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
-import com.passro.passrobackend.sender.dto.SenderDeliveryListDto;
+import com.passro.passrobackend.global.advice.code.CommonErrorCode;
+import com.passro.passrobackend.global.exception.APIException;
 import com.passro.passrobackend.sender.dto.SenderDeliveryDetailDto;
+import com.passro.passrobackend.sender.dto.SenderDeliveryListDto;
 import com.passro.passrobackend.sender.dto.SenderPaymentAmountDto;
+import com.passro.passrobackend.subway.code.SubwayErrorCode;
+import com.passro.passrobackend.subway.dto.SubwayRouteResponseDto;
+import com.passro.passrobackend.subway.service.SubwayService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 
-// 발송 관련 DB 조회 Service
+// 발송 관련 DB 조회 및 계산 Service
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -27,6 +33,8 @@ public class SenderQueryService {
     private final DeliveryRepository deliveryRepository;
     private final DeliveryLogRepository deliveryLogRepository;
     private final SenderDeliveryValidator senderDeliveryValidator;
+    private final SubwayService subwayService;
+    private final DeliveryPointProperties deliveryPointProperties;
 
     // 발송자 배송 목록 전체 조회
     public List<SenderDeliveryListDto> getSenders(Account sender, DeliveryState status) {
@@ -62,17 +70,61 @@ public class SenderQueryService {
         return SenderDeliveryDetailDto.fromEntity(delivery, logs);
     }
 
-    // 발송 금액 정보 조회
-    public SenderPaymentAmountDto getPaymentAmount(Account sender, Long deliveryId) {
-        Delivery delivery = senderDeliveryValidator.getDeliveryAndValidateOwnership(deliveryId, sender);
-
-        DeliveryPoint deliveryPoint = delivery.getDeliveryPoint();
-        if (deliveryPoint == null) {
-            throw new DeliveryException(DeliveryErrorCode.DELIVERY_POINT_NOT_FOUND);
+    // 배송 요청 생성 전, 결제 금액(포인트)을 실시간으로 계산
+    public SenderPaymentAmountDto getPaymentAmount(Long sourceStationId, Long destinationStationId, String size) {
+        // 필수 파라미터 (출발역, 도착역) 검증
+        if (sourceStationId == null || destinationStationId == null) {
+            throw new DeliveryException(DeliveryErrorCode.PLACE_NOT_FOUND);
         }
 
-        return SenderPaymentAmountDto.fromEntity(deliveryPoint);
+        // 물품 크기/무게 값 검증
+        if (size == null || size.isBlank()) {
+            throw new DeliveryException(CommonErrorCode.INVALID_REQUEST);
+        }
+
+        // 물품 크기 문자열 대문자 정규화 (예: "s" -> "S")
+        String normalizedSize = size.toUpperCase(Locale.ROOT);
+
+        // SubwayService를 사용하여 출발역과 도착역 간 최단 경로 탐색
+        SubwayRouteResponseDto route;
+        try {
+            route = subwayService.findShortestRouteByPlaceIds(sourceStationId, null, destinationStationId);
+        } catch (IllegalArgumentException exception) {
+            // 해당 Place ID가 존재하지 않는 역인 경우
+            throw new DeliveryException(DeliveryErrorCode.PLACE_NOT_FOUND);
+        } catch (IllegalStateException exception) {
+            // 지하철 그래프 상에서 경로를 찾을 수 없는 경우
+            throw new DeliveryException(SubwayErrorCode.ROUTE_NOT_FOUND);
+        }
+
+        // 5. 이동 정거장 수 계산 (환승역 제외 순수 이동 정거장 수)
+        int travelStations = route.getTravelStationCount();
+
+        // 6. 정책 기반 항목별 결제 포인트 계산
+        // (1) 기본 요금: 2,000원
+        long basePoint = deliveryPointProperties.getBase();
+
+        // (2) 거리 요금: 이동 정거장 수 기준 (10정거장 이하: 0원 / 10정거장 초과: 200원)
+        long distancePoint = deliveryPointProperties.pointForRoute(travelStations);
+
+        // (3) 무게/크기 요금: S (+0원) / M (+500원) / L (+1,000원)
+        long weightPoint;
+        try {
+            weightPoint = deliveryPointProperties.pointForSize(normalizedSize);
+        } catch (IllegalArgumentException exception) {
+            // 지원하지 않는 크기 규격인 경우
+            throw new DeliveryException(CommonErrorCode.INVALID_REQUEST);
+        }
+
+        // (4) 총 결제 포인트 합산 (기본 + 거리 + 무게)
+        long totalPoint = Math.addExact(Math.addExact(basePoint, distancePoint), weightPoint);
+
+        // 7. 계산 결과를 DTO로 생성하여 반환 (DB 저장은 이루어지지 않음)
+        return SenderPaymentAmountDto.builder()
+                .basePoint(basePoint)
+                .distancePoint(distancePoint)
+                .weightPoint(weightPoint)
+                .totalPoint(totalPoint)
+                .build();
     }
-
-
 }
