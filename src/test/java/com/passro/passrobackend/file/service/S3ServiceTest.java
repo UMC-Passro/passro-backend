@@ -77,7 +77,7 @@ class S3ServiceTest {
                         GetObjectResponse.builder().build(),
                         new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x00}));
 
-        String finalKey = s3Service.finalizeUploadedImage(JPEG_UPLOAD_KEY);
+        String finalKey = s3Service.finalizeUploadedImage(JPEG_UPLOAD_KEY, "delivery-images/");
 
         assertThat(finalKey)
                 .startsWith("delivery-images/")

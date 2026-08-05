@@ -47,6 +47,7 @@ public class SecurityConfiguration {
                                 "/subway/**"
                         )
                         .permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, accountRepository)
                         ,UsernamePasswordAuthenticationFilter.class)
