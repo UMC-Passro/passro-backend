@@ -12,6 +12,7 @@ import com.passro.passrobackend.delivery.entity.DeliveryLog;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
+import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.place.entity.Place;
@@ -224,5 +225,15 @@ class SenderQueryServiceTest {
         // When & Then
         assertThatThrownBy(() -> senderQueryService.getPaymentAmount(999L, 420L, "M"))
                 .isInstanceOf(DeliveryException.class);
+    }
+
+    @Test
+    @DisplayName("출발역과 도착역이 동일한 경우 DeliveryException이 발생한다")
+    void getPaymentAmount_sameOriginAndDestination() {
+        // When & Then
+        assertThatThrownBy(() -> senderQueryService.getPaymentAmount(100L, 100L, "S"))
+                .isInstanceOf(DeliveryException.class)
+                .extracting("code")
+                .isEqualTo(DeliveryErrorCode.SAME_ORIGIN_DESTINATION_NOT_ALLOWED);
     }
 }

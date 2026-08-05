@@ -77,6 +77,10 @@ public class SenderQueryService {
             throw new DeliveryException(DeliveryErrorCode.PLACE_NOT_FOUND);
         }
 
+        if (sourceStationId.equals(destinationStationId)) {
+            throw new DeliveryException(DeliveryErrorCode.SAME_ORIGIN_DESTINATION_NOT_ALLOWED);
+        }
+
         // 물품 크기/무게 값 검증
         if (size == null || size.isBlank()) {
             throw new DeliveryException(CommonErrorCode.INVALID_REQUEST);
