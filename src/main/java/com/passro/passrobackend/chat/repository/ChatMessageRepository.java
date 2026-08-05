@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
@@ -21,4 +22,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     // 안읽은 메시지 수 (상대방이 보낸 것 중 안읽은 것)
     long countByDelivery_IdAndSender_IdNotAndIsReadFalse(Long deliveryId, Long readerId);
+
+    // 채팅방의 가장 최근 메시지 조회
+    Optional<ChatMessage> findTopByDelivery_IdOrderByCreatedAtDesc(Long deliveryId);
 }

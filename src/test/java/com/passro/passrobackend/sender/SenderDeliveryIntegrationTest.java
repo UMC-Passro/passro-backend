@@ -80,17 +80,12 @@ class SenderDeliveryIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.result.status").value("WAIT"))
                 .andExpect(jsonPath("$.result.deliveryTimeLine[0].type").value("SEND_REQUEST"));
 
-        Delivery delivery = deliveryRepository.findById(deliveryId).orElseThrow();
-        DeliveryPoint point = deliveryPointRepository.findByDelivery(delivery).orElseThrow();
-        point.setBase_point(1000L);
-        point.setDistance_point(2000L);
-        point.setWeight_point(500L);
-        deliveryPointRepository.saveAndFlush(point);
-
-        mockMvc.perform(get("/sender/{deliveryId}/payment", deliveryId)
+        mockMvc.perform(get("/sender/payment")
+                        .param("sourceStationId", String.valueOf(sourceId))
+                        .param("destinationStationId", String.valueOf(destId))
+                        .param("size", "M")
                         .header("Authorization", bearer(token)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.totalPoint").value(3500));
+                .andExpect(status().isOk());
 
         mockMvc.perform(patch("/sender/{deliveryId}/terms", deliveryId)
                         .header("Authorization", bearer(token)))
@@ -98,29 +93,29 @@ class SenderDeliveryIntegrationTest extends IntegrationTestSupport {
         entityManager.flush();
         entityManager.clear();
         assertThat(deliveryRepository.findById(deliveryId).orElseThrow().getTerms()).isTrue();
-        assertThat(accountRepository.findById(sender.getId()).orElseThrow().getPoint()).isEqualTo(6500L);
+        assertThat(accountRepository.findById(sender.getId()).orElseThrow().getPoint()).isEqualTo(7500L);
         assertThat(pointLogRepository.findAllByAccountOrderByCreatedAtDesc(sender))
                 .singleElement()
                 .satisfies(log -> {
                     assertThat(log.getIncrementReason()).isEqualTo(PointIncrementReason.DELIVERY_PAYMENT);
-                    assertThat(log.getDeltaPoint()).isEqualTo(-3500L);
+                    assertThat(log.getDeltaPoint()).isEqualTo(-2500L);
                     assertThat(log.getBeforePoint()).isEqualTo(10000L);
-                    assertThat(log.getAfterPoint()).isEqualTo(6500L);
+                    assertThat(log.getAfterPoint()).isEqualTo(7500L);
                 });
 
         mockMvc.perform(get("/account/points")
                         .header("Authorization", bearer(token)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.currentPoint").value(6500))
+                .andExpect(jsonPath("$.result.currentPoint").value(7500))
                 .andExpect(jsonPath("$.result.pointLogs[0].delivery.id").value(deliveryId))
                 .andExpect(jsonPath("$.result.pointLogs[0].delivery.name").value("Laptop"))
                 .andExpect(jsonPath("$.result.pointLogs[0].delivery.origin.id").value(sourceId))
                 .andExpect(jsonPath("$.result.pointLogs[0].delivery.destination.id").value(destId))
                 .andExpect(jsonPath("$.result.pointLogs[0].delivery.status").value("WAIT"))
                 .andExpect(jsonPath("$.result.pointLogs[0].incrementReason").value("DELIVERY_PAYMENT"))
-                .andExpect(jsonPath("$.result.pointLogs[0].deltaPoint").value(-3500))
+                .andExpect(jsonPath("$.result.pointLogs[0].deltaPoint").value(-2500))
                 .andExpect(jsonPath("$.result.pointLogs[0].beforePoint").value(10000))
-                .andExpect(jsonPath("$.result.pointLogs[0].afterPoint").value(6500));
+                .andExpect(jsonPath("$.result.pointLogs[0].afterPoint").value(7500));
 
         mockMvc.perform(patch("/sender/{deliveryId}/cancel", deliveryId)
                         .header("Authorization", bearer(token)))
@@ -139,7 +134,7 @@ class SenderDeliveryIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.currentPoint").value(10000))
                 .andExpect(jsonPath("$.result.pointLogs[0].incrementReason").value("DELIVERY_REFUND"))
-                .andExpect(jsonPath("$.result.pointLogs[0].deltaPoint").value(3500))
+                .andExpect(jsonPath("$.result.pointLogs[0].deltaPoint").value(2500))
                 .andExpect(jsonPath("$.result.pointLogs[1].incrementReason").value("DELIVERY_PAYMENT"));
         assertThat(deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(canceled))
                 .extracting(log -> log.getType())
