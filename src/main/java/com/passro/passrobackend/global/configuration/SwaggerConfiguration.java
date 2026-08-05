@@ -5,6 +5,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -24,6 +25,12 @@ public class SwaggerConfiguration {
                                         .scheme("bearer")
                                         .bearerFormat("JWT")))
                 .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
+                .addServersItem(new Server()
+                        .url("https://passro.suplitter.com")
+                        .description("배포 서버"))
+                .addServersItem(new Server()
+                        .url("http://localhost:8080")
+                        .description("로컬 서버"))
                 .info(info());
     }
 
