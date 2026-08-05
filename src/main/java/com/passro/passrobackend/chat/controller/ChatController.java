@@ -9,6 +9,7 @@ import com.passro.passrobackend.chat.service.ChatService;
 import com.passro.passrobackend.global.response.APIResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class ChatController {
             summary = "메시지 조회",
             description = "afterId 없으면 전체 메시지 반환 (최초 진입), afterId 있으면 해당 id 이후의 새 메시지만 반환 (polling). 조회 시 상대방 메시지 자동 읽음 처리."
     )
+    @ApiResponse(responseCode = "200", description = "메시지 조회 성공", useReturnTypeSchema = true)
     @GetMapping("/messages")
     public APIResponse<List<ChatMessageResponseDto>> getMessages(
             @PathVariable Long deliveryId,
@@ -47,6 +49,7 @@ public class ChatController {
             summary = "메시지 전송",
             description = "메시지를 전송한다. 전송된 메시지는 isRead=false로 저장되며, 상대방이 메시지 조회 시 자동으로 읽음 처리된다."
     )
+    @ApiResponse(responseCode = "200", description = "메시지 전송 성공", useReturnTypeSchema = true)
     @PostMapping("/messages")
     public APIResponse<ChatMessageResponseDto> sendMessage(
             @PathVariable Long deliveryId,
@@ -60,6 +63,7 @@ public class ChatController {
             summary = "채팅방 헤더 정보 조회",
             description = "채팅방 상단에 표시할 정보를 반환한다. 상대방 닉네임·프로필 사진, 물품명, 출발지·도착지, 현재 배송 상태를 포함한다."
     )
+    @ApiResponse(responseCode = "200", description = "채팅방 정보 조회 성공", useReturnTypeSchema = true)
     @GetMapping("/info")
     public APIResponse<ChatRoomInfoResponseDto> getChatRoomInfo(
             @PathVariable Long deliveryId,

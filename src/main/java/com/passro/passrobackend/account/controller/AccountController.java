@@ -7,6 +7,7 @@ import com.passro.passrobackend.account.service.AccountService;
 import com.passro.passrobackend.global.code.BaseSuccessCode;
 import com.passro.passrobackend.global.configuration.security.CustomUserDetails;
 import com.passro.passrobackend.global.response.APIResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
@@ -22,6 +23,7 @@ public class AccountController {
     private final AccountService accountService;
 
     @GetMapping("/mypage/shipper")
+    @ApiResponse(responseCode = "200", description = "배송기사 마이페이지 조회 성공", useReturnTypeSchema = true)
     public ResponseEntity<APIResponse<AccountResDTO.ShipperMyPage>> shipperPage(@AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
         return ResponseEntity.ok()
@@ -30,6 +32,7 @@ public class AccountController {
     }
 
     @GetMapping("/mypage/sender")
+    @ApiResponse(responseCode = "200", description = "발송자 마이페이지 조회 성공", useReturnTypeSchema = true)
     public ResponseEntity<APIResponse<AccountResDTO.SenderMyPage>> senderPage(@AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
         return ResponseEntity.ok()

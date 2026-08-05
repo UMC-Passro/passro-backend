@@ -60,4 +60,31 @@ class SwaggerSchemaIntegrationTest extends IntegrationTestSupport {
                 "/components/schemas/Place/properties/subwayStationName").isMissingNode())
                 .isFalse();
     }
+
+    @Test
+    void myPagePointAndChatResponsesUseObjectDtoSchemas() throws Exception {
+        String body = mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        JsonNode document = objectMapper.readTree(body);
+
+        assertThat(document.at("/components/schemas/ShipperMyPage/type").asText())
+                .isEqualTo("object");
+        assertThat(document.at("/components/schemas/SenderMyPage/type").asText())
+                .isEqualTo("object");
+        assertThat(document.at("/components/schemas/PointHistoryResponseDto/type").asText())
+                .isEqualTo("object");
+        assertThat(document.at("/components/schemas/PointLogResponseDto/type").asText())
+                .isEqualTo("object");
+        assertThat(document.at("/components/schemas/PointDeliveryResponseDto/type").asText())
+                .isEqualTo("object");
+        assertThat(document.at("/components/schemas/PlaceResponseDto/type").asText())
+                .isEqualTo("object");
+        assertThat(document.at("/components/schemas/ChatRoomInfoResponseDto/type").asText())
+                .isEqualTo("object");
+        assertThat(document.at("/components/schemas/ChatMessageResponseDto/type").asText())
+                .isEqualTo("object");
+    }
 }

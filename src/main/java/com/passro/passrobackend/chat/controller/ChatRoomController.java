@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Tag(name = "Chat", description = "채팅 API - delivery의 sender/shipper 간 1:1 채팅. WAIT·CANCEL 상태의 배송건은 접근 불가.")
+@Tag(name = "채팅", description = "채팅 API - delivery의 sender/shipper 간 1:1 채팅. WAIT·CANCEL 상태의 배송건은 접근 불가.")
 @RestController
 @RequestMapping("/chat")
 @RequiredArgsConstructor
