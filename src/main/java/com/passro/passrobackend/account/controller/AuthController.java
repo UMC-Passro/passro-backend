@@ -160,12 +160,16 @@ public class AuthController {
     }
 
     @DeleteMapping("/logout")
+    @Operation(summary = "로그아웃", description = "저장된 Refresh Token을 삭제하여 로그아웃 처리합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "로그아웃 성공", useReturnTypeSchema = true,
+                    content = @Content(examples = @ExampleObject(name = "ACCOUNT200_1", summary = "로그아웃 성공", value = ACCOUNT_OK)))
+    })
     public APIResponse<Void> logout(@AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
         authService.logout(userDetails.getAccountId());
         return APIResponse.onSuccess(code, null);
     }
-
     @PostMapping("/find/id")
     public APIResponse<Void> findId(@Valid @RequestBody AuthReqDTO.FindId dto) {
         BaseSuccessCode code = AccountSuccessCode.OK;

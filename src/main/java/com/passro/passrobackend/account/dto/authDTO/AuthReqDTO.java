@@ -17,7 +17,6 @@ import java.util.List;
 public class AuthReqDTO {
 
     @Getter
-    @Schema(types = "object", description = "회원가입 상세 응답")
     public static class Signup {
         @NotBlank(message = "이메일을 입력하세요.")
         @Email(message = "올바른 이메일 형식이 아닙니다.")
@@ -86,7 +85,6 @@ public class AuthReqDTO {
     }
 
     @Getter
-    @Schema(types = "object", description = "로그인 상세 응답")
     public static class Login {
 
         @NotBlank(message = "이메일을 입력하세요.")
