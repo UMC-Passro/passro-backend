@@ -171,6 +171,14 @@ public class AuthController {
         return APIResponse.onSuccess(code, null);
     }
     @PostMapping("/find/id")
+    @Operation(summary = "아이디(이메일) 찾기", description = "이름과 전화번호로 본인 확인 후, 가입된 이메일을 해당 이메일로 발송합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "요청 처리 성공(계정 존재 여부와 무관하게 동일하게 응답)", useReturnTypeSchema = true,
+                    content = @Content(examples = @ExampleObject(name = "ACCOUNT200_1", summary = "요청 처리 성공", value = ACCOUNT_OK))),
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION)))
+    })
     public APIResponse<Void> findId(@Valid @RequestBody AuthReqDTO.FindId dto) {
         BaseSuccessCode code = AccountSuccessCode.OK;
         authService.findId(dto);
@@ -178,6 +186,14 @@ public class AuthController {
     }
 
     @PostMapping("/find/password")
+    @Operation(summary = "비밀번호 찾기", description = "이름, 전화번호, 이메일로 본인 확인 후 임시 비밀번호를 해당 이메일로 발송합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "요청 처리 성공(계정 존재 여부와 무관하게 동일하게 응답)", useReturnTypeSchema = true,
+                    content = @Content(examples = @ExampleObject(name = "ACCOUNT200_1", summary = "요청 처리 성공", value = ACCOUNT_OK))),
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION)))
+    })
     public APIResponse<Void> findPassword(@Valid @RequestBody AuthReqDTO.FindPassword dto) {
         BaseSuccessCode code = AccountSuccessCode.OK;
         authService.findPassword(dto);
