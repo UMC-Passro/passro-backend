@@ -4,6 +4,7 @@ import com.passro.passrobackend.account.dto.accountDTO.AccountReqDTO;
 import com.passro.passrobackend.account.dto.accountDTO.AccountResDTO;
 import com.passro.passrobackend.account.exception.code.AccountSuccessCode;
 import com.passro.passrobackend.account.service.AccountService;
+import com.passro.passrobackend.account.service.MailSenderService;
 import com.passro.passrobackend.global.code.BaseSuccessCode;
 import com.passro.passrobackend.global.configuration.security.CustomUserDetails;
 import com.passro.passrobackend.global.response.APIResponse;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class AccountController {
 
     private final AccountService accountService;
+    private final MailSenderService mailSenderService;
 
     @GetMapping("/mypage/shipper")
     @ApiResponse(responseCode = "200", description = "배송기사 마이페이지 조회 성공", useReturnTypeSchema = true)
@@ -52,7 +54,7 @@ public class AccountController {
     @PatchMapping("/mypage/edit/password/mail")
     public APIResponse<Void> sendPasswordEditMail(@AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
-        accountService.sendMailMessageAndEditPassword(userDetails.getAccountId());
+        mailSenderService.sendMailMessageEditPassword(userDetails.getAccountId());
         return APIResponse.onSuccess(code, null);
     }
 
