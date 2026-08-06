@@ -201,6 +201,18 @@ public class AuthController {
     }
 
     @PostMapping("/reissue")
+    @Operation(summary = "토큰 재발급", description = "Refresh Token으로 새로운 Access/Refresh Token을 발급받습니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "토큰 재발급 성공",
+                    content = @Content(schema = @Schema(implementation = AuthResDTO.TokenResponse.class),
+                            examples = @ExampleObject(name = "ACCOUNT200_1", summary = "토큰 재발급 성공", value = ACCOUNT_OK))),
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION))),
+            @ApiResponse(responseCode = "401", description = "유효하지 않은 Refresh Token",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(name = "ACCOUNT401_2", summary = "리프레시 토큰 오류", value = ACCOUNT_INVALID_REFRESH_TOKEN)))
+    })
     public ResponseEntity<APIResponse<AuthResDTO.TokenResponse>> reissue(@Valid @RequestBody AuthReqDTO.ReIssue dto){
         BaseSuccessCode code = AccountSuccessCode.OK;
         return ResponseEntity.ok()
