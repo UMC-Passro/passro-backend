@@ -114,6 +114,10 @@ public class AccountService {
         return !accountRepository.existsByNickname(nickname);
     }
 
+    public boolean isMailAvailable(String mail) {
+        return !accountRepository.existsByMail(mail);
+    }
+
     private void validateUniversityEmail(String email) {
         int atIndex = email.indexOf("@");
         if (atIndex == -1 || atIndex == email.length() - 1)

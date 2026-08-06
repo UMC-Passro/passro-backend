@@ -48,6 +48,15 @@ public class AuthController {
         return APIResponse.onSuccess(AccountSuccessCode.OK, accountService.isNicknameAvailable(nickname));
     }
 
+    @GetMapping("/mail/check")
+    @Operation(summary = "이메일 중복 확인", description = "이메일이 사용 가능한지 확인합니다. true이면 사용 가능합니다.")
+    public APIResponse<Boolean> checkEmail(
+            @RequestParam
+            @NotBlank(message = "이메일 입력하세요.")
+            String mail) {
+        return APIResponse.onSuccess(AccountSuccessCode.OK, accountService.isMailAvailable(mail));
+    }
+
     @PostMapping("/mail/send")
     @Operation(summary = "인증 메일 발송", description = "대학교 이메일로 6자리 인증 코드를 발송합니다. 인증 코드는 5분 동안 유효합니다.")
     @ApiResponses({

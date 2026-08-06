@@ -157,6 +157,43 @@ class AuthIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void mailAvailabilityCanBeCheckedWithoutAuthentication() throws Exception {
+        Account account = createAccount("mail-check");
+        String availableMail = "available-" + UUID.randomUUID() + "@passro.test";
+
+        mockMvc.perform(get("/auth/mail/check")
+                        .param("mail", account.getMail()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value("ACCOUNT200_1"))
+                .andExpect(jsonPath("$.result").value(false));
+
+        mockMvc.perform(get("/auth/mail/check")
+                        .param("mail", availableMail))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value("ACCOUNT200_1"))
+                .andExpect(jsonPath("$.result").value(true));
+    }
+
+    @Test
+    void mailAvailabilityRejectsBlankMail() throws Exception {
+        mockMvc.perform(get("/auth/mail/check")
+                        .param("mail", "   "))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("COMMON400"));
+    }
+
+    @Test
+    void mailAvailabilityRejectsMissingMailParameter() throws Exception {
+        mockMvc.perform(get("/auth/mail/check"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("COMMON400"));
+    }
+
+    @Test
     void signupRejectsMissingRequiredFields() throws Exception {
         mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
