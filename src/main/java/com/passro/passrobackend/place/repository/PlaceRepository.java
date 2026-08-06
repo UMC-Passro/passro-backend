@@ -20,4 +20,8 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
             String subwayRouteName,
             String subwayStationName
     );
+
+    boolean existsByLatitudeIsNullOrLongitudeIsNull();
+
+    List<Place> findAllByLatitudeIsNotNullAndLongitudeIsNotNull();
 }

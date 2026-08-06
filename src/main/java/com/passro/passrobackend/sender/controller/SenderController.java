@@ -13,6 +13,7 @@ import com.passro.passrobackend.sender.dto.SenderDeliveryListDto;
 import com.passro.passrobackend.sender.dto.SenderPaymentAmountDto;
 import com.passro.passrobackend.sender.service.SenderQueryService;
 import com.passro.passrobackend.sender.service.SenderCommandService;
+import com.passro.passrobackend.subway.dto.SubwayRouteResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -50,18 +51,90 @@ public class SenderController {
     private final ShipperLocationService shipperLocationService;
 
     @GetMapping("/{deliveryId}/shipper-location")
-    @Operation(summary = "배송기사 현재 위치 조회", description = "발송자가 배송 중인 본인 배송의 배송기사 위치를 조회합니다.")
+    @Operation(
+            summary = "배송기사 현재 위치 조회",
+            description = "발송자가 배송 중인 본인 배송의 배송기사 위치와 현재 역부터 배송 도착역까지의 예상 소요시간(분)을 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "위치 조회 성공", useReturnTypeSchema = true),
-            @ApiResponse(responseCode = "400", description = "배송 중 상태가 아님"),
-            @ApiResponse(responseCode = "403", description = "배송 접근 권한 없음"),
-            @ApiResponse(responseCode = "404", description = "배송 또는 위치 정보를 찾을 수 없음")
+            @ApiResponse(responseCode = "400", description = "배송 중 상태가 아님",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(
+                                    name = "SHIPPER_LOCATION400_1",
+                                    summary = "위치 조회 불가능",
+                                    value = SHIPPER_LOCATION_TRACKING_NOT_AVAILABLE))),
+            @ApiResponse(responseCode = "403", description = "배송 접근 권한 없음",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(
+                                    name = "DELIVERY403_1",
+                                    summary = "배송 접근 권한 없음",
+                                    value = DELIVERY_FORBIDDEN))),
+            @ApiResponse(responseCode = "404", description = "배송, 위치, 역 또는 경로 정보를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class), examples = {
+                            @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND),
+                            @ExampleObject(name = "SHIPPER_LOCATION404_1", summary = "위치 정보 없음", value = SHIPPER_LOCATION_NOT_FOUND),
+                            @ExampleObject(name = "SUBWAY404_1", summary = "현재 역 또는 도착역 없음", value = SUBWAY_PLACE_NOT_FOUND),
+                            @ExampleObject(name = "SUBWAY404_2", summary = "도착 경로 없음", value = SUBWAY_ROUTE_NOT_FOUND)
+                    }))
     })
     public APIResponse<ShipperLocationResponseDto> getShipperLocation(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 ID", example = "1") @PathVariable Long deliveryId) {
         return APIResponse.onSuccess(
                 SenderSuccessCode.OK, shipperLocationService.getLocation(account, deliveryId));
+    }
+
+    @GetMapping("/{deliveryId}/routes/shipper-commute")
+    @Operation(
+            summary = "매칭 배송기사 통학 경로 조회",
+            description = "발송자가 본인 배송에 매칭된 배송기사의 출발역·경유역·도착역 기준 최단 경로를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "통학 경로 조회 성공", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "403", description = "배송 접근 권한 없음",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(
+                                    name = "DELIVERY403_1",
+                                    summary = "배송 접근 권한 없음",
+                                    value = DELIVERY_FORBIDDEN))),
+            @ApiResponse(responseCode = "404", description = "배송, 배송기사, 통학 경로 또는 지하철 경로를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class), examples = {
+                            @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND),
+                            @ExampleObject(name = "DELIVERY404_4", summary = "매칭 배송기사 없음", value = DELIVERY_SHIPPER_NOT_ASSIGNED),
+                            @ExampleObject(name = "DELIVERY404_5", summary = "배송기사 통학 경로 없음", value = DELIVERY_SHIPPER_ROUTE_NOT_FOUND),
+                            @ExampleObject(name = "SUBWAY404_1", summary = "통학 경로의 역 없음", value = SUBWAY_PLACE_NOT_FOUND),
+                            @ExampleObject(name = "SUBWAY404_2", summary = "통학 경로 탐색 불가능", value = SUBWAY_ROUTE_NOT_FOUND)
+                    }))
+    })
+    public APIResponse<SubwayRouteResponseDto> getShipperCommuteRoute(
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
+            @Parameter(description = "배송 ID", example = "1") @PathVariable Long deliveryId) {
+        return APIResponse.onSuccess(
+                SenderSuccessCode.OK, senderQueryService.getShipperCommuteRoute(account, deliveryId));
+    }
+
+    @GetMapping("/{deliveryId}/routes/delivery")
+    @Operation(
+            summary = "배송 출발·도착 경로 조회",
+            description = "발송자가 본인 배송에 등록된 출발역부터 도착역까지의 최단 경로를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "배송 경로 조회 성공", useReturnTypeSchema = true),
+            @ApiResponse(responseCode = "403", description = "배송 접근 권한 없음",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(
+                                    name = "DELIVERY403_1",
+                                    summary = "배송 접근 권한 없음",
+                                    value = DELIVERY_FORBIDDEN))),
+            @ApiResponse(responseCode = "404", description = "배송, 지하철역 또는 경로를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class), examples = {
+                            @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND),
+                            @ExampleObject(name = "SUBWAY404_1", summary = "배송 출발역 또는 도착역 없음", value = SUBWAY_PLACE_NOT_FOUND),
+                            @ExampleObject(name = "SUBWAY404_2", summary = "배송 경로 탐색 불가능", value = SUBWAY_ROUTE_NOT_FOUND)
+                    }))
+    })
+    public APIResponse<SubwayRouteResponseDto> getDeliveryRoute(
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
+            @Parameter(description = "배송 ID", example = "1") @PathVariable Long deliveryId) {
+        return APIResponse.onSuccess(
+                SenderSuccessCode.OK, senderQueryService.getDeliveryRoute(account, deliveryId));
     }
 
     // 발송자 배송 조회

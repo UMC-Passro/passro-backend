@@ -172,6 +172,25 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.paths['/subway/search'].get.security").isEmpty())
                 .andExpect(jsonPath("$.paths['/subway/routes/shortest'].post.tags[0]").value("지하철"))
                 .andExpect(jsonPath("$.paths['/subway/routes/shortest'].post.security").isEmpty())
+                .andExpect(jsonPath("$.components.schemas.SubwayRouteResponseDto.type").value("object"))
+                .andExpect(jsonPath(
+                        "$.components.schemas.APIResponseSubwayRouteResponseDto.properties.result['$ref']")
+                        .value("#/components/schemas/SubwayRouteResponseDto"))
+                .andExpect(jsonPath(
+                        "$.paths['/sender/{deliveryId}/routes/shipper-commute'].get.responses['200'].content['*/*'].schema['$ref']")
+                        .value("#/components/schemas/APIResponseSubwayRouteResponseDto"))
+                .andExpect(jsonPath(
+                        "$.paths['/sender/{deliveryId}/routes/shipper-commute'].get.responses['403'].content['*/*'].schema['$ref']")
+                        .value("#/components/schemas/APIResponse"))
+                .andExpect(jsonPath(
+                        "$.paths['/sender/{deliveryId}/routes/shipper-commute'].get.responses['403'].content['*/*'].examples.DELIVERY403_1.value.code")
+                        .value("DELIVERY403_1"))
+                .andExpect(jsonPath(
+                        "$.paths['/sender/{deliveryId}/routes/shipper-commute'].get.responses['404'].content['*/*'].examples.DELIVERY404_4.value.code")
+                        .value("DELIVERY404_4"))
+                .andExpect(jsonPath(
+                        "$.paths['/sender/{deliveryId}/routes/shipper-commute'].get.responses['404'].content['*/*'].examples.SUBWAY404_2.value.code")
+                        .value("SUBWAY404_2"))
                 .andExpect(jsonPath("$.paths['/subway/stations']").doesNotExist());
     }
 

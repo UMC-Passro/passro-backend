@@ -13,6 +13,7 @@ import com.passro.passrobackend.shipper.enums.MatchingPriority;
 import com.passro.passrobackend.subway.dto.SubwayRouteResponseDto;
 import com.passro.passrobackend.subway.dto.SubwayStationResponseDto;
 import com.passro.passrobackend.subway.service.SubwayService;
+import com.passro.passrobackend.subway.service.SubwayTravelTimeCalculator;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -30,8 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Transactional(readOnly = true)
 public class ShipperMatchingService {
-
-    private static final int MINUTES_PER_ROUTE_WEIGHT = 3;
 
     private final DeliveryRepository deliveryRepository;
     private final AccountPlaceRepository accountPlaceRepository;
@@ -106,7 +105,8 @@ public class ShipperMatchingService {
                         .thenComparing(ed -> ed.delivery().getCreatedAt(), Comparator.reverseOrder())
                 )
                 .map(evaluated -> new MatchedDelivery(
-                        evaluated.delivery(), toEstimatedTimeMinutes(evaluated.routeWeight())))
+                        evaluated.delivery(), SubwayTravelTimeCalculator.toEstimatedTimeMinutes(
+                                evaluated.routeWeight())))
                 .toList();
     }
 
@@ -126,7 +126,8 @@ public class ShipperMatchingService {
         try {
             int routeWeight = subwayService.findShortestRoute(
                     delivery.getOrigin(), null, delivery.getDest()).getShortestDistance();
-            return new MatchedDelivery(delivery, toEstimatedTimeMinutes(routeWeight));
+            return new MatchedDelivery(
+                    delivery, SubwayTravelTimeCalculator.toEstimatedTimeMinutes(routeWeight));
         } catch (Exception e) {
             log.warn("예상시간 계산 중 예외가 발생하여 배송건을 건너뜁니다 - Delivery ID: {}, Error: {}",
                     delivery.getId(), e.getMessage());
@@ -195,10 +196,6 @@ public class ShipperMatchingService {
 
         // 5순위: 나머지 (가중치 오름차순)
         return MatchingPriority.RANK_5;
-    }
-
-    private int toEstimatedTimeMinutes(int routeWeight) {
-        return routeWeight * MINUTES_PER_ROUTE_WEIGHT;
     }
 
     public record MatchedDelivery(Delivery delivery, int estimatedTimeMinutes) {}

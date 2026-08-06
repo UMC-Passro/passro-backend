@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "지하철 경로 조회 응답 DTO", types = "object")
 public class SubwayRouteResponseDto {
 
     @Schema(description = "최단 경로의 역간 이동 횟수", example = "5")

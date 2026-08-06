@@ -29,6 +29,10 @@ public final class SwaggerErrorExamples {
             "{\"success\":false,\"code\":\"DELIVERY404_2\",\"message\":\"해당 장소를 찾을 수 없습니다.\",\"result\":null}";
     public static final String DELIVERY_POINT_NOT_FOUND =
             "{\"success\":false,\"code\":\"DELIVERY404_3\",\"message\":\"해당 배송의 결제 포인트 정보를 찾을 수 없습니다.\",\"result\":null}";
+    public static final String DELIVERY_SHIPPER_NOT_ASSIGNED =
+            "{\"success\":false,\"code\":\"DELIVERY404_4\",\"message\":\"해당 배송에 매칭된 배송기사가 없습니다.\",\"result\":null}";
+    public static final String DELIVERY_SHIPPER_ROUTE_NOT_FOUND =
+            "{\"success\":false,\"code\":\"DELIVERY404_5\",\"message\":\"매칭된 배송기사의 통학 경로를 찾을 수 없습니다.\",\"result\":null}";
     public static final String DELIVERY_FORBIDDEN =
             "{\"success\":false,\"code\":\"DELIVERY403_1\",\"message\":\"해당 배송에 대한 접근 권한이 없습니다.\",\"result\":null}";
     public static final String DELIVERY_SELF_MATCH_FORBIDDEN =
@@ -64,4 +68,9 @@ public final class SwaggerErrorExamples {
             "{\"success\":false,\"code\":\"SUBWAY404_1\",\"message\":\"지하철역 Place를 찾을 수 없습니다.\",\"result\":null}";
     public static final String SUBWAY_ROUTE_NOT_FOUND =
             "{\"success\":false,\"code\":\"SUBWAY404_2\",\"message\":\"지하철 경로를 찾을 수 없습니다.\",\"result\":null}";
+
+    public static final String SHIPPER_LOCATION_NOT_FOUND =
+            "{\"success\":false,\"code\":\"SHIPPER_LOCATION404_1\",\"message\":\"배송기사의 현재 위치를 찾을 수 없습니다.\",\"result\":null}";
+    public static final String SHIPPER_LOCATION_TRACKING_NOT_AVAILABLE =
+            "{\"success\":false,\"code\":\"SHIPPER_LOCATION400_1\",\"message\":\"배송 중인 상태에서만 배송기사 위치를 조회할 수 있습니다.\",\"result\":null}";
 }
