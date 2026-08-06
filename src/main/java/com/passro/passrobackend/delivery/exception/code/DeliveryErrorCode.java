@@ -35,7 +35,13 @@ public enum DeliveryErrorCode implements BaseErrorCode {
             "출발역과 도착역은 같을 수 없습니다."),
     DELIVERY_POINT_NOT_FOUND(HttpStatus.NOT_FOUND,
             "DELIVERY404_3",
-            "해당 배송의 결제 포인트 정보를 찾을 수 없습니다.");
+            "해당 배송의 결제 포인트 정보를 찾을 수 없습니다."),
+    SHIPPER_NOT_ASSIGNED(HttpStatus.NOT_FOUND,
+            "DELIVERY404_4",
+            "해당 배송에 매칭된 배송기사가 없습니다."),
+    SHIPPER_ROUTE_NOT_FOUND(HttpStatus.NOT_FOUND,
+            "DELIVERY404_5",
+            "매칭된 배송기사의 통학 경로를 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;

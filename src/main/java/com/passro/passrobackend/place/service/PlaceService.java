@@ -6,6 +6,7 @@ import jakarta.annotation.PostConstruct;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -27,18 +28,26 @@ public class PlaceService {
     private static final String REGION_COLUMN = "권역명";
     private static final String ROUTE_COLUMN = "노선명";
     private static final String STATION_COLUMN = "역명";
+    private static final String LATITUDE_COLUMN = "위도";
+    private static final String LONGITUDE_COLUMN = "경도";
 
     private final PlaceRepository placeRepository;
 
     @PostConstruct
     public void initialize() {
-        if (placeRepository.count() > 0) {
+        long placeCount = placeRepository.count();
+        if (placeCount > 0 && !placeRepository.existsByLatitudeIsNullOrLongitudeIsNull()) {
             return;
         }
 
         List<Place> places = readSubwayPlaces();
-        placeRepository.saveAll(places);
-        log.info("지하철역 초기 데이터 {}건을 저장했습니다.", places.size());
+        if (placeCount == 0) {
+            placeRepository.saveAll(places);
+            log.info("지하철역 초기 데이터 {}건을 저장했습니다.", places.size());
+            return;
+        }
+
+        updateMissingCoordinates(places);
     }
 
     public List<Place> searchByKeyword(String keyword) {
@@ -61,7 +70,14 @@ public class PlaceService {
             int regionIndex = findColumnIndex(headers, REGION_COLUMN);
             int routeIndex = findColumnIndex(headers, ROUTE_COLUMN);
             int stationIndex = findColumnIndex(headers, STATION_COLUMN);
-            int requiredColumnCount = Math.max(regionIndex, Math.max(routeIndex, stationIndex)) + 1;
+            int latitudeIndex = findColumnIndex(headers, LATITUDE_COLUMN);
+            int longitudeIndex = findColumnIndex(headers, LONGITUDE_COLUMN);
+            int requiredColumnCount = List.of(
+                            regionIndex, routeIndex, stationIndex, latitudeIndex, longitudeIndex)
+                    .stream()
+                    .mapToInt(Integer::intValue)
+                    .max()
+                    .orElseThrow() + 1;
 
             Map<String, Place> uniquePlaces = new LinkedHashMap<>();
             String line;
@@ -85,17 +101,71 @@ public class PlaceService {
                             "지하철역 CSV " + lineNumber + "행의 권역명, 노선명 또는 역명이 비어 있습니다.");
                 }
 
+                BigDecimal latitude = parseCoordinate(
+                        columns.get(latitudeIndex), LATITUDE_COLUMN, lineNumber,
+                        BigDecimal.valueOf(-90), BigDecimal.valueOf(90));
+                BigDecimal longitude = parseCoordinate(
+                        columns.get(longitudeIndex), LONGITUDE_COLUMN, lineNumber,
+                        BigDecimal.valueOf(-180), BigDecimal.valueOf(180));
+
                 String routeName = normalizeRouteName(regionName, originalRouteName);
                 String key = routeName + '\u0000' + stationName;
                 uniquePlaces.putIfAbsent(key, Place.builder()
                         .subwayRouteName(routeName)
                         .subwayStationName(stationName)
+                        .latitude(latitude)
+                        .longitude(longitude)
                         .build());
             }
 
             return new ArrayList<>(uniquePlaces.values());
         } catch (IOException exception) {
             throw new IllegalStateException("지하철역 CSV 파일을 읽을 수 없습니다: " + SUBWAY_DATA_PATH, exception);
+        }
+    }
+
+    private void updateMissingCoordinates(List<Place> parsedPlaces) {
+        Map<String, Place> parsedPlaceByKey = new LinkedHashMap<>();
+        for (Place place : parsedPlaces) {
+            parsedPlaceByKey.put(placeKey(place), place);
+        }
+
+        List<Place> updatedPlaces = placeRepository.findAll().stream()
+                .filter(place -> place.getLatitude() == null || place.getLongitude() == null)
+                .filter(place -> parsedPlaceByKey.containsKey(placeKey(place)))
+                .peek(place -> {
+                    Place parsedPlace = parsedPlaceByKey.get(placeKey(place));
+                    place.updateCoordinates(parsedPlace.getLatitude(), parsedPlace.getLongitude());
+                })
+                .toList();
+
+        if (!updatedPlaces.isEmpty()) {
+            placeRepository.saveAll(updatedPlaces);
+        }
+        log.info("기존 지하철역 {}건의 위도·경도를 보완했습니다.", updatedPlaces.size());
+    }
+
+    private String placeKey(Place place) {
+        return place.getSubwayRouteName() + '\u0000' + place.getSubwayStationName();
+    }
+
+    private BigDecimal parseCoordinate(
+            String value,
+            String columnName,
+            int lineNumber,
+            BigDecimal minimum,
+            BigDecimal maximum) {
+        String trimmedValue = value.trim();
+        try {
+            BigDecimal coordinate = new BigDecimal(trimmedValue);
+            if (coordinate.compareTo(minimum) < 0 || coordinate.compareTo(maximum) > 0) {
+                throw new IllegalStateException(
+                        "지하철역 CSV " + lineNumber + "행의 " + columnName + " 값이 유효 범위를 벗어났습니다.");
+            }
+            return coordinate;
+        } catch (NumberFormatException exception) {
+            throw new IllegalStateException(
+                    "지하철역 CSV " + lineNumber + "행의 " + columnName + " 값이 올바르지 않습니다.", exception);
         }
     }
 
