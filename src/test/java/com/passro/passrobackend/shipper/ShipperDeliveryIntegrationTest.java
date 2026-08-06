@@ -96,6 +96,27 @@ class ShipperDeliveryIntegrationTest extends IntegrationTestSupport {
         assertThat(matched.getId()).isNotEqualTo(delivering.getId());
     }
 
+    @Test
+    void shipperCannotAcceptOwnDeliveryByCallingMatchEndpointDirectly() throws Exception {
+        Account account = createAccount("self-delivery");
+        Delivery delivery = deliveryRepository.saveAndFlush(Delivery.builder()
+                .sender(account)
+                .status(DeliveryState.WAIT)
+                .terms(true)
+                .build());
+
+        mockMvc.perform(patch("/shipper/{deliveryId}/matched", delivery.getId())
+                        .header("Authorization", bearer(accessToken(account))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("DELIVERY403_2"));
+
+        entityManager.flush();
+        entityManager.clear();
+        Delivery persisted = deliveryRepository.findById(delivery.getId()).orElseThrow();
+        assertThat(persisted.getStatus()).isEqualTo(DeliveryState.WAIT);
+        assertThat(persisted.getShipper()).isNull();
+    }
+
     // @Test // TODO: 출발지/도착지 로직 수정 완료 후 주석 해제
     void shipperCanProgressAssignedDeliveryThroughEveryState() throws Exception {
         Account sender = createAccount("flow-sender");

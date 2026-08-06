@@ -1,11 +1,14 @@
 package com.passro.passrobackend.shipper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
+import com.passro.passrobackend.delivery.exception.DeliveryException;
+import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.shipper.dto.ShipperDeliveryListDto;
 import com.passro.passrobackend.shipper.service.ShipperService;
@@ -63,5 +66,22 @@ class ShipperServiceTest {
 
         assertThat(result.getCreatedAt()).isEqualTo(createdAt);
         assertThat(result.getEstimatedTimeMinutes()).isEqualTo(30);
+    }
+
+    @Test
+    void shipperCannotAcceptOwnDelivery() {
+        Account account = Account.builder().id(1L).build();
+        Delivery delivery = Delivery.builder()
+                .id(10L)
+                .sender(account)
+                .status(DeliveryState.WAIT)
+                .terms(true)
+                .build();
+        given(deliveryRepository.findByIdForUpdate(10L)).willReturn(java.util.Optional.of(delivery));
+
+        assertThatThrownBy(() -> shipperService.matchAccept(account, 10L))
+                .isInstanceOf(DeliveryException.class)
+                .extracting("code")
+                .isEqualTo(DeliveryErrorCode.SELF_DELIVERY_NOT_ALLOWED);
     }
 }

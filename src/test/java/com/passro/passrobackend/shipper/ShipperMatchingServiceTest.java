@@ -204,6 +204,41 @@ class ShipperMatchingServiceTest {
     }
 
     @Test
+    @DisplayName("배송기사가 직접 발송한 배송은 매칭 대기 목록에서 제외한다")
+    void shouldExcludeDeliverySentByShipper() {
+        Account shipper = Account.builder().id(1L).build();
+        Account anotherSender = Account.builder().id(2L).build();
+        Place origin = Place.builder().id(10L).build();
+        Place destination = Place.builder().id(20L).build();
+        Delivery ownDelivery = Delivery.builder()
+                .id(1L)
+                .sender(shipper)
+                .origin(origin)
+                .dest(destination)
+                .status(DeliveryState.WAIT)
+                .terms(true)
+                .build();
+        Delivery anotherDelivery = Delivery.builder()
+                .id(2L)
+                .sender(anotherSender)
+                .origin(origin)
+                .dest(destination)
+                .status(DeliveryState.WAIT)
+                .terms(true)
+                .build();
+        given(accountPlaceRepository.findByAccount(shipper)).willReturn(Optional.empty());
+        given(deliveryRepository.findAllByStatus(DeliveryState.WAIT))
+                .willReturn(List.of(ownDelivery, anotherDelivery));
+        given(subwayService.findShortestRoute(origin, null, destination))
+                .willReturn(new SubwayRouteResponseDto(6, 0, List.of()));
+
+        List<MatchedDelivery> result = shipperMatchingService.listMatchRequestedWithPriority(shipper);
+
+        assertThat(result).extracting(MatchedDelivery::delivery)
+                .containsExactly(anotherDelivery);
+    }
+
+    @Test
     @DisplayName("배송기사의 출발역 권역 조회 시 예외가 발생하거나 null이면 매칭 대기 목록을 빈 리스트로 반환한다")
     void shouldReturnEmptyListWhenShipperRegionLookupFails() {
         // Given

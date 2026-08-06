@@ -48,6 +48,7 @@ public class ShipperService {
     @Transactional
     public void matchAccept(Account shipper, Long id) {
         Delivery delivery = getDeliveryForUpdate(id);
+        validateNotOwnDelivery(delivery, shipper);
         validateStatus(delivery, DeliveryState.WAIT);
         if (delivery.getShipper() != null || !Boolean.TRUE.equals(delivery.getTerms())) {
             throw new DeliveryException(DeliveryErrorCode.INVALID_STATUS_TRANSITION);
@@ -58,6 +59,15 @@ public class ShipperService {
         delivery.setStatus(DeliveryState.MATCHED);
         deliveryRepository.save(delivery);
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.MATCHED));
+    }
+
+    private void validateNotOwnDelivery(Delivery delivery, Account shipper) {
+        if (delivery.getSender() != null
+                && delivery.getSender().getId() != null
+                && shipper != null
+                && delivery.getSender().getId().equals(shipper.getId())) {
+            throw new DeliveryException(DeliveryErrorCode.SELF_DELIVERY_NOT_ALLOWED);
+        }
     }
 
     @Transactional

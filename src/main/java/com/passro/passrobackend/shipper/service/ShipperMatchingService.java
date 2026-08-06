@@ -44,6 +44,7 @@ public class ShipperMatchingService {
         if (accountPlaceOpt.isEmpty()) {
             // 동선 정보가 등록되지 않은 배송기사인 경우 전체 대기 목록 반환 (약관 동의 건만)
             return deliveryRepository.findAllByStatus(DeliveryState.WAIT).stream()
+                    .filter(delivery -> !isSentBy(delivery, shipper))
                     .filter(delivery -> Boolean.TRUE.equals(delivery.getTerms()))
                     .map(this::estimateDeliverySafely)
                     .filter(Objects::nonNull)
@@ -96,6 +97,7 @@ public class ShipperMatchingService {
         final Set<Long> finalPassThroughIds = passThroughPlaceIds;
 
         return pendingDeliveries.stream()
+                .filter(delivery -> !isSentBy(delivery, shipper))
                 .map(delivery -> evaluateDeliverySafely(delivery, shipperStartId, shipperDestId, finalPassThroughIds, targetRegion))
                 .filter(Objects::nonNull) // SubwayService 연산 중 예외 발생건 또는 권역 불일치건 건너뜀
                 .sorted(Comparator
@@ -106,6 +108,14 @@ public class ShipperMatchingService {
                 .map(evaluated -> new MatchedDelivery(
                         evaluated.delivery(), toEstimatedTimeMinutes(evaluated.routeWeight())))
                 .toList();
+    }
+
+    private boolean isSentBy(Delivery delivery, Account account) {
+        return delivery != null
+                && delivery.getSender() != null
+                && delivery.getSender().getId() != null
+                && account != null
+                && delivery.getSender().getId().equals(account.getId());
     }
 
     private MatchedDelivery estimateDeliverySafely(Delivery delivery) {

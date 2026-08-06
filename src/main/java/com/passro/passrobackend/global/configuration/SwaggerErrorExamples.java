@@ -31,6 +31,8 @@ public final class SwaggerErrorExamples {
             "{\"success\":false,\"code\":\"DELIVERY404_3\",\"message\":\"해당 배송의 결제 포인트 정보를 찾을 수 없습니다.\",\"result\":null}";
     public static final String DELIVERY_FORBIDDEN =
             "{\"success\":false,\"code\":\"DELIVERY403_1\",\"message\":\"해당 배송에 대한 접근 권한이 없습니다.\",\"result\":null}";
+    public static final String DELIVERY_SELF_MATCH_FORBIDDEN =
+            "{\"success\":false,\"code\":\"DELIVERY403_2\",\"message\":\"본인이 요청한 배송은 수락할 수 없습니다.\",\"result\":null}";
     public static final String DELIVERY_CANNOT_CANCEL =
             "{\"success\":false,\"code\":\"DELIVERY400_1\",\"message\":\"매칭이 진행된 배송은 취소할 수 없습니다.\",\"result\":null}";
     public static final String DELIVERY_INVALID_COMPLETION_STATUS =

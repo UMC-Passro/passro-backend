@@ -26,6 +26,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import static com.passro.passrobackend.global.configuration.SwaggerErrorExamples.DELIVERY_NOT_FOUND;
+import static com.passro.passrobackend.global.configuration.SwaggerErrorExamples.DELIVERY_SELF_MATCH_FORBIDDEN;
 import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.SHIPPER_OK;
 
 import com.passro.passrobackend.shipper.service.ShipperMatchingService;
@@ -56,7 +57,9 @@ public class ShipperController {
 
     @GetMapping("/matched")
     @ResponseBody
-    @Operation(summary = "매칭 대기 배송 목록 조회", description = "로그인한 배송기사의 권역 및 동선을 기반으로 우선순위 정렬된 배송 요청 목록을 조회합니다.")
+    @Operation(
+            summary = "매칭 대기 배송 목록 조회",
+            description = "로그인한 배송기사의 권역 및 동선을 기반으로 우선순위 정렬된 배송 요청 목록을 조회합니다. 본인이 요청한 배송은 제외됩니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true)
     public APIResponse<List<ShipperDeliveryListDto>> listMatched(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
@@ -99,6 +102,12 @@ public class ShipperController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "매칭 수락 성공", useReturnTypeSchema = true,
                     content = @Content(examples = @ExampleObject(name = "SHIPPER200_1", summary = "매칭 수락 성공", value = SHIPPER_OK))),
+            @ApiResponse(responseCode = "403", description = "본인이 요청한 배송",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(
+                                    name = "DELIVERY403_2",
+                                    summary = "본인 배송 수락 불가",
+                                    value = DELIVERY_SELF_MATCH_FORBIDDEN))),
             @ApiResponse(responseCode = "404", description = "배송 정보를 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
                             examples = @ExampleObject(name = "DELIVERY404_1", summary = "배송 정보 없음", value = DELIVERY_NOT_FOUND)))
