@@ -2,6 +2,7 @@ package com.passro.passrobackend.point.dto;
 
 import com.passro.passrobackend.point.entity.PointLog;
 import com.passro.passrobackend.point.enums.PointIncrementReason;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Schema(types = "object", description = "포인트 증감 내역 응답")
 public class PointLogResponseDto {
 
     private Long pointLogId;

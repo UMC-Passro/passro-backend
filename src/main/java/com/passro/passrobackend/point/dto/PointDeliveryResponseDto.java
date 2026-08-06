@@ -3,6 +3,7 @@ package com.passro.passrobackend.point.dto;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.place.entity.Place;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,6 +14,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Schema(types = "object", description = "포인트 내역 배송 응답")
 public class PointDeliveryResponseDto {
 
     private Long id;
@@ -39,6 +41,7 @@ public class PointDeliveryResponseDto {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor(access = AccessLevel.PROTECTED)
+    @Schema(types = "object", description = "포인트 내역 지하철역 응답")
     public static class PlaceResponseDto {
 
         private Long id;
