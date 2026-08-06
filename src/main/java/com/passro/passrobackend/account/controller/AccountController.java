@@ -8,6 +8,7 @@ import com.passro.passrobackend.account.service.MailSenderService;
 import com.passro.passrobackend.global.code.BaseSuccessCode;
 import com.passro.passrobackend.global.configuration.security.CustomUserDetails;
 import com.passro.passrobackend.global.response.APIResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -27,6 +28,7 @@ public class AccountController {
     private final MailSenderService mailSenderService;
 
     @GetMapping("/mypage/shipper")
+    @Operation(summary = "배송기사 마이페이지 조회", description = "마이페이지를 배송기사 기준으로 조회합니다.")
     @ApiResponse(responseCode = "200", description = "배송기사 마이페이지 조회 성공", useReturnTypeSchema = true)
     public ResponseEntity<APIResponse<AccountResDTO.ShipperMyPage>> shipperPage(@AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
@@ -36,6 +38,7 @@ public class AccountController {
     }
 
     @GetMapping("/mypage/sender")
+    @Operation(summary = "발송자 마이페이지 조회", description = "마이페이지를 발송자 기준으로 조회합니다.")
     @ApiResponse(responseCode = "200", description = "발송자 마이페이지 조회 성공", useReturnTypeSchema = true)
     public ResponseEntity<APIResponse<AccountResDTO.SenderMyPage>> senderPage(@AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
@@ -45,6 +48,7 @@ public class AccountController {
     }
 
     @PatchMapping("/mypage/edit/myInfo")
+    @Operation(summary = "마이페이지 수정", description = "마이페이지에서 원하는 정보를 수정합니다.")
     @ApiResponse(responseCode = "200", description = "마이페이지 수정 성공", useReturnTypeSchema = true)
     public ResponseEntity<APIResponse<Void>> editNickname(@Valid @RequestBody AccountReqDTO.EditMyInfo dto, @AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
@@ -63,6 +67,7 @@ public class AccountController {
     }
 
     @PatchMapping("/mypage/edit/password")
+    @Operation(summary = "비밀번호 변경", description = "현재 비밀번호와 새로운 비밀번호를 입력하여 변경합니다.")
     @ApiResponse(responseCode = "200", description = "비밀번호 변경 성공", useReturnTypeSchema = true)
     public APIResponse<Void> editPassword(@Valid @RequestBody AccountReqDTO.EditPassword dto, @AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
