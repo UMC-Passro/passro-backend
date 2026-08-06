@@ -1,6 +1,9 @@
 package com.passro.passrobackend.sender.service;
 
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.account.entity.AccountPlace;
+import com.passro.passrobackend.account.repository.AccountPlaceRepository;
+import com.passro.passrobackend.account.repository.WayPointRepository;
 import com.passro.passrobackend.delivery.configuration.DeliveryPointProperties;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryLog;
@@ -10,7 +13,7 @@ import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.global.advice.code.CommonErrorCode;
-import com.passro.passrobackend.global.exception.APIException;
+import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.sender.dto.SenderDeliveryDetailDto;
 import com.passro.passrobackend.sender.dto.SenderDeliveryListDto;
 import com.passro.passrobackend.sender.dto.SenderPaymentAmountDto;
@@ -33,6 +36,8 @@ public class SenderQueryService {
     private final DeliveryRepository deliveryRepository;
     private final DeliveryLogRepository deliveryLogRepository;
     private final SenderDeliveryValidator senderDeliveryValidator;
+    private final AccountPlaceRepository accountPlaceRepository;
+    private final WayPointRepository wayPointRepository;
     private final SubwayService subwayService;
     private final DeliveryPointProperties deliveryPointProperties;
 
@@ -68,6 +73,45 @@ public class SenderQueryService {
         List<DeliveryLog> logs = deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(delivery);
 
         return SenderDeliveryDetailDto.fromEntity(delivery, logs);
+    }
+
+    public SubwayRouteResponseDto getShipperCommuteRoute(Account sender, Long deliveryId) {
+        Delivery delivery = senderDeliveryValidator.getDeliveryAndValidateOwnership(deliveryId, sender);
+        Account shipper = delivery.getShipper();
+        if (shipper == null) {
+            throw new DeliveryException(DeliveryErrorCode.SHIPPER_NOT_ASSIGNED);
+        }
+
+        AccountPlace accountPlace = accountPlaceRepository.findByAccount(shipper)
+                .orElseThrow(() -> new DeliveryException(DeliveryErrorCode.SHIPPER_ROUTE_NOT_FOUND));
+        if (accountPlace.getStartPlace() == null || accountPlace.getDestinationPlace() == null) {
+            throw new DeliveryException(DeliveryErrorCode.SHIPPER_ROUTE_NOT_FOUND);
+        }
+
+        List<Place> waypoints = wayPointRepository
+                .findAllByAccountPlaceOrderByVisitOrderAsc(accountPlace)
+                .stream()
+                .map(wayPoint -> wayPoint.getPlace())
+                .toList();
+        return findRoute(accountPlace.getStartPlace(), waypoints, accountPlace.getDestinationPlace());
+    }
+
+    public SubwayRouteResponseDto getDeliveryRoute(Account sender, Long deliveryId) {
+        Delivery delivery = senderDeliveryValidator.getDeliveryAndValidateOwnership(deliveryId, sender);
+        return findRoute(delivery.getOrigin(), List.of(), delivery.getDest());
+    }
+
+    private SubwayRouteResponseDto findRoute(
+            Place origin,
+            List<Place> waypoints,
+            Place destination) {
+        try {
+            return subwayService.findShortestRoute(origin, waypoints, destination);
+        } catch (IllegalArgumentException exception) {
+            throw new DeliveryException(SubwayErrorCode.PLACE_NOT_FOUND);
+        } catch (IllegalStateException exception) {
+            throw new DeliveryException(SubwayErrorCode.ROUTE_NOT_FOUND);
+        }
     }
 
     // 배송 요청 생성 전, 결제 금액(포인트)을 실시간으로 계산

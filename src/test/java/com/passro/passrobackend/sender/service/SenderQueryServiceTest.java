@@ -5,6 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.account.entity.AccountPlace;
+import com.passro.passrobackend.account.entity.WayPoint;
+import com.passro.passrobackend.account.repository.AccountPlaceRepository;
+import com.passro.passrobackend.account.repository.WayPointRepository;
 import com.passro.passrobackend.delivery.configuration.DeliveryPointProperties;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
@@ -24,6 +28,7 @@ import com.passro.passrobackend.subway.dto.SubwayStationResponseDto;
 import com.passro.passrobackend.subway.service.SubwayService;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +47,12 @@ class SenderQueryServiceTest {
 
     @Mock
     private SenderDeliveryValidator senderDeliveryValidator;
+
+    @Mock
+    private AccountPlaceRepository accountPlaceRepository;
+
+    @Mock
+    private WayPointRepository wayPointRepository;
 
     @Mock
     private SubwayService subwayService;
@@ -156,6 +167,69 @@ class SenderQueryServiceTest {
         assertThat(result.getStatus()).isEqualTo(DeliveryState.DELIVERING);
         assertThat(result.getShipperInfo().getName()).isEqualTo("배송기사");
         assertThat(result.getDeliveryTimeLine()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("배송에 매칭된 배송기사의 경유지를 포함한 통학 경로를 조회한다")
+    void getShipperCommuteRoute_success() {
+        Account sender = Account.builder().id(1L).build();
+        Account shipper = Account.builder().id(2L).build();
+        Place start = Place.builder().id(10L).build();
+        Place waypointPlace = Place.builder().id(11L).build();
+        Place destination = Place.builder().id(12L).build();
+        Delivery delivery = Delivery.builder().id(100L).sender(sender).shipper(shipper).build();
+        AccountPlace accountPlace = AccountPlace.builder()
+                .account(shipper)
+                .startPlace(start)
+                .destinationPlace(destination)
+                .build();
+        WayPoint wayPoint = WayPoint.builder()
+                .accountPlace(accountPlace)
+                .place(waypointPlace)
+                .visitOrder(1)
+                .build();
+        SubwayRouteResponseDto expected = new SubwayRouteResponseDto(2, 0, List.of());
+
+        given(senderDeliveryValidator.getDeliveryAndValidateOwnership(100L, sender)).willReturn(delivery);
+        given(accountPlaceRepository.findByAccount(shipper)).willReturn(Optional.of(accountPlace));
+        given(wayPointRepository.findAllByAccountPlaceOrderByVisitOrderAsc(accountPlace))
+                .willReturn(List.of(wayPoint));
+        given(subwayService.findShortestRoute(start, List.of(waypointPlace), destination)).willReturn(expected);
+
+        assertThat(senderQueryService.getShipperCommuteRoute(sender, 100L)).isSameAs(expected);
+    }
+
+    @Test
+    @DisplayName("매칭되지 않은 배송의 배송기사 통학 경로 조회를 거부한다")
+    void getShipperCommuteRoute_withoutShipper() {
+        Account sender = Account.builder().id(1L).build();
+        Delivery delivery = Delivery.builder().id(100L).sender(sender).build();
+        given(senderDeliveryValidator.getDeliveryAndValidateOwnership(100L, sender)).willReturn(delivery);
+
+        assertThatThrownBy(() -> senderQueryService.getShipperCommuteRoute(sender, 100L))
+                .isInstanceOf(DeliveryException.class)
+                .extracting("code")
+                .isEqualTo(DeliveryErrorCode.SHIPPER_NOT_ASSIGNED);
+    }
+
+    @Test
+    @DisplayName("배송에 등록된 출발역과 도착역의 경로를 조회한다")
+    void getDeliveryRoute_success() {
+        Account sender = Account.builder().id(1L).build();
+        Place origin = Place.builder().id(10L).build();
+        Place destination = Place.builder().id(20L).build();
+        Delivery delivery = Delivery.builder()
+                .id(100L)
+                .sender(sender)
+                .origin(origin)
+                .dest(destination)
+                .build();
+        SubwayRouteResponseDto expected = new SubwayRouteResponseDto(3, 1, List.of());
+
+        given(senderDeliveryValidator.getDeliveryAndValidateOwnership(100L, sender)).willReturn(delivery);
+        given(subwayService.findShortestRoute(origin, List.of(), destination)).willReturn(expected);
+
+        assertThat(senderQueryService.getDeliveryRoute(sender, 100L)).isSameAs(expected);
     }
 
     @Test

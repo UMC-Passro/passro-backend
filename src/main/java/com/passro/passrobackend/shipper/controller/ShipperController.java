@@ -40,12 +40,14 @@ public class ShipperController {
     private final ShipperLocationService shipperLocationService;
 
     @PutMapping("/location")
-    @Operation(summary = "현재 위치 갱신", description = "배송 중인 배송기사가 현재 위도, 경도와 역 위치를 갱신합니다.")
+    @Operation(
+            summary = "현재 위치 갱신",
+            description = "배송 중인 배송기사가 현재 위도·경도를 갱신합니다. placeId는 선택값이며, 생략하면 전달된 좌표에서 가장 가까운 지하철역을 자동으로 선택합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "위치 갱신 성공", useReturnTypeSchema = true),
-            @ApiResponse(responseCode = "400", description = "좌표 또는 역 ID 검증 실패"),
+            @ApiResponse(responseCode = "400", description = "좌표 또는 전달된 역 ID 검증 실패"),
             @ApiResponse(responseCode = "403", description = "배송 중인 배송기사가 아님"),
-            @ApiResponse(responseCode = "404", description = "역 정보를 찾을 수 없음")
+            @ApiResponse(responseCode = "404", description = "전달된 역 또는 좌표와 비교할 역 정보를 찾을 수 없음")
     })
     public APIResponse<ShipperLocationResponseDto> updateLocation(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,

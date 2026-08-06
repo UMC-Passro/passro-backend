@@ -7,6 +7,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.account.entity.AccountPlace;
+import com.passro.passrobackend.account.entity.WayPoint;
+import com.passro.passrobackend.account.repository.AccountPlaceRepository;
+import com.passro.passrobackend.account.repository.WayPointRepository;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryPoint;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
@@ -38,6 +42,12 @@ class SenderDeliveryIntegrationTest extends IntegrationTestSupport {
 
     @Autowired
     private PointLogRepository pointLogRepository;
+
+    @Autowired
+    private AccountPlaceRepository accountPlaceRepository;
+
+    @Autowired
+    private WayPointRepository wayPointRepository;
 
     private long sourceId;
     private long destId;
@@ -165,6 +175,52 @@ class SenderDeliveryIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void senderCanReadDeliveryAndMatchedShipperRoutesWithCoordinates() throws Exception {
+        Account sender = createAccount("route-sender");
+        Account shipper = createAccount("route-shipper");
+        Place seoulStation = requiredPlace("공항", "서울역");
+        Place gongdeok = requiredPlace("공항", "공덕");
+        Place hongikUniversity = requiredPlace("공항", "홍대입구");
+        Place digitalMediaCity = requiredPlace("공항", "디지털미디어시티");
+        Place magongnaru = requiredPlace("공항", "마곡나루");
+
+        long deliveryId = createDelivery(
+                accessToken(sender), "Route item", seoulStation.getId(), gongdeok.getId());
+        Delivery delivery = deliveryRepository.findById(deliveryId).orElseThrow();
+        delivery.setShipper(shipper);
+        delivery.setStatus(DeliveryState.MATCHED);
+        deliveryRepository.saveAndFlush(delivery);
+
+        AccountPlace shipperRoute = accountPlaceRepository.saveAndFlush(AccountPlace.builder()
+                .account(shipper)
+                .startPlace(hongikUniversity)
+                .destinationPlace(magongnaru)
+                .build());
+        wayPointRepository.saveAndFlush(WayPoint.builder()
+                .accountPlace(shipperRoute)
+                .place(digitalMediaCity)
+                .visitOrder(1)
+                .build());
+
+        String token = accessToken(sender);
+        mockMvc.perform(get("/sender/{deliveryId}/routes/delivery", deliveryId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.stations[0].stationName").value("서울역"))
+                .andExpect(jsonPath("$.result.stations[0].latitude").value(37.55301784))
+                .andExpect(jsonPath("$.result.stations[0].longitude").value(126.9697643))
+                .andExpect(jsonPath("$.result.stations[1].stationName").value("공덕"));
+
+        mockMvc.perform(get("/sender/{deliveryId}/routes/shipper-commute", deliveryId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.stations[0].stationName").value("홍대입구"))
+                .andExpect(jsonPath("$.result.stations[0].latitude").isNumber())
+                .andExpect(jsonPath("$.result.stations[1].stationName").value("디지털미디어시티"))
+                .andExpect(jsonPath("$.result.stations[2].stationName").value("마곡나루"));
+    }
+
+    @Test
     void anotherSenderCannotReadOrModifyDelivery() throws Exception {
         Account owner = createAccount("owner");
         Account stranger = createAccount("stranger");
@@ -206,5 +262,10 @@ class SenderDeliveryIntegrationTest extends IntegrationTestSupport {
                         .header("Authorization", bearer(token)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("DELIVERY400_2"));
+    }
+
+    private Place requiredPlace(String routeName, String stationName) {
+        return placeRepository.findBySubwayRouteNameAndSubwayStationName(routeName, stationName)
+                .orElseThrow();
     }
 }
