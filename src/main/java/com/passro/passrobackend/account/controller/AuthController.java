@@ -130,7 +130,7 @@ public class AuthController {
                             @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION),
                             @ExampleObject(name = "ACCOUNT400_3", summary = "이메일 미인증", value = ACCOUNT_MAIL_NOT_CONFIRMED),
                             @ExampleObject(name = "ACCOUNT400_4", summary = "이메일 중복", value = ACCOUNT_DUPLICATE_MAIL),
-                            @ExampleObject(name = "ACCOUNT400_5", summary = "닉네임 중복", value = ACCOUNT_DUPLICATE_NICKNAME)
+                            @ExampleObject(name = "ACCOUNT400_6", summary = "닉네임 중복", value = ACCOUNT_DUPLICATE_NICKNAME)
                     }))
     })
     public APIResponse<Void> signup(@Valid @RequestBody AuthReqDTO.Signup dto){
@@ -140,6 +140,18 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인하여 Access/Refresh Token을 발급받습니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "로그인 성공",
+                    content = @Content(schema = @Schema(implementation = AuthResDTO.TokenResponse.class),
+                            examples = @ExampleObject(name = "ACCOUNT200_1", summary = "로그인 성공", value = ACCOUNT_OK))),
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION))),
+            @ApiResponse(responseCode = "401", description = "이메일 또는 비밀번호 불일치",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(name = "ACCOUNT401_1", summary = "인증 실패", value = ACCOUNT_INVALID_CREDENTIALS)))
+    })
     public ResponseEntity<APIResponse<AuthResDTO.TokenResponse>> login(@Valid @RequestBody AuthReqDTO.Login dto){
         BaseSuccessCode code = AccountSuccessCode.OK;
         return ResponseEntity.ok()
