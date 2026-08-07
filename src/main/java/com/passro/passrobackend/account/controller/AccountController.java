@@ -80,7 +80,7 @@ public class AccountController {
                     })),
             @ApiResponse(responseCode = "429", description = "정보 수정 제한(쿨다운)",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
-                            examples = @ExampleObject(name = "ACCOUNT429_1", summary = "잠시 후 다시 시도", value = ACCOUNT_MAIL_RESEND_TOO_FAST)))
+                            examples = @ExampleObject(name = "ACCOUNT429_1", summary = "잠시 후 다시 시도", value = ACCOUNT_TOO_FAST)))
     })
     public ResponseEntity<APIResponse<Void>> editNickname(@Valid @RequestBody AccountReqDTO.EditMyInfo dto, @AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
@@ -107,7 +107,7 @@ public class AccountController {
                             examples = @ExampleObject(name = "ACCOUNT404_1", summary = "계정 없음", value = ACCOUNT_NOT_FOUND))),
             @ApiResponse(responseCode = "429", description = "비밀번호 변경 제한(쿨다운)",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
-                            examples = @ExampleObject(name = "ACCOUNT429_1", summary = "잠시 후 다시 시도", value = ACCOUNT_MAIL_RESEND_TOO_FAST)))
+                            examples = @ExampleObject(name = "ACCOUNT429_1", summary = "잠시 후 다시 시도", value = ACCOUNT_TOO_FAST)))
     })
     public APIResponse<Void> editPassword(@Valid @RequestBody AccountReqDTO.EditPassword dto, @AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
