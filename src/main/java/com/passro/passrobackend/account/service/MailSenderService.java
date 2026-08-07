@@ -19,7 +19,6 @@ import java.time.Duration;
 public class MailSenderService {
 
     private final AsyncMailService asyncMailService;
-    private final AuthService authService;
 
     private final AccountRepository accountRepository;
     private final UniversityRepository universityRepository;
@@ -35,9 +34,6 @@ public class MailSenderService {
     //인증 요청 대기
     private static final String RESEND_COOLDOWN_PREFIX = "mail:verify:cooldown:";
     private static final Duration RESEND_COOLDOWN_TTL = Duration.ofSeconds(60);
-
-    //비밀번호 변경 대기
-    private static final String EDIT_PASSWORD_COOLDOWN_PREFIX = "edit:password:verify:code";
 
 
     public void sendMailMessageSignUpOrShipperSelect(AuthReqDTO.SendMail dto) {

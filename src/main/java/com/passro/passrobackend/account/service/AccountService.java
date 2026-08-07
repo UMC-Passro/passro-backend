@@ -31,7 +31,6 @@ public class AccountService {
     private final DeliveryRepository deliveryRepository;
     private final ReviewService reviewService;
     private final S3Service s3Service;
-    private final VerificationCodeService verificationCodeService;
 
     private final AccountRepository accountRepository;
     private final AccountPlaceRepository accountPlaceRepository;
@@ -41,9 +40,6 @@ public class AccountService {
     private final PasswordEncoder passwordEncoder;
 
     private final StringRedisTemplate stringRedisTemplate;
-
-    //인증 코드
-    private static final String CODE_PREFIX = "mail:verify:code:";
 
     //닉네임 변경 대기
     private static final String EDIT_INFO_COOLDOWN_PREFIX = "edit:info:verify:code";
