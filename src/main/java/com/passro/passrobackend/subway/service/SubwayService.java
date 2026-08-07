@@ -58,9 +58,9 @@ public class SubwayService {
     @PostConstruct
     public void initialize() {
         List<StationRecord> records = readStationRecords();
-        Map<String, Place> places = loadPlaces();
+        Map<String, Long> placeIds = loadPlaceIds();
 
-        createNodes(records, places);
+        createNodes(records, placeIds);
         connectStationsOnSameRoute(records);
         connectBranchStations(readBranchEdgeRecords());
         connectTransferStations();
@@ -155,30 +155,28 @@ public class SubwayService {
         return Place.builder().id(placeId).build();
     }
 
-    private Map<String, Place> loadPlaces() {
-        Map<String, Place> places = new HashMap<>();
+    private Map<String, Long> loadPlaceIds() {
+        Map<String, Long> placeIds = new HashMap<>();
         for (Place place : placeRepository.findAll()) {
-            places.put(nodeKey(place.getSubwayRouteName(), place.getSubwayStationName()), place);
+            placeIds.put(nodeKey(place.getSubwayRouteName(), place.getSubwayStationName()), place.getId());
         }
-        return places;
+        return placeIds;
     }
 
-    private void createNodes(List<StationRecord> records, Map<String, Place> places) {
+    private void createNodes(List<StationRecord> records, Map<String, Long> placeIds) {
         for (StationRecord record : records) {
             String key = nodeKey(record.routeName(), record.stationName());
-            Place place = places.get(key);
-            if (place == null) {
+            Long placeId = placeIds.get(key);
+            if (placeId == null) {
                 throw new IllegalStateException(
                         "Place를 찾을 수 없습니다: route=" + record.routeName() + ", station=" + record.stationName());
             }
 
             SubwayNode node = nodesByRouteAndStation.computeIfAbsent(key, ignored -> SubwayNode.builder()
-                    .id(place.getId())
+                    .id(placeId)
                     .region(record.regionName())
                     .route(record.routeName())
                     .name(record.stationName())
-                    .latitude(place.getLatitude())
-                    .longitude(place.getLongitude())
                     .build());
             nodesById.putIfAbsent(node.getId(), node);
             nodesByStation.computeIfAbsent(node.getName(), ignored -> new ArrayList<>()).add(node);
