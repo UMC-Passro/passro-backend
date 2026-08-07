@@ -58,14 +58,6 @@ public class AccountController {
                 .body(APIResponse.onSuccess(code, null));
     }
 
-    @PatchMapping("/mypage/edit/password/mail")
-    @ApiResponse(responseCode = "200", description = "메일 요청 성공", useReturnTypeSchema = true)
-    public APIResponse<Void> sendPasswordEditMail(@AuthenticationPrincipal CustomUserDetails userDetails){
-        BaseSuccessCode code = AccountSuccessCode.OK;
-        mailSenderService.sendMailMessageEditPassword(userDetails.getAccountId());
-        return APIResponse.onSuccess(code, null);
-    }
-
     @PatchMapping("/mypage/edit/password")
     @Operation(summary = "비밀번호 변경", description = "현재 비밀번호와 새로운 비밀번호를 입력하여 변경합니다.")
     @ApiResponse(responseCode = "200", description = "비밀번호 변경 성공", useReturnTypeSchema = true)
