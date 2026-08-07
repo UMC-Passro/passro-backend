@@ -58,11 +58,16 @@ public class SubwayService {
     @PostConstruct
     public void initialize() {
         List<StationRecord> records = readStationRecords();
-        Map<String, Place> places = loadPlaces();
+        Map<String, Long> placeIds = loadPlaceIds();
 
-        createNodes(records, places);
+        // DB(Place)에 존재하지 않는 역/간선은 건너뛰기 위한 사전 필터링 (응급조치)
+        records = filterRecordsWithExistingPlace(records, placeIds);
+        List<BranchEdgeRecord> branchEdgeRecords =
+                filterBranchEdgesWithExistingPlace(readBranchEdgeRecords(), placeIds);
+
+        createNodes(records, placeIds);
         connectStationsOnSameRoute(records);
-        connectBranchStations(readBranchEdgeRecords());
+        connectBranchStations(branchEdgeRecords);
         connectTransferStations();
 
         log.info("지하철 그래프를 생성했습니다. nodes={}, directedEdges={}",
@@ -155,30 +160,60 @@ public class SubwayService {
         return Place.builder().id(placeId).build();
     }
 
-    private Map<String, Place> loadPlaces() {
-        Map<String, Place> places = new HashMap<>();
+    private Map<String, Long> loadPlaceIds() {
+        Map<String, Long> placeIds = new HashMap<>();
         for (Place place : placeRepository.findAll()) {
-            places.put(nodeKey(place.getSubwayRouteName(), place.getSubwayStationName()), place);
+            placeIds.put(nodeKey(place.getSubwayRouteName(), place.getSubwayStationName()), place.getId());
         }
-        return places;
+        return placeIds;
     }
 
-    private void createNodes(List<StationRecord> records, Map<String, Place> places) {
+    private List<StationRecord> filterRecordsWithExistingPlace(
+            List<StationRecord> records, Map<String, Long> placeIds) {
+        List<StationRecord> filtered = new ArrayList<>();
         for (StationRecord record : records) {
             String key = nodeKey(record.routeName(), record.stationName());
-            Place place = places.get(key);
-            if (place == null) {
-                throw new IllegalStateException(
-                        "Place를 찾을 수 없습니다: route=" + record.routeName() + ", station=" + record.stationName());
+            if (placeIds.containsKey(key)) {
+                filtered.add(record);
+            } else {
+                log.warn("Place를 찾을 수 없어 건너뜁니다: route={}, station={}",
+                        record.routeName(), record.stationName());
+            }
+        }
+        return filtered;
+    }
+
+    private List<BranchEdgeRecord> filterBranchEdgesWithExistingPlace(
+            List<BranchEdgeRecord> records, Map<String, Long> placeIds) {
+        List<BranchEdgeRecord> filtered = new ArrayList<>();
+        for (BranchEdgeRecord record : records) {
+            boolean sourceExists = placeIds.containsKey(nodeKey(record.routeName(), record.sourceStationName()));
+            boolean targetExists = placeIds.containsKey(nodeKey(record.routeName(), record.targetStationName()));
+            if (sourceExists && targetExists) {
+                filtered.add(record);
+            } else {
+                log.warn("분기 간선의 역을 찾을 수 없어 건너뜁니다: route={}, source={}, target={}",
+                        record.routeName(), record.sourceStationName(), record.targetStationName());
+            }
+        }
+        return filtered;
+    }
+
+    private void createNodes(List<StationRecord> records, Map<String, Long> placeIds) {
+        for (StationRecord record : records) {
+            String key = nodeKey(record.routeName(), record.stationName());
+            Long placeId = placeIds.get(key);
+            if (placeId == null) {
+                // 필터링 이후이므로 이론상 도달하지 않지만 방어적으로 남겨둠
+                log.warn("Place를 찾을 수 없어 건너뜁니다: route={}, station={}", record.routeName(), record.stationName());
+                continue;
             }
 
             SubwayNode node = nodesByRouteAndStation.computeIfAbsent(key, ignored -> SubwayNode.builder()
-                    .id(place.getId())
+                    .id(placeId)
                     .region(record.regionName())
                     .route(record.routeName())
                     .name(record.stationName())
-                    .latitude(place.getLatitude())
-                    .longitude(place.getLongitude())
                     .build());
             nodesById.putIfAbsent(node.getId(), node);
             nodesByStation.computeIfAbsent(node.getName(), ignored -> new ArrayList<>()).add(node);

@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.*;
 import software.amazon.awssdk.core.internal.http.pipeline.stages.ApplyUserAgentStage;
 
 import static com.passro.passrobackend.global.configuration.SwaggerErrorExamples.*;
-import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.ACCOUNT_OK;
+import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -130,7 +130,7 @@ public class AuthController {
                             @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION),
                             @ExampleObject(name = "ACCOUNT400_3", summary = "이메일 미인증", value = ACCOUNT_MAIL_NOT_CONFIRMED),
                             @ExampleObject(name = "ACCOUNT400_4", summary = "이메일 중복", value = ACCOUNT_DUPLICATE_MAIL),
-                            @ExampleObject(name = "ACCOUNT400_5", summary = "닉네임 중복", value = ACCOUNT_DUPLICATE_NICKNAME)
+                            @ExampleObject(name = "ACCOUNT400_6", summary = "닉네임 중복", value = ACCOUNT_DUPLICATE_NICKNAME)
                     }))
     })
     public APIResponse<Void> signup(@Valid @RequestBody AuthReqDTO.Signup dto){
@@ -140,6 +140,18 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인하여 Access/Refresh Token을 발급받습니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "로그인 성공",
+                    content = @Content(schema = @Schema(implementation = AuthResDTO.TokenResponse.class),
+                            examples = @ExampleObject(name = "ACCOUNT200_1", summary = "로그인 성공", value = ACCOUNT_LOGIN_SUCCESS))),
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION))),
+            @ApiResponse(responseCode = "401", description = "이메일 또는 비밀번호 불일치",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(name = "ACCOUNT401_1", summary = "인증 실패", value = ACCOUNT_INVALID_CREDENTIALS)))
+    })
     public ResponseEntity<APIResponse<AuthResDTO.TokenResponse>> login(@Valid @RequestBody AuthReqDTO.Login dto){
         BaseSuccessCode code = AccountSuccessCode.OK;
         return ResponseEntity.ok()
@@ -148,13 +160,25 @@ public class AuthController {
     }
 
     @DeleteMapping("/logout")
+    @Operation(summary = "로그아웃", description = "저장된 Refresh Token을 삭제하여 로그아웃 처리합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "로그아웃 성공", useReturnTypeSchema = true,
+                    content = @Content(examples = @ExampleObject(name = "ACCOUNT200_1", summary = "로그아웃 성공", value = ACCOUNT_OK)))
+    })
     public APIResponse<Void> logout(@AuthenticationPrincipal CustomUserDetails userDetails){
         BaseSuccessCode code = AccountSuccessCode.OK;
         authService.logout(userDetails.getAccountId());
         return APIResponse.onSuccess(code, null);
     }
-
     @PostMapping("/find/id")
+    @Operation(summary = "아이디(이메일) 찾기", description = "이름과 전화번호로 본인 확인 후, 가입된 이메일을 해당 이메일로 발송합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "요청 처리 성공(계정 존재 여부와 무관하게 동일하게 응답)", useReturnTypeSchema = true,
+                    content = @Content(examples = @ExampleObject(name = "ACCOUNT200_1", summary = "요청 처리 성공", value = ACCOUNT_OK))),
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION)))
+    })
     public APIResponse<Void> findId(@Valid @RequestBody AuthReqDTO.FindId dto) {
         BaseSuccessCode code = AccountSuccessCode.OK;
         authService.findId(dto);
@@ -162,6 +186,14 @@ public class AuthController {
     }
 
     @PostMapping("/find/password")
+    @Operation(summary = "비밀번호 찾기", description = "이름, 전화번호, 이메일로 본인 확인 후 임시 비밀번호를 해당 이메일로 발송합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "요청 처리 성공(계정 존재 여부와 무관하게 동일하게 응답)", useReturnTypeSchema = true,
+                    content = @Content(examples = @ExampleObject(name = "ACCOUNT200_1", summary = "요청 처리 성공", value = ACCOUNT_OK))),
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION)))
+    })
     public APIResponse<Void> findPassword(@Valid @RequestBody AuthReqDTO.FindPassword dto) {
         BaseSuccessCode code = AccountSuccessCode.OK;
         authService.findPassword(dto);
@@ -169,6 +201,18 @@ public class AuthController {
     }
 
     @PostMapping("/reissue")
+    @Operation(summary = "토큰 재발급", description = "Refresh Token으로 새로운 Access/Refresh Token을 발급받습니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "토큰 재발급 성공",
+                    content = @Content(schema = @Schema(implementation = AuthResDTO.TokenResponse.class),
+                            examples = @ExampleObject(name = "ACCOUNT200_1", summary = "토큰 재발급 성공", value = ACCOUNT_REISSUE_SUCCESS))),
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION))),
+            @ApiResponse(responseCode = "401", description = "유효하지 않은 Refresh Token",
+                    content = @Content(schema = @Schema(implementation = APIResponse.class),
+                            examples = @ExampleObject(name = "ACCOUNT401_2", summary = "리프레시 토큰 오류", value = ACCOUNT_INVALID_REFRESH_TOKEN)))
+    })
     public ResponseEntity<APIResponse<AuthResDTO.TokenResponse>> reissue(@Valid @RequestBody AuthReqDTO.ReIssue dto){
         BaseSuccessCode code = AccountSuccessCode.OK;
         return ResponseEntity.ok()
