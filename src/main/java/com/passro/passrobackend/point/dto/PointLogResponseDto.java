@@ -20,6 +20,7 @@ public class PointLogResponseDto {
 
     private Long pointLogId;
     private PointDeliveryResponseDto delivery;
+    private PointMarketResponseDto market;
     private PointIncrementReason incrementReason;
     private Long deltaPoint;
     private Long beforePoint;
@@ -31,6 +32,7 @@ public class PointLogResponseDto {
         return PointLogResponseDto.builder()
                 .pointLogId(pointLog.getId())
                 .delivery(PointDeliveryResponseDto.from(pointLog.getDelivery()))
+                .market(PointMarketResponseDto.from(pointLog.getMarket()))
                 .incrementReason(pointLog.getIncrementReason())
                 .deltaPoint(pointLog.getDeltaPoint())
                 .beforePoint(pointLog.getBeforePoint())

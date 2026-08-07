@@ -3,6 +3,7 @@ package com.passro.passrobackend.point.service;
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.account.repository.AccountRepository;
 import com.passro.passrobackend.delivery.entity.Delivery;
+import com.passro.passrobackend.market.entity.Market;
 import com.passro.passrobackend.point.dto.PointHistoryResponseDto;
 import com.passro.passrobackend.point.dto.PointLogResponseDto;
 import com.passro.passrobackend.point.entity.PointLog;
@@ -80,6 +81,26 @@ public class PointService {
         shipper.earnPoint(amount);
         saveLog(shipper, delivery, PointIncrementReason.DELIVERY_SETTLEMENT,
                 amount, beforePoint, shipper.currentPoint(), "배송 완료 포인트 정산");
+    }
+
+    public long payForMarket(Long accountId, Market market) {
+        long amount = market.getPrice();
+        validateAmount(amount);
+
+        Account account = getAccountForUpdate(accountId);
+        long beforePoint = account.currentPoint();
+        if (beforePoint < amount) {
+            throw new PointException(PointErrorCode.INSUFFICIENT_BALANCE);
+        }
+
+        account.usePoint(amount);
+        pointLogRepository.save(PointLog.createMarketPurchase(
+                account,
+                market,
+                Math.negateExact(amount),
+                beforePoint,
+                account.currentPoint()));
+        return account.currentPoint();
     }
 
     private Account getAccountForUpdate(Long accountId) {

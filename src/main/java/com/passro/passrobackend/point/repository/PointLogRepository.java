@@ -26,7 +26,8 @@ public interface PointLogRepository extends JpaRepository<PointLog, Long> {
             "delivery",
             "delivery.origin",
             "delivery.dest",
-            "delivery.deliveryGoodInfo"
+            "delivery.deliveryGoodInfo",
+            "market"
     })
     List<PointLog> findAllByAccountOrderByCreatedAtDesc(Account account);
 }

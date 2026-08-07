@@ -25,6 +25,9 @@ public class PointDeliveryResponseDto {
     private String memo;
 
     public static PointDeliveryResponseDto from(Delivery delivery) {
+        if (delivery == null) {
+            return null;
+        }
         return PointDeliveryResponseDto.builder()
                 .id(delivery.getId())
                 .name(delivery.getDeliveryGoodInfo() != null

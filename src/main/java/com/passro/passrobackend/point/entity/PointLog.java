@@ -3,6 +3,7 @@ package com.passro.passrobackend.point.entity;
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.global.entity.BaseEntity;
+import com.passro.passrobackend.market.entity.Market;
 import com.passro.passrobackend.point.enums.PointIncrementReason;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,9 +45,13 @@ public class PointLog extends BaseEntity {
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "delivery_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "delivery_id")
     private Delivery delivery;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "market_id")
+    private Market market;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "increment_reason", nullable = false, length = 40)
@@ -81,6 +86,24 @@ public class PointLog extends BaseEntity {
                 .beforePoint(beforePoint)
                 .afterPoint(afterPoint)
                 .incrementReasonMemo(memo)
+                .build();
+    }
+
+    public static PointLog createMarketPurchase(
+            Account account,
+            Market market,
+            long deltaPoint,
+            long beforePoint,
+            long afterPoint
+    ) {
+        return PointLog.builder()
+                .account(account)
+                .market(market)
+                .incrementReason(PointIncrementReason.MARKET_PURCHASE)
+                .deltaPoint(deltaPoint)
+                .beforePoint(beforePoint)
+                .afterPoint(afterPoint)
+                .incrementReasonMemo("마켓 상품 구매: " + market.getName())
                 .build();
     }
 }
