@@ -36,7 +36,7 @@ public class ShipperService {
 
     public ShipperDeliveryDetailDto getDeliveryById(Account shipper, Long id) {
         Delivery delivery = getDelivery(id);
-        validateAssignedShipper(delivery, shipper);
+//        validateAssignedShipper(delivery, shipper);
         List<DeliveryLog> logs = deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(delivery);
         return ShipperDeliveryDetailDto.fromDelivery(delivery, logs);
     }
