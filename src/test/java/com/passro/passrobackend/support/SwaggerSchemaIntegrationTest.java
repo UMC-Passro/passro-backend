@@ -30,7 +30,7 @@ class SwaggerSchemaIntegrationTest extends IntegrationTestSupport {
                 "마켓",
                 "지하철",
                 "발송자",
-                "배송기사",
+                "전달자",
                 "채팅",
                 "배송 문의",
                 "리뷰",
