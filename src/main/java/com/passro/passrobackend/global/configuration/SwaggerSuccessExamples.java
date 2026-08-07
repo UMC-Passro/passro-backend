@@ -7,6 +7,18 @@ public final class SwaggerSuccessExamples {
 
     public static final String ACCOUNT_OK =
             "{\"success\":true,\"code\":\"ACCOUNT200_1\",\"message\":\"요청 성공.\",\"result\":null}";
+    public static final String ACCOUNT_LOGIN_SUCCESS = """
+    {
+      "code": "ACCOUNT200_1",
+      "message": "요청 성공",
+      "result": {
+        "accessToken": "eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzg1MDcwMjk0LCJleHAiOjE3ODUwNzM4OTQsInJvbGUiOiJVU0VSIn0...",
+        "refreshToken": "eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzg1MDcwMjk0LCJleHAiOjE3ODYyNzk4OTR9..."
+      },
+      "success": true
+    }
+    """;
+    public static final String ACCOUNT_REISSUE_SUCCESS = ACCOUNT_LOGIN_SUCCESS;  // 구조 동일하니 재사용 가능
     public static final String FILE_URL =
             "{\"success\":true,\"code\":\"FILE200_1\",\"message\":\"요청 성공.\",\"result\":\"https://s3.example.com/file?signature=...\"}";
     public static final String INQUIRY_CREATED =

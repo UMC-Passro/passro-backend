@@ -1,6 +1,7 @@
 package com.passro.passrobackend.account.dto.authDTO;
 
 import com.passro.passrobackend.account.validation.PasswordComplexity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
