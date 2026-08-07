@@ -1,5 +1,6 @@
 package com.passro.passrobackend.account.dto.accountDTO;
 
+import com.passro.passrobackend.subway.dto.SubwayStationResponseDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,6 +18,8 @@ public class AccountResDTO {
         private String name;
         private LocalDate birth;
         private String phoneNumber;
+        private SubwayStationResponseDto startPlace;
+        private SubwayStationResponseDto destinationPlace;
         private Long deliveryCount;
         private Long point;
         private double rating;

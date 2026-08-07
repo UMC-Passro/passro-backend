@@ -16,6 +16,7 @@ import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
 import com.passro.passrobackend.review.dto.ReviewAverageResponseDto;
 import com.passro.passrobackend.review.service.ReviewService;
+import com.passro.passrobackend.subway.dto.SubwayStationResponseDto;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -67,6 +68,8 @@ public class AccountService {
     public AccountResDTO.ShipperMyPage myShipperPage(Long accountId) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(()-> new AccountException(AccountErrorCode.NOT_FOUND));
+        AccountPlace accountPlace = accountPlaceRepository.findByAccount(account)
+                .orElseThrow(() -> new AccountException(AccountErrorCode.NOT_FOUND));
 
         String picture = null;
         if (account.getPicture() != null)
@@ -76,6 +79,8 @@ public class AccountService {
         String name = account.getName();
         var birth = account.getBirth();
         String phoneNumber = account.getPhoneNumber();
+        SubwayStationResponseDto startPlace = SubwayStationResponseDto.from(accountPlace.getStartPlace());
+        SubwayStationResponseDto destinationPlace = SubwayStationResponseDto.from(accountPlace.getDestinationPlace());
         Long deliveryCount = deliveryRepository.countByShipper(account);
         Long point = account.getPoint();
 
@@ -85,7 +90,8 @@ public class AccountService {
             rating = ratingDTO.getAverageRating();
 
         return new AccountResDTO.ShipperMyPage(
-                picture, nickname, name, birth, phoneNumber, deliveryCount, point, rating);
+                picture, nickname, name, birth, phoneNumber, startPlace, destinationPlace,
+                deliveryCount, point, rating);
     }
 
     public AccountResDTO.SenderMyPage mySenderPage(Long accountId) {
