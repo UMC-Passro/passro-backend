@@ -47,6 +47,16 @@ public class AccountController {
                 .body(APIResponse.onSuccess(code, accountService.mySenderPage(userDetails.getAccountId())));
     }
 
+    @GetMapping("/mypage/student-certification")
+    @Operation(summary = "학생 인증 여부 조회", description = "로그인한 사용자의 학생 인증 여부를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "학생 인증 여부 조회 성공", useReturnTypeSchema = true)
+    public APIResponse<Boolean> getStudentCertificationStatus(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return APIResponse.onSuccess(
+                AccountSuccessCode.OK,
+                accountService.isStudentCertified(userDetails.getAccountId()));
+    }
+
     @PatchMapping("/mypage/edit/myInfo")
     @Operation(summary = "마이페이지 수정", description = "마이페이지에서 원하는 정보를 수정합니다.")
     @ApiResponse(responseCode = "200", description = "마이페이지 수정 성공", useReturnTypeSchema = true)
