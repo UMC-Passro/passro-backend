@@ -52,19 +52,6 @@ public class MailSenderService {
         sendMail(mail);
     }
 
-    public void sendMailMessageEditPassword(Long accountId) {
-
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(()-> new AccountException(AccountErrorCode.NOT_FOUND));
-
-        String mail = account.getMail();
-
-        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId)))
-            throw new AccountException(AccountErrorCode.TOO_FAST);
-
-        sendMail(mail);
-    }
-
     private void validateUniversityMail(String mail) {
         int atIndex = mail.indexOf("@");
         if (atIndex == -1 || atIndex == mail.length() - 1)
