@@ -1,5 +1,7 @@
 package com.passro.passrobackend.account.dto.accountDTO;
 
+import com.passro.passrobackend.account.exception.AccountException;
+import com.passro.passrobackend.account.exception.code.AccountErrorCode;
 import com.passro.passrobackend.account.validation.PasswordComplexity;
 import jakarta.validation.constraints.*;
 import lombok.Getter;

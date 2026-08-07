@@ -50,6 +50,10 @@ public enum AccountErrorCode implements BaseErrorCode {
             "ACCOUNT400_9",
             "현재 비밀번호와 일치합니다."),
 
+    NOT_SAME_PASSWORD(HttpStatus.BAD_REQUEST,
+            "ACCOUNT400_9",
+            "현재 비밀번호와 일치하지않습니다."),
+
     TOO_FAST(HttpStatus.TOO_MANY_REQUESTS,
             "ACCOUNT429_1",
             "잠시 후 다시 시도해주세요."),
