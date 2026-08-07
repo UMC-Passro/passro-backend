@@ -105,7 +105,6 @@ public abstract class IntegrationTestSupport {
                   "sourceStationId":%d,
                   "destinationStationId":%d,
                   "name":"%s",
-                  "price":100000,
                   "size":"M",
                   "picture":"good.png",
                   "memo":"Handle with care"

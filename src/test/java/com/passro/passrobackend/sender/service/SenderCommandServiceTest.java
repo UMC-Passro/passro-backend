@@ -76,7 +76,6 @@ class SenderCommandServiceTest {
                 .sourceStationId(10L)
                 .destinationStationId(20L)
                 .name("노트북")
-                .price(1000000L)
                 .size("M")
                 .picture("pic.jpg")
                 .memo("조심히 배송해 주세요")
@@ -112,6 +111,7 @@ class SenderCommandServiceTest {
         ArgumentCaptor<Delivery> deliveryCaptor = ArgumentCaptor.forClass(Delivery.class);
         verify(deliveryRepository).save(deliveryCaptor.capture());
         assertThat(deliveryCaptor.getValue().getDeliveryGoodInfo().getName()).isEqualTo("노트북");
+        assertThat(deliveryCaptor.getValue().getDeliveryGoodInfo().getPrice()).isEqualTo(2700L);
         assertThat(deliveryCaptor.getValue().getDeliveryPoint().getBase_point()).isEqualTo(2000L);
         assertThat(deliveryCaptor.getValue().getDeliveryPoint().getDistance_point()).isEqualTo(200L);
         assertThat(deliveryCaptor.getValue().getDeliveryPoint().getWeight_point()).isEqualTo(500L);

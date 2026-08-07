@@ -185,7 +185,10 @@ public class SenderController {
     // 배송 요청
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "배송 요청 생성", description = "출발지, 도착지, 물품 정보를 입력해 새 배송을 요청합니다. 응답 result는 생성된 배송 ID입니다.")
+    @Operation(
+            summary = "배송 요청 생성",
+            description = "출발지, 도착지, 물품 정보를 입력해 새 배송을 요청합니다. "
+                    + "배송 가격은 이동 거리와 물품 크기를 기준으로 서버에서 계산하며, 응답 result는 생성된 배송 ID입니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "배송 요청 생성 성공", useReturnTypeSchema = true,
                     content = @Content(examples = @ExampleObject(name = "SENDER201_1", summary = "배송 요청 생성 성공", value = SENDER_CREATED))),

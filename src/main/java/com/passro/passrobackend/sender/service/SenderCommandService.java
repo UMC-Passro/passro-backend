@@ -101,20 +101,23 @@ public class SenderCommandService {
 
         String normalizedSize = request.getSize().toUpperCase(Locale.ROOT);
         SubwayRouteResponseDto route = subwayService.findShortestRoute(origin, List.of(), dest);
+        long basePoint = deliveryPointProperties.getBase();
+        long distancePoint = deliveryPointProperties.pointForRoute(route.getTravelStationCount());
+        long weightPoint = deliveryPointProperties.pointForSize(normalizedSize);
+        long totalPoint = Math.addExact(Math.addExact(basePoint, distancePoint), weightPoint);
 
         // 배송 물품 정보 (DeliveryGoodInfo) 생성 및 저장
         DeliveryGoodInfo goodInfo = DeliveryGoodInfo.builder()
                 .name(request.getName())
-                .price(request.getPrice())
+                .price(totalPoint)
                 .size(normalizedSize) // TODO: 배송 사이즈는 enum으로 관리 고려 중입니다.
                 .picture(request.getPicture())
                 .build();
 
         DeliveryPoint pointInfo = DeliveryPoint.builder()
-                .base_point(deliveryPointProperties.getBase())
-                .distance_point(deliveryPointProperties.pointForRoute(
-                        route.getTravelStationCount()))
-                .weight_point(deliveryPointProperties.pointForSize(normalizedSize))
+                .base_point(basePoint)
+                .distance_point(distancePoint)
+                .weight_point(weightPoint)
                 .build();
 
         delivery.attachGoodInfo(goodInfo);

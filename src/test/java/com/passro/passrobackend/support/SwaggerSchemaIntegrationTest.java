@@ -10,6 +10,20 @@ import org.junit.jupiter.api.Test;
 class SwaggerSchemaIntegrationTest extends IntegrationTestSupport {
 
     @Test
+    void senderDeliveryCreateRequestDoesNotExposePrice() throws Exception {
+        String body = mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        JsonNode document = objectMapper.readTree(body);
+
+        JsonNode requestSchema = document.at("/components/schemas/SenderDeliveryCreateRequestDto");
+        assertThat(requestSchema.at("/properties/price").isMissingNode()).isTrue();
+        assertThat(requestSchema.at("/required").toString()).doesNotContain("\"price\"");
+    }
+
+    @Test
     void senderDetailResponseUsesObjectDtoSchema() throws Exception {
         String body = mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())

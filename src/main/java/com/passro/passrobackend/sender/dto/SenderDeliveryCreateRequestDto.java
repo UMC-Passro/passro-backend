@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -30,10 +29,6 @@ public class SenderDeliveryCreateRequestDto {
     private String name;
 
     // DeliveryGoodInfo
-    @NotNull(message = "물품 가격을 입력하세요.")
-    @PositiveOrZero(message = "물품 가격은 0 이상이어야 합니다.")
-    private Long price;
-
     @NotBlank(message = "물품 크기를 입력하세요.")
     @Pattern(regexp = "(?i)S|M|L", message = "물품 크기는 S, M, L 중 하나여야 합니다.")
     private String size;
