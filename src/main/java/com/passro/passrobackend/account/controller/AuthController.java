@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.*;
 import software.amazon.awssdk.core.internal.http.pipeline.stages.ApplyUserAgentStage;
 
 import static com.passro.passrobackend.global.configuration.SwaggerErrorExamples.*;
-import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.ACCOUNT_OK;
+import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -144,7 +144,7 @@ public class AuthController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "로그인 성공",
                     content = @Content(schema = @Schema(implementation = AuthResDTO.TokenResponse.class),
-                            examples = @ExampleObject(name = "ACCOUNT200_1", summary = "로그인 성공", value = ACCOUNT_OK))),
+                            examples = @ExampleObject(name = "ACCOUNT200_1", summary = "로그인 성공", value = ACCOUNT_LOGIN_SUCCESS))),
             @ApiResponse(responseCode = "400", description = "요청 값 검증 실패",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
                             examples = @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION))),
@@ -205,7 +205,7 @@ public class AuthController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "토큰 재발급 성공",
                     content = @Content(schema = @Schema(implementation = AuthResDTO.TokenResponse.class),
-                            examples = @ExampleObject(name = "ACCOUNT200_1", summary = "토큰 재발급 성공", value = ACCOUNT_OK))),
+                            examples = @ExampleObject(name = "ACCOUNT200_1", summary = "토큰 재발급 성공", value = ACCOUNT_REISSUE_SUCCESS))),
             @ApiResponse(responseCode = "400", description = "요청 값 검증 실패",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
                             examples = @ExampleObject(name = "COMMON400", summary = "요청 값 검증 실패", value = COMMON_VALIDATION))),
