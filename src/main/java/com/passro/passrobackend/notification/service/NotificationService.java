@@ -28,8 +28,8 @@ public class NotificationService {
      * @param type 알림 종류
      * @param title 알림 제목
      * @param content 알림 내용 (nullable)
-     * @param resourceType 클릭 시 이동할 자원 종류 (NONE 이면 이동 없음)
-     * @param resourceId 자원 ID (resourceType 이 NONE 이면 null)
+     * @param resourceType 클릭 시 이동할 자원 종류 (null 이면 NONE 으로 저장)
+     * @param resourceId 자원 ID (resourceType 이 NONE 이면 null 로 저장하여 정합성 유지)
      */
     @Transactional
     public Notification publish(Account recipient,
@@ -38,13 +38,19 @@ public class NotificationService {
                                 String content,
                                 ResourceType resourceType,
                                 Long resourceId) {
+        ResourceType effectiveResourceType =
+                resourceType != null ? resourceType : ResourceType.NONE;
+        // NONE 이면 resourceId 도 null 로 강제 (자원 종류 없이 ID만 남는 상태 방지)
+        Long effectiveResourceId =
+                effectiveResourceType == ResourceType.NONE ? null : resourceId;
+
         Notification notification = Notification.builder()
                 .account(recipient)
                 .type(type)
                 .title(title)
                 .content(content)
-                .resourceType(resourceType != null ? resourceType : ResourceType.NONE)
-                .resourceId(resourceId)
+                .resourceType(effectiveResourceType)
+                .resourceId(effectiveResourceId)
                 .isRead(false)
                 .build();
         return notificationRepository.save(notification);

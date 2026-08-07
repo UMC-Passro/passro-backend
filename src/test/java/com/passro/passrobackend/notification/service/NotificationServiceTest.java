@@ -83,8 +83,25 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("알림 발행 - resourceType 이 null 이면 NONE 으로 저장")
-    void publish_nullResourceTypeDefaultsToNone() {
+    @DisplayName("알림 발행 - resourceType 이 null 이면 NONE 으로 저장하고 resourceId 도 null 로 정리")
+    void publish_nullResourceTypeClearsResourceId() {
+        // given
+        Account recipient = account(10L);
+        given(notificationRepository.save(any(Notification.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        // when — resourceType 은 null 인데 resourceId 는 넘어옴
+        Notification result = notificationService.publish(
+                recipient, NotificationType.GENERAL, "공지", null, null, 999L);
+
+        // then — resourceType 은 NONE 으로 저장, resourceId 는 null 로 정리됨
+        assertThat(result.getResourceType()).isEqualTo(ResourceType.NONE);
+        assertThat(result.getResourceId()).isNull();
+    }
+
+    @Test
+    @DisplayName("알림 발행 - resourceType 이 명시적으로 NONE 이면 resourceId 도 null 로 정리")
+    void publish_explicitNoneClearsResourceId() {
         // given
         Account recipient = account(10L);
         given(notificationRepository.save(any(Notification.class)))
@@ -92,10 +109,11 @@ class NotificationServiceTest {
 
         // when
         Notification result = notificationService.publish(
-                recipient, NotificationType.GENERAL, "공지", null, null, null);
+                recipient, NotificationType.GENERAL, "공지", null, ResourceType.NONE, 555L);
 
         // then
         assertThat(result.getResourceType()).isEqualTo(ResourceType.NONE);
+        assertThat(result.getResourceId()).isNull();
     }
 
     @Test

@@ -2,9 +2,11 @@ package com.passro.passrobackend.notification.controller;
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.global.response.APIResponse;
+import com.passro.passrobackend.notification.code.NotificationErrorCode;
 import com.passro.passrobackend.notification.code.NotificationSuccessCode;
 import com.passro.passrobackend.notification.dto.NotificationResponseDto;
 import com.passro.passrobackend.notification.dto.UnreadCountResponseDto;
+import com.passro.passrobackend.notification.exception.NotificationException;
 import com.passro.passrobackend.notification.service.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,6 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "알림", description = "인앱 알림 조회/확인/삭제 API")
 public class NotificationController {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final NotificationService notificationService;
 
     @GetMapping
@@ -34,6 +38,7 @@ public class NotificationController {
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+        validatePagination(page, size);
         return APIResponse.onSuccess(NotificationSuccessCode.OK,
                 notificationService.getMyNotifications(account, page, size));
     }
@@ -62,5 +67,12 @@ public class NotificationController {
             @Parameter(description = "알림 ID", example = "1") @PathVariable Long id) {
         notificationService.deleteNotification(account, id);
         return APIResponse.onSuccess(NotificationSuccessCode.DELETED, null);
+    }
+
+    // 페이지네이션 요청 값 검증
+    private void validatePagination(int page, int size) {
+        if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
+            throw new NotificationException(NotificationErrorCode.INVALID_PAGINATION);
+        }
     }
 }
