@@ -34,7 +34,7 @@ import com.passro.passrobackend.shipper.service.ShipperMatchingService;
 @RestController
 @RequestMapping("/shipper")
 @RequiredArgsConstructor
-@Tag(name = "배송기사", description = "배송기사의 배송 조회 및 배송 상태 변경 API")
+@Tag(name = "전달자", description = "전즈사의 배송 조회 및 배송 상태 변경 API")
 public class ShipperController {
     private final ShipperService shipperService;
     private final ShipperMatchingService shipperMatchingService;
@@ -43,11 +43,11 @@ public class ShipperController {
     @PutMapping("/location")
     @Operation(
             summary = "현재 위치 갱신",
-            description = "배송 중인 배송기사가 현재 위도·경도를 갱신합니다. placeId는 선택값이며, 생략하면 전달된 좌표에서 가장 가까운 지하철역을 자동으로 선택합니다.")
+            description = "전달중인 전달자의 현재 위도·경도를 갱신합니다. placeId는 선택값이며, 생략하면 전달된 좌표에서 가장 가까운 지하철역을 자동으로 선택합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "위치 갱신 성공", useReturnTypeSchema = true),
             @ApiResponse(responseCode = "400", description = "좌표 또는 전달된 역 ID 검증 실패"),
-            @ApiResponse(responseCode = "403", description = "배송 중인 배송기사가 아님"),
+            @ApiResponse(responseCode = "403", description = "전달 중인 전달자가 아님"),
             @ApiResponse(responseCode = "404", description = "전달된 역 또는 좌표와 비교할 역 정보를 찾을 수 없음")
     })
     public APIResponse<ShipperLocationResponseDto> updateLocation(
@@ -61,7 +61,7 @@ public class ShipperController {
     @ResponseBody
     @Operation(
             summary = "매칭 대기 배송 목록 조회",
-            description = "로그인한 배송기사의 권역 및 동선을 기반으로 우선순위 정렬된 배송 요청 목록을 조회합니다. 본인이 요청한 배송은 제외됩니다.")
+            description = "로그인한 전달자의 권역 및 동선을 기반으로 우선순위 정렬된 배송 요청 목록을 조회합니다. 본인이 요청한 배송은 제외됩니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true)
     public APIResponse<List<ShipperDeliveryListDto>> listMatched(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
@@ -74,7 +74,7 @@ public class ShipperController {
 
     @GetMapping("/")
     @ResponseBody
-    @Operation(summary = "내 배송 목록 조회", description = "로그인한 배송기사에게 배정된 배송 목록을 조회합니다.")
+    @Operation(summary = "내 배송 목록 조회", description = "로그인한 전달자에게 배정된 배송 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공", useReturnTypeSchema = true)
     public APIResponse<List<ShipperDeliveryListDto>> listDelivery(
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
@@ -100,7 +100,7 @@ public class ShipperController {
 
     @PatchMapping("/{deliveryId}/matched")
     @ResponseBody
-    @Operation(summary = "배송 매칭 수락", description = "배송 요청을 수락하고 배송기사를 배정합니다.")
+    @Operation(summary = "배송 매칭 수락", description = "배송 요청을 수락하고 전달자를 배정합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "매칭 수락 성공", useReturnTypeSchema = true,
                     content = @Content(examples = @ExampleObject(name = "SHIPPER200_1", summary = "매칭 수락 성공", value = SHIPPER_OK))),

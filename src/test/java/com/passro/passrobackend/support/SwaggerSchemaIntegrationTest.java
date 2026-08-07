@@ -5,9 +5,38 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class SwaggerSchemaIntegrationTest extends IntegrationTestSupport {
+
+    @Test
+    void swaggerTagsFollowUserFlowOrder() throws Exception {
+        String body = mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        JsonNode document = objectMapper.readTree(body);
+
+        List<String> tagNames = new ArrayList<>();
+        document.at("/tags").forEach(tag -> tagNames.add(tag.path("name").asText()));
+
+        assertThat(tagNames).containsExactly(
+                "인증",
+                "계정",
+                "포인트",
+                "마켓",
+                "지하철",
+                "발송자",
+                "배송기사",
+                "채팅",
+                "배송 문의",
+                "리뷰",
+                "문의(공통)",
+                "파일");
+    }
 
     @Test
     void senderDeliveryCreateRequestDoesNotExposePrice() throws Exception {
