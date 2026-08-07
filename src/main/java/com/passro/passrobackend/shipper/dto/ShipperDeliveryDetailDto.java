@@ -2,7 +2,9 @@ package com.passro.passrobackend.shipper.dto;
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
+import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
 import com.passro.passrobackend.delivery.entity.DeliveryLog;
+import com.passro.passrobackend.delivery.entity.DeliveryPoint;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.place.entity.Place;
@@ -19,6 +21,13 @@ import lombok.*;
 public class ShipperDeliveryDetailDto {
     private Long id;
     private String name;
+    private Long price;
+    private String size;
+
+    private Long basePoint;
+    private Long distancePoint;
+    private Long weightPoint;
+    private Long totalPoint;
 
     private SenderInfo senderInfo;
     private ShipperInfo shipperInfo;
@@ -99,11 +108,25 @@ public class ShipperDeliveryDetailDto {
     }
 
     public static ShipperDeliveryDetailDto fromDelivery(Delivery delivery, List<DeliveryLog> logs) {
+        DeliveryGoodInfo goodInfo = delivery.getDeliveryGoodInfo();
+        DeliveryPoint point = delivery.getDeliveryPoint();
+
+        Long basePoint = point != null ? pointOrZero(point.getBase_point()) : null;
+        Long distancePoint = point != null ? pointOrZero(point.getDistance_point()) : null;
+        Long weightPoint = point != null ? pointOrZero(point.getWeight_point()) : null;
+        Long totalPoint = point != null
+                ? Math.addExact(Math.addExact(basePoint, distancePoint), weightPoint)
+                : null;
+
         return ShipperDeliveryDetailDto.builder()
                 .id(delivery.getId())
-                .name(delivery.getDeliveryGoodInfo() != null
-                        ? delivery.getDeliveryGoodInfo().getName()
-                        : null)
+                .name(goodInfo != null ? goodInfo.getName() : null)
+                .price(goodInfo != null ? goodInfo.getPrice() : null)
+                .size(goodInfo != null ? goodInfo.getSize() : null)
+                .basePoint(basePoint)
+                .distancePoint(distancePoint)
+                .weightPoint(weightPoint)
+                .totalPoint(totalPoint)
                 .senderInfo(SenderInfo.fromAccount(delivery.getSender()))
                 .shipperInfo(ShipperInfo.fromAccount(delivery.getShipper()))
                 .originPlace(delivery.getOrigin())
@@ -112,5 +135,9 @@ public class ShipperDeliveryDetailDto {
                 .deliveryState(delivery.getStatus())
                 .deliveryTimeLine(logs != null ? logs.stream().map(DeliveryLogInfo::fromEntity).toList() : List.of())
                 .build();
+    }
+
+    private static long pointOrZero(Long point) {
+        return point != null ? point : 0L;
     }
 }
