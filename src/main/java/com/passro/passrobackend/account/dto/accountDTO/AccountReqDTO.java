@@ -4,6 +4,7 @@ import com.passro.passrobackend.account.validation.PasswordComplexity;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class AccountReqDTO {
@@ -16,6 +17,14 @@ public class AccountReqDTO {
                 message = "닉네임은 완성된 한글, 영문, 숫자만 입력 가능합니다."
         )
         private String nickname;
+
+        @NotBlank(message = "변경할 이름을 입력하세요.")
+        @Size(max = 50, message = "이름은 50자 이하여야 합니다.")
+        private String name;
+
+        @NotNull(message = "변경할 생년월일을 입력하세요.")
+        @Past(message = "생년월일은 과거 날짜여야 합니다.")
+        private LocalDate birth;
 
         @NotBlank(message = "변경할 전화번호를 입력하세요.")
         @Pattern(

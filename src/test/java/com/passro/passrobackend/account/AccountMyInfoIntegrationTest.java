@@ -13,6 +13,7 @@ import com.passro.passrobackend.account.repository.WayPointRepository;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
 import com.passro.passrobackend.support.IntegrationTestSupport;
+import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,22 +64,27 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void editMyInfoUpdatesNicknamePhoneAndRoute() throws Exception {
+    void editMyInfoUpdatesNameBirthNicknamePhoneAndRoute() throws Exception {
         Account account = createAccountWithRoute("edit-info");
         String token = accessToken(account);
 
         String newNickname = "edited" + UUID.randomUUID().toString().substring(0, 6);
+        String newName = "수정된이름";
+        LocalDate newBirth = LocalDate.of(1999, 12, 31);
         String newPhoneNumber = "010-9999-8888";
 
         String requestBody = """
                 {
                   "nickname":"%s",
+                  "name":"%s",
+                  "birth":"%s",
                   "phoneNumber":"%s",
                   "startPlaceId":%d,
                   "destinationPlaceId":%d,
                   "wayPoints":[%d]
                 }
-                """.formatted(newNickname, newPhoneNumber, startPlace.getId(), destinationPlace.getId(), wayPointPlace.getId());
+                """.formatted(newNickname, newName, newBirth, newPhoneNumber,
+                        startPlace.getId(), destinationPlace.getId(), wayPointPlace.getId());
 
         mockMvc.perform(patch("/mypage/edit/myInfo")
                         .header("Authorization", bearer(token))
@@ -89,6 +95,8 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
 
         Account updated = accountRepository.findById(account.getId()).orElseThrow();
         assertThat(updated.getNickname()).isEqualTo(newNickname);
+        assertThat(updated.getName()).isEqualTo(newName);
+        assertThat(updated.getBirth()).isEqualTo(newBirth);
         assertThat(updated.getPhoneNumber()).isEqualTo(newPhoneNumber);
 
         AccountPlace updatedPlace = accountPlaceRepository.findByAccount(updated).orElseThrow();
@@ -105,11 +113,14 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
         String requestBody = """
                 {
                   "nickname":"%s",
+                  "name":"%s",
+                  "birth":"%s",
                   "phoneNumber":"%s",
                   "startPlaceId":%d,
                   "destinationPlaceId":%d
                 }
-                """.formatted(other.getNickname(), account.getPhoneNumber(), startPlace.getId(), destinationPlace.getId());
+                """.formatted(other.getNickname(), account.getName(), account.getBirth(),
+                        account.getPhoneNumber(), startPlace.getId(), destinationPlace.getId());
 
         mockMvc.perform(patch("/mypage/edit/myInfo")
                         .header("Authorization", bearer(token))
@@ -128,11 +139,14 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
         String requestBody = """
                 {
                   "nickname":"%s",
+                  "name":"%s",
+                  "birth":"%s",
                   "phoneNumber":"%s",
                   "startPlaceId":%d,
                   "destinationPlaceId":%d
                 }
-                """.formatted(account.getNickname(), other.getPhoneNumber(), startPlace.getId(), destinationPlace.getId());
+                """.formatted(account.getNickname(), account.getName(), account.getBirth(),
+                        other.getPhoneNumber(), startPlace.getId(), destinationPlace.getId());
 
         mockMvc.perform(patch("/mypage/edit/myInfo")
                         .header("Authorization", bearer(token))
@@ -152,11 +166,14 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
         String requestBody = """
                 {
                   "nickname":"%s",
+                  "name":"%s",
+                  "birth":"%s",
                   "phoneNumber":"%s",
                   "startPlaceId":999999,
                   "destinationPlaceId":%d
                 }
-                """.formatted(account.getNickname(), account.getPhoneNumber(), destinationPlace.getId());
+                """.formatted(account.getNickname(), account.getName(), account.getBirth(),
+                        account.getPhoneNumber(), destinationPlace.getId());
 
         mockMvc.perform(patch("/mypage/edit/myInfo")
                         .header("Authorization", bearer(token))
@@ -174,11 +191,14 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
         String requestBody = """
                 {
                   "nickname":"ㄴㅇㅁㄴㅇㄴ",
+                  "name":"%s",
+                  "birth":"%s",
                   "phoneNumber":"%s",
                   "startPlaceId":%d,
                   "destinationPlaceId":%d
                 }
-                """.formatted(account.getPhoneNumber(), startPlace.getId(), destinationPlace.getId());
+                """.formatted(account.getName(), account.getBirth(), account.getPhoneNumber(),
+                        startPlace.getId(), destinationPlace.getId());
 
         mockMvc.perform(patch("/mypage/edit/myInfo")
                         .header("Authorization", bearer(token))
@@ -195,11 +215,14 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
         String requestBody = """
                 {
                   "nickname":"%s",
+                  "name":"%s",
+                  "birth":"%s",
                   "phoneNumber":"%s",
                   "startPlaceId":%d,
                   "destinationPlaceId":%d
                 }
-                """.formatted(account.getNickname(), account.getPhoneNumber(), startPlace.getId(), destinationPlace.getId());
+                """.formatted(account.getNickname(), account.getName(), account.getBirth(),
+                        account.getPhoneNumber(), startPlace.getId(), destinationPlace.getId());
 
         mockMvc.perform(patch("/mypage/edit/myInfo")
                         .header("Authorization", bearer(token))

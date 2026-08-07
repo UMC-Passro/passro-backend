@@ -73,6 +73,9 @@ public class AccountService {
             picture = s3Service.getPresignedDownloadUrl(account.getPicture()).toString();
 
         String nickname = account.getNickname();
+        String name = account.getName();
+        var birth = account.getBirth();
+        String phoneNumber = account.getPhoneNumber();
         Long deliveryCount = deliveryRepository.countByShipper(account);
         Long point = account.getPoint();
 
@@ -81,7 +84,8 @@ public class AccountService {
         if (ratingDTO != null)
             rating = ratingDTO.getAverageRating();
 
-        return new AccountResDTO.ShipperMyPage(picture, nickname, deliveryCount, point, rating);
+        return new AccountResDTO.ShipperMyPage(
+                picture, nickname, name, birth, phoneNumber, deliveryCount, point, rating);
     }
 
     public AccountResDTO.SenderMyPage mySenderPage(Long accountId) {
@@ -148,6 +152,8 @@ public class AccountService {
 
         accountPlace.changePlace(startPlace, destinationPlace);
         account.changeNickname(dto.getNickname());
+        account.changeName(dto.getName());
+        account.changeBirth(dto.getBirth());
         account.changePhoneNumber(dto.getPhoneNumber());
 
         accountRepository.save(account);

@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.time.LocalDate;
+
 public class AccountResDTO {
 
     @Getter
@@ -12,6 +14,9 @@ public class AccountResDTO {
     public static class ShipperMyPage{
         private String picture;
         private String nickname;
+        private String name;
+        private LocalDate birth;
+        private String phoneNumber;
         private Long deliveryCount;
         private Long point;
         private double rating;

@@ -48,6 +48,14 @@ public class Account extends BaseEntity {
         this.nickname = nickname;
     }
 
+    public void changeName(String name) {
+        this.name = name;
+    }
+
+    public void changeBirth(LocalDate birth) {
+        this.birth = birth;
+    }
+
     public void changePassword(String password){
         this.password = password;
     }
