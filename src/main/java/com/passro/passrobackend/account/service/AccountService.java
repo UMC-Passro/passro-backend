@@ -87,7 +87,7 @@ public class AccountService {
 
         return new AccountResDTO.ShipperMyPage(
                 picture, nickname, name, birth, phoneNumber, startPlace, destinationPlace,
-                deliveryCount, point, rating);
+                deliveryCount, point, account.getCreatedAt(), rating);
     }
 
     public AccountResDTO.SenderMyPage mySenderPage(Long accountId) {

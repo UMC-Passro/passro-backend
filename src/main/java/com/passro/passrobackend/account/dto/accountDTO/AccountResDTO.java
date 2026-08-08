@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class AccountResDTO {
 
@@ -22,6 +23,7 @@ public class AccountResDTO {
         private SubwayStationResponseDto destinationPlace;
         private Long deliveryCount;
         private Long point;
+        private LocalDateTime createdAt;
         private double rating;
     }
 
