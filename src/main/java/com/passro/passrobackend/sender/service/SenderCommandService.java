@@ -178,7 +178,7 @@ public class SenderCommandService {
     }
 
     private String validateUploadedImage(String imageKey) {
-        return s3Service.finalizeUploadedImage(imageKey);
+        return s3Service.finalizeUploadedImage(imageKey, "delivery-images/");
     }
 
 

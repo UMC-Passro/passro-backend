@@ -44,7 +44,7 @@ public class S3Service {
 	private static final Pattern UPLOAD_IMAGE_KEY_PATTERN = Pattern.compile(
 			"uploads/images/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|jpeg|png|webp)");
 	private static final Pattern FINAL_IMAGE_KEY_PATTERN = Pattern.compile(
-			"delivery-images/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|jpeg|png|webp)");
+			"(delivery-images|report-images)/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|jpeg|png|webp)");
 
 	private final S3Presigner s3Presigner;
 	private final S3Client s3Client;
@@ -127,14 +127,19 @@ public class S3Service {
 		validateUploadedImage(objectKey, ALLOWED_IMAGE_TYPES.keySet(), MAX_IMAGE_SIZE);
 	}
 
-	public String finalizeUploadedImage(String uploadKey) {
+	public String finalizeUploadedImage(String uploadKey, String finalDirectory) {
 		if (!StringUtils.hasText(uploadKey) || !UPLOAD_IMAGE_KEY_PATTERN.matcher(uploadKey).matches()) {
 			throw new FileException(FileErrorCode.INVALID_FILE_NAME);
 		}
+		if (!StringUtils.hasText(finalDirectory)
+				|| !(finalDirectory.equals("delivery-images/") || finalDirectory.equals("report-images/"))) {
+			throw new FileException(FileErrorCode.INVALID_FILE_NAME);
+		}
+
 		validateUploadedImage(uploadKey, ALLOWED_IMAGE_TYPES.keySet(), MAX_IMAGE_SIZE);
 
 		String extension = uploadKey.substring(uploadKey.lastIndexOf('.') + 1);
-		String finalKey = "delivery-images/" + UUID.randomUUID() + "." + extension;
+		String finalKey = finalDirectory + UUID.randomUUID() + "." + extension;
 		try {
 			s3Client.copyObject(CopyObjectRequest.builder()
 					.bucket(s3Properties.getBucket())
