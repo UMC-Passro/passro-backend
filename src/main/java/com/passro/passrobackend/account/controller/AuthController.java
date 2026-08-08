@@ -27,7 +27,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import software.amazon.awssdk.core.internal.http.pipeline.stages.ApplyUserAgentStage;
 
 import static com.passro.passrobackend.global.configuration.SwaggerErrorExamples.*;
 import static com.passro.passrobackend.global.configuration.SwaggerSuccessExamples.*;
@@ -76,7 +75,7 @@ public class AuthController {
                     })),
             @ApiResponse(responseCode = "429", description = "인증 메일 재발송 제한",
                     content = @Content(schema = @Schema(implementation = APIResponse.class),
-                            examples = @ExampleObject(name = "ACCOUNT429_1", summary = "인증 메일 재발송 제한", value = ACCOUNT_MAIL_RESEND_TOO_FAST)))
+                            examples = @ExampleObject(name = "ACCOUNT429_1", summary = "인증 메일 재발송 제한", value = ACCOUNT_TOO_FAST)))
     })
     public APIResponse<Void> mailSend(@Valid @RequestBody AuthReqDTO.SendMail dto){
         BaseSuccessCode code = AccountSuccessCode.OK;

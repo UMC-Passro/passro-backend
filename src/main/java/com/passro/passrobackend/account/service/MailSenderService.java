@@ -19,7 +19,6 @@ import java.time.Duration;
 public class MailSenderService {
 
     private final AsyncMailService asyncMailService;
-    private final AuthService authService;
 
     private final AccountRepository accountRepository;
     private final UniversityRepository universityRepository;
@@ -36,9 +35,6 @@ public class MailSenderService {
     private static final String RESEND_COOLDOWN_PREFIX = "mail:verify:cooldown:";
     private static final Duration RESEND_COOLDOWN_TTL = Duration.ofSeconds(60);
 
-    //비밀번호 변경 대기
-    private static final String EDIT_PASSWORD_COOLDOWN_PREFIX = "edit:password:verify:code";
-
 
     public void sendMailMessageSignUpOrShipperSelect(AuthReqDTO.SendMail dto) {
         String mail = dto.getMail();
@@ -48,19 +44,6 @@ public class MailSenderService {
 
         if (accountRepository.existsByMail(mail))
             throw new AccountException(AccountErrorCode.DUPLICATE_MAIL);
-
-        sendMail(mail);
-    }
-
-    public void sendMailMessageEditPassword(Long accountId) {
-
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(()-> new AccountException(AccountErrorCode.NOT_FOUND));
-
-        String mail = account.getMail();
-
-        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId)))
-            throw new AccountException(AccountErrorCode.TOO_FAST);
 
         sendMail(mail);
     }

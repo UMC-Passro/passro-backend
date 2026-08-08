@@ -24,7 +24,7 @@ public final class SwaggerErrorExamples {
             "{\"success\":false,\"code\":\"ACCOUNT400_8\",\"message\":\"학생 이메일이 아닙니다.\",\"result\":null}";
     public static final String ACCOUNT_SAME_PASSWORD =
             "{\"success\":false,\"code\":\"ACCOUNT400_9\",\"message\":\"현재 비밀번호와 일치합니다.\",\"result\":null}";
-    public static final String ACCOUNT_MAIL_RESEND_TOO_FAST =
+    public static final String ACCOUNT_TOO_FAST =
             "{\"success\":false,\"code\":\"ACCOUNT429_1\",\"message\":\"잠시 후 다시 시도해 주세요.\",\"result\":null}";
     public static final String ACCOUNT_NOT_FOUND =
             "{\"success\":false,\"code\":\"ACCOUNT404_1\",\"message\":\"해당 계정을 찾을 수 없습니다.\",\"result\":null}";

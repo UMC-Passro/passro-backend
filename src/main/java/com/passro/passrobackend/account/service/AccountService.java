@@ -32,7 +32,6 @@ public class AccountService {
     private final DeliveryRepository deliveryRepository;
     private final ReviewService reviewService;
     private final S3Service s3Service;
-    private final VerificationCodeService verificationCodeService;
 
     private final AccountRepository accountRepository;
     private final AccountPlaceRepository accountPlaceRepository;
@@ -42,9 +41,6 @@ public class AccountService {
     private final PasswordEncoder passwordEncoder;
 
     private final StringRedisTemplate stringRedisTemplate;
-
-    //인증 코드
-    private static final String CODE_PREFIX = "mail:verify:code:";
 
     //닉네임 변경 대기
     private static final String EDIT_INFO_COOLDOWN_PREFIX = "edit:info:verify:code";
@@ -167,29 +163,29 @@ public class AccountService {
         stringRedisTemplate.opsForValue().set(EDIT_INFO_COOLDOWN_PREFIX + accountId, "true", EDIT_COOLDOWN_TTL);
     }
 
-    public void codeCodeConfirmAndEditPassword(AccountReqDTO.EditPassword dto, Long accountId) {
+    public void editPassword(AccountReqDTO.EditPassword dto, Long accountId) {
+
+        //변경 시간 텀 검증
+        if(Boolean.TRUE.equals(stringRedisTemplate.hasKey(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId)))
+            throw new AccountException(AccountErrorCode.TOO_FAST);
+
+        String nowPassword = dto.getNowPassword();
+        String editPassword = dto.getEditPassword();
 
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(()-> new AccountException(AccountErrorCode.NOT_FOUND));
 
-        String mail = account.getMail();
+        //현재 비밀번호 입력 검증
+        if (!passwordEncoder.matches(nowPassword, account.getPassword()))
+            throw new AccountException(AccountErrorCode.INVALID_CREDENTIALS);
 
-        String code = dto.getCode();
-
-        String savedCode = stringRedisTemplate.opsForValue().get(CODE_PREFIX + mail);
-
-        verificationCodeService.confirmSavedCode(code, savedCode);
-
-        if (passwordEncoder.matches(dto.getPassword(), account.getPassword()))
+        //현재 비밀번호와 수정할 비밀번호 같은지 비교
+        if(editPassword.equals(nowPassword))
             throw new AccountException(AccountErrorCode.SAME_PASSWORD);
 
-        String editPassword = passwordEncoder.encode(dto.getPassword());
-
-        account.changePassword(editPassword);
+        account.changePassword(passwordEncoder.encode(editPassword));
         accountRepository.save(account);
 
-
-        stringRedisTemplate.delete(CODE_PREFIX + mail);
         stringRedisTemplate.opsForValue().set(EDIT_PASSWORD_COOLDOWN_PREFIX + accountId, "true", EDIT_COOLDOWN_TTL);
     }
 }
