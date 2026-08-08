@@ -82,7 +82,7 @@ class ReportServiceImplTest {
         given(deliveryRepository.findById(10L)).willReturn(Optional.of(delivery));
         given(reportRepository.existsByReporter_IdAndTargetTypeAndTargetId(1L, ReportTargetType.DELIVERY, 10L))
                 .willReturn(false);
-        given(reportRepository.save(any(Report.class)))
+        given(reportRepository.saveAndFlush(any(Report.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
         // when
@@ -90,7 +90,7 @@ class ReportServiceImplTest {
 
         // then
         assertThat(response).isNotNull();
-        verify(reportRepository).save(any(Report.class));
+        verify(reportRepository).saveAndFlush(any(Report.class));
         verify(reportImageRepository, never()).save(any(ReportImage.class));
         verify(s3Service, never()).finalizeUploadedImage(anyString(), anyString());
     }
@@ -116,7 +116,7 @@ class ReportServiceImplTest {
         given(chatMessageRepository.findById(100L)).willReturn(Optional.of(chatMessage));
         given(reportRepository.existsByReporter_IdAndTargetTypeAndTargetId(1L, ReportTargetType.CHAT_MESSAGE, 100L))
                 .willReturn(false);
-        given(reportRepository.save(any(Report.class)))
+        given(reportRepository.saveAndFlush(any(Report.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
         // when
@@ -124,7 +124,7 @@ class ReportServiceImplTest {
 
         // then
         assertThat(response).isNotNull();
-        verify(reportRepository).save(any(Report.class));
+        verify(reportRepository).saveAndFlush(any(Report.class));
     }
 
     @Test
@@ -148,7 +148,7 @@ class ReportServiceImplTest {
         given(accountRepository.findById(2L)).willReturn(Optional.of(counterparty));
         given(reportRepository.existsByReporter_IdAndTargetTypeAndTargetId(1L, ReportTargetType.ACCOUNT, 2L))
                 .willReturn(false);
-        given(reportRepository.save(any(Report.class)))
+        given(reportRepository.saveAndFlush(any(Report.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
         // when
@@ -156,7 +156,7 @@ class ReportServiceImplTest {
 
         // then
         assertThat(response).isNotNull();
-        verify(reportRepository).save(any(Report.class));
+        verify(reportRepository).saveAndFlush(any(Report.class));
     }
 
     @Test
@@ -184,10 +184,8 @@ class ReportServiceImplTest {
         given(deliveryRepository.findById(10L)).willReturn(Optional.of(delivery));
         given(reportRepository.existsByReporter_IdAndTargetTypeAndTargetId(1L, ReportTargetType.DELIVERY, 10L))
                 .willReturn(false);
-        given(reportRepository.save(any(Report.class)))
+        given(reportRepository.saveAndFlush(any(Report.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
-        given(s3Service.finalizeUploadedImage(anyString(), eq("report-images/")))
-                .willReturn("report-images/final-image.jpg");
         given(reportImageRepository.save(any(ReportImage.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
         given(s3Service.finalizeUploadedImage(anyString(), eq("report-images/")))
@@ -355,7 +353,7 @@ class ReportServiceImplTest {
                 .extracting(e -> ((ReportException) e).getCode())
                 .isEqualTo(ReportErrorCode.REPORT_ALREADY_EXISTS);
 
-        verify(reportRepository, never()).save(any(Report.class));
+        verify(reportRepository, never()).saveAndFlush(any(Report.class));
     }
 
     @Test
@@ -378,7 +376,7 @@ class ReportServiceImplTest {
         given(deliveryRepository.findById(10L)).willReturn(Optional.of(delivery));
         given(reportRepository.existsByReporter_IdAndTargetTypeAndTargetId(1L, ReportTargetType.DELIVERY, 10L))
                 .willReturn(false);
-        given(reportRepository.save(any(Report.class)))
+        given(reportRepository.saveAndFlush(any(Report.class)))
                 .willThrow(new DataIntegrityViolationException("duplicate"));
 
         // when & then

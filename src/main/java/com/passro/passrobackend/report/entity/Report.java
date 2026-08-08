@@ -94,7 +94,11 @@ public class Report extends BaseEntity {
     private List<ReportImage> images = new ArrayList<>();
 
     public void addImage(ReportImage image) {
+        if (this.images == null) {
+            this.images = new ArrayList<>();
+        }
         this.images.add(image);
+        image.assignReport(this);
     }
 
     public void updateStatus(ReportStatus status) {

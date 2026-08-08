@@ -37,6 +37,7 @@ import java.util.List;
 public class ReportServiceImpl implements ReportService {
 
     private static final String REPORT_IMAGE_DIRECTORY = "report-images/";
+    private static final int MAX_REPORT_IMAGE_COUNT = 5;
 
     private final ReportRepository reportRepository;
     private final ReportImageRepository reportImageRepository;
@@ -60,28 +61,27 @@ public class ReportServiceImpl implements ReportService {
             throw new ReportException(ReportErrorCode.REPORT_ALREADY_EXISTS);
         }
 
+        Report report = Report.builder()
+                .reporter(reporter)
+                .reportedAccount(resolvedTarget.reportedAccount())
+                .delivery(resolvedTarget.delivery())
+                .chatMessage(resolvedTarget.chatMessage())
+                .targetType(request.getTargetType())
+                .targetId(resolvedTarget.targetId())
+                .reason(request.getReason())
+                .detail(request.getDetail())
+                .status(ReportStatus.PENDING)
+                .build();
+
         try {
-            Report report = reportRepository.save(
-                    Report.builder()
-                            .reporter(reporter)
-                            .reportedAccount(resolvedTarget.reportedAccount())
-                            .delivery(resolvedTarget.delivery())
-                            .chatMessage(resolvedTarget.chatMessage())
-                            .targetType(request.getTargetType())
-                            .targetId(resolvedTarget.targetId())
-                            .reason(request.getReason())
-                            .detail(request.getDetail())
-                            .status(ReportStatus.PENDING)
-                            .build()
-            );
-
-            saveImages(report, request.getImageKeys());
-
-            return ReportCreateResponseDto.from(report);
-
+            reportRepository.saveAndFlush(report);
         } catch (DataIntegrityViolationException e) {
             throw new ReportException(ReportErrorCode.REPORT_ALREADY_EXISTS);
         }
+
+        saveImages(report, request.getImageKeys());
+
+        return ReportCreateResponseDto.from(report);
     }
 
     @Override
@@ -121,7 +121,7 @@ public class ReportServiceImpl implements ReportService {
             throw new ReportException(ReportErrorCode.INVALID_REPORT_REASON);
         }
 
-        if (request.getImageKeys() != null && request.getImageKeys().size() > 5) {
+        if (request.getImageKeys() != null && request.getImageKeys().size() > MAX_REPORT_IMAGE_COUNT) {
             throw new ReportException(ReportErrorCode.INVALID_REPORT_IMAGE_COUNT);
         }
 
@@ -146,11 +146,15 @@ public class ReportServiceImpl implements ReportService {
         Delivery delivery = deliveryRepository.findById(request.getDeliveryId())
                 .orElseThrow(() -> new ReportException(ReportErrorCode.REPORT_DELIVERY_NOT_FOUND));
 
-        validateDeliveryParticipant(delivery, reporter);
+        if (!isParticipant(reporter, delivery)) {
+            throw new ReportException(ReportErrorCode.REPORT_FORBIDDEN);
+        }
+
+        Account reportedAccount = resolveCounterparty(reporter, delivery);
 
         return new ResolvedTarget(
                 delivery.getId(),
-                null,
+                reportedAccount,
                 delivery,
                 null
         );
@@ -165,7 +169,9 @@ public class ReportServiceImpl implements ReportService {
                 .orElseThrow(() -> new ReportException(ReportErrorCode.REPORT_CHAT_MESSAGE_NOT_FOUND));
 
         Delivery delivery = chatMessage.getDelivery();
-        validateDeliveryParticipant(delivery, reporter);
+        if (!isParticipant(reporter, delivery)) {
+            throw new ReportException(ReportErrorCode.REPORT_FORBIDDEN);
+        }
 
         if (chatMessage.getSender().getId().equals(reporter.getId())) {
             throw new ReportException(ReportErrorCode.REPORT_SELF_MESSAGE_NOT_ALLOWED);
@@ -180,18 +186,12 @@ public class ReportServiceImpl implements ReportService {
     }
 
     private ResolvedTarget resolveAccountTarget(Account reporter, ReportCreateRequestDto request) {
-        if (request.getDeliveryId() == null) {
-            throw new ReportException(ReportErrorCode.INVALID_REPORT_DELIVERY_ID);
-        }
-
         if (request.getReportedAccountId() == null) {
             throw new ReportException(ReportErrorCode.INVALID_REPORTED_ACCOUNT_ID);
         }
-
-        Delivery delivery = deliveryRepository.findById(request.getDeliveryId())
-                .orElseThrow(() -> new ReportException(ReportErrorCode.REPORT_DELIVERY_NOT_FOUND));
-
-        validateDeliveryParticipant(delivery, reporter);
+        if (request.getDeliveryId() == null) {
+            throw new ReportException(ReportErrorCode.INVALID_REPORT_DELIVERY_ID);
+        }
 
         Account reportedAccount = accountRepository.findById(request.getReportedAccountId())
                 .orElseThrow(() -> new ReportException(ReportErrorCode.REPORT_ACCOUNT_NOT_FOUND));
@@ -200,11 +200,15 @@ public class ReportServiceImpl implements ReportService {
             throw new ReportException(ReportErrorCode.REPORT_SELF_ACCOUNT_NOT_ALLOWED);
         }
 
-        boolean isCounterparty =
-                (delivery.getSender() != null && delivery.getSender().getId().equals(reportedAccount.getId()))
-                        || (delivery.getShipper() != null && delivery.getShipper().getId().equals(reportedAccount.getId()));
+        Delivery delivery = deliveryRepository.findById(request.getDeliveryId())
+                .orElseThrow(() -> new ReportException(ReportErrorCode.REPORT_DELIVERY_NOT_FOUND));
 
-        if (!isCounterparty) {
+        if (!isParticipant(reporter, delivery) || !isParticipant(reportedAccount, delivery)) {
+            throw new ReportException(ReportErrorCode.REPORT_FORBIDDEN);
+        }
+
+        if (resolveCounterparty(reporter, delivery) == null
+                || !resolveCounterparty(reporter, delivery).getId().equals(reportedAccount.getId())) {
             throw new ReportException(ReportErrorCode.REPORT_FORBIDDEN);
         }
 
@@ -216,15 +220,21 @@ public class ReportServiceImpl implements ReportService {
         );
     }
 
-    private void validateDeliveryParticipant(Delivery delivery, Account reporter) {
-        boolean isSender = delivery.getSender() != null
-                && delivery.getSender().getId().equals(reporter.getId());
-        boolean isShipper = delivery.getShipper() != null
-                && delivery.getShipper().getId().equals(reporter.getId());
+    private boolean isParticipant(Account account, Delivery delivery) {
+        return delivery.getSender().getId().equals(account.getId())
+                || (delivery.getShipper() != null && delivery.getShipper().getId().equals(account.getId()));
+    }
 
-        if (!isSender && !isShipper) {
-            throw new ReportException(ReportErrorCode.REPORT_FORBIDDEN);
+    private Account resolveCounterparty(Account reporter, Delivery delivery) {
+        if (delivery.getSender().getId().equals(reporter.getId())) {
+            return delivery.getShipper();
         }
+
+        if (delivery.getShipper() != null && delivery.getShipper().getId().equals(reporter.getId())) {
+            return delivery.getSender();
+        }
+
+        return null;
     }
 
     private void saveImages(Report report, List<String> imageKeys) {
@@ -234,13 +244,12 @@ public class ReportServiceImpl implements ReportService {
             String finalizedKey = s3Service.finalizeUploadedImage(keys.get(i), REPORT_IMAGE_DIRECTORY);
 
             ReportImage reportImage = ReportImage.builder()
-                    .report(report)
                     .imageKey(finalizedKey)
                     .displayOrder(i)
                     .build();
 
-            reportImageRepository.save(reportImage);
             report.addImage(reportImage);
+            reportImageRepository.save(reportImage);
         }
     }
 

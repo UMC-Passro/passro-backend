@@ -34,4 +34,8 @@ public class ReportImage extends BaseEntity {
 
     @Column(nullable = false)
     private Integer displayOrder;
+
+    public void assignReport(Report report) {
+        this.report = report;
+    }
 }
