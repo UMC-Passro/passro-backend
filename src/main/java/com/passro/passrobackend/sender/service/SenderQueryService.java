@@ -71,8 +71,11 @@ public class SenderQueryService {
 
         // 배송 타임라인을 날짜 오름차순으로 조회
         List<DeliveryLog> logs = deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(delivery);
+        AccountPlace shipperAccountPlace = delivery.getShipper() != null
+                ? accountPlaceRepository.findByAccount(delivery.getShipper()).orElse(null)
+                : null;
 
-        return SenderDeliveryDetailDto.fromEntity(delivery, logs);
+        return SenderDeliveryDetailDto.fromEntity(delivery, logs, shipperAccountPlace);
     }
 
     public SubwayRouteResponseDto getShipperCommuteRoute(Account sender, Long deliveryId) {

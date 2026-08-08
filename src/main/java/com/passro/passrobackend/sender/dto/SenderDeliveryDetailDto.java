@@ -1,6 +1,7 @@
 package com.passro.passrobackend.sender.dto;
 
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.account.entity.AccountPlace;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryLog;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
@@ -36,16 +37,18 @@ public class SenderDeliveryDetailDto {
     public static class ShipperInfo {
         private String name;
         private String picture;
-        private Place place;
+        private Place originPlace;
+        private Place destPlace;
 
-        public static ShipperInfo fromAccount(Account account) {
+        public static ShipperInfo fromAccount(Account account, AccountPlace accountPlace) {
             if (account == null) {
                 return null;
             }
             return ShipperInfo.builder()
                     .name(account.getName())
                     .picture(account.getPicture())
-                    .place(account.getPlace_id())
+                    .originPlace(accountPlace != null ? accountPlace.getStartPlace() : null)
+                    .destPlace(accountPlace != null ? accountPlace.getDestinationPlace() : null)
                     .build();
         }
     }
@@ -73,7 +76,8 @@ public class SenderDeliveryDetailDto {
         }
     }
 
-    public static SenderDeliveryDetailDto fromEntity(Delivery delivery, List<DeliveryLog> logs) {
+    public static SenderDeliveryDetailDto fromEntity(
+            Delivery delivery, List<DeliveryLog> logs, AccountPlace shipperAccountPlace) {
         return SenderDeliveryDetailDto.builder()
                 .id(delivery.getId())
                 .name(delivery.getDeliveryGoodInfo() != null
@@ -82,7 +86,7 @@ public class SenderDeliveryDetailDto {
                 .originPlace(delivery.getOrigin())
                 .destPlace(delivery.getDest())
                 .status(delivery.getStatus())
-                .shipperInfo(ShipperInfo.fromAccount(delivery.getShipper()))
+                .shipperInfo(ShipperInfo.fromAccount(delivery.getShipper(), shipperAccountPlace))
                 .deliveryTimeLine(logs != null ? logs.stream().map(DeliveryLogInfo::fromEntity).toList() : List.of())
                 .build();
     }

@@ -1,6 +1,7 @@
 package com.passro.passrobackend.shipper.dto;
 
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.account.entity.AccountPlace;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
 import com.passro.passrobackend.delivery.entity.DeliveryLog;
@@ -47,9 +48,10 @@ public class ShipperDeliveryDetailDto {
     public static class SenderInfo {
         private String name;
         private String picture;
-        private Place place;
+        private Place originPlace;
+        private Place destPlace;
 
-        public static SenderInfo fromAccount(Account account) {
+        public static SenderInfo fromAccount(Account account, AccountPlace accountPlace) {
             if (account == null) {
                 return null;
             }
@@ -57,7 +59,8 @@ public class ShipperDeliveryDetailDto {
             return SenderInfo.builder()
                     .name(account.getName())
                     .picture(account.getPicture())
-                    .place(account.getPlace_id())
+                    .originPlace(accountPlace != null ? accountPlace.getStartPlace() : null)
+                    .destPlace(accountPlace != null ? accountPlace.getDestinationPlace() : null)
                     .build();
         }
     }
@@ -69,9 +72,10 @@ public class ShipperDeliveryDetailDto {
     public static class ShipperInfo {
         private String name;
         private String picture;
-        private Place place;
+        private Place originPlace;
+        private Place destPlace;
 
-        public static ShipperInfo fromAccount(Account account) {
+        public static ShipperInfo fromAccount(Account account, AccountPlace accountPlace) {
             if (account == null) {
                 return null;
             }
@@ -79,7 +83,8 @@ public class ShipperDeliveryDetailDto {
             return ShipperInfo.builder()
                     .name(account.getName())
                     .picture(account.getPicture())
-                    .place(account.getPlace_id())
+                    .originPlace(accountPlace != null ? accountPlace.getStartPlace() : null)
+                    .destPlace(accountPlace != null ? accountPlace.getDestinationPlace() : null)
                     .build();
         }
     }
@@ -107,7 +112,11 @@ public class ShipperDeliveryDetailDto {
         }
     }
 
-    public static ShipperDeliveryDetailDto fromDelivery(Delivery delivery, List<DeliveryLog> logs) {
+    public static ShipperDeliveryDetailDto fromDelivery(
+            Delivery delivery,
+            List<DeliveryLog> logs,
+            AccountPlace senderAccountPlace,
+            AccountPlace shipperAccountPlace) {
         DeliveryGoodInfo goodInfo = delivery.getDeliveryGoodInfo();
         DeliveryPoint point = delivery.getDeliveryPoint();
 
@@ -127,8 +136,8 @@ public class ShipperDeliveryDetailDto {
                 .distancePoint(distancePoint)
                 .weightPoint(weightPoint)
                 .totalPoint(totalPoint)
-                .senderInfo(SenderInfo.fromAccount(delivery.getSender()))
-                .shipperInfo(ShipperInfo.fromAccount(delivery.getShipper()))
+                .senderInfo(SenderInfo.fromAccount(delivery.getSender(), senderAccountPlace))
+                .shipperInfo(ShipperInfo.fromAccount(delivery.getShipper(), shipperAccountPlace))
                 .originPlace(delivery.getOrigin())
                 .destPlace(delivery.getDest())
                 .memo(delivery.getMemo())

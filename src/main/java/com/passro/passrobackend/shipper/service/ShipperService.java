@@ -1,6 +1,8 @@
 package com.passro.passrobackend.shipper.service;
 
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.account.entity.AccountPlace;
+import com.passro.passrobackend.account.repository.AccountPlaceRepository;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryLog;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
@@ -25,6 +27,7 @@ public class ShipperService {
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryLogRepository deliveryLogRepository;
+    private final AccountPlaceRepository accountPlaceRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final S3Service s3Service;
 
@@ -38,7 +41,17 @@ public class ShipperService {
         Delivery delivery = getDelivery(id);
 //        validateAssignedShipper(delivery, shipper);
         List<DeliveryLog> logs = deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(delivery);
-        return ShipperDeliveryDetailDto.fromDelivery(delivery, logs);
+        AccountPlace senderAccountPlace = findAccountPlace(delivery.getSender());
+        AccountPlace shipperAccountPlace = findAccountPlace(delivery.getShipper());
+        return ShipperDeliveryDetailDto.fromDelivery(
+                delivery, logs, senderAccountPlace, shipperAccountPlace);
+    }
+
+    private AccountPlace findAccountPlace(Account account) {
+        if (account == null) {
+            return null;
+        }
+        return accountPlaceRepository.findByAccount(account).orElse(null);
     }
 
     public List<Delivery> listMatchRequested() {
