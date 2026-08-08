@@ -74,7 +74,7 @@ public class AccountController {
     }
 
     @PatchMapping("/mypage/edit/myInfo")
-    @Operation(summary = "마이페이지 수정", description = "닉네임, 전화번호, 출발지/도착지, 경유지를 수정합니다.")
+    @Operation(summary = "마이페이지 수정", description = "프로필 이미지, 닉네임, 이름, 생일, 전화번호, 출발지/도착지, 경유지를 수정합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "마이페이지 수정 성공", useReturnTypeSchema = true),
             @ApiResponse(responseCode = "400", description = "요청 값 검증 실패, 닉네임 중복 또는 전화번호 중복",

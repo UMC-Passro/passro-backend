@@ -35,6 +35,8 @@ public class AccountReqDTO {
         )
         private String phoneNumber;
 
+        private String picture;
+
         @NotNull(message = "변경할 출발지를 입력하세요.")
         private Long startPlaceId;
 

@@ -12,6 +12,7 @@ import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
+import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.global.advice.code.CommonErrorCode;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.sender.dto.SenderDeliveryDetailDto;
@@ -40,6 +41,7 @@ public class SenderQueryService {
     private final WayPointRepository wayPointRepository;
     private final SubwayService subwayService;
     private final DeliveryPointProperties deliveryPointProperties;
+    private final S3Service s3Service;
 
     // 발송자 배송 목록 전체 조회
     public List<SenderDeliveryListDto> getSenders(Account sender, DeliveryState status) {
@@ -75,7 +77,15 @@ public class SenderQueryService {
                 ? accountPlaceRepository.findByAccount(delivery.getShipper()).orElse(null)
                 : null;
 
-        return SenderDeliveryDetailDto.fromEntity(delivery, logs, shipperAccountPlace);
+        return SenderDeliveryDetailDto.fromEntity(
+                delivery, logs, shipperAccountPlace, this::imageUrl);
+    }
+
+    private String imageUrl(String imageKey) {
+        if (imageKey == null || imageKey.isBlank()) {
+            return null;
+        }
+        return s3Service.getPresignedDownloadUrlString(imageKey);
     }
 
     public SubwayRouteResponseDto getShipperCommuteRoute(Account sender, Long deliveryId) {

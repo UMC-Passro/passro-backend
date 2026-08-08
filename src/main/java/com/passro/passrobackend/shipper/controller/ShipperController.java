@@ -67,7 +67,7 @@ public class ShipperController {
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
         return APIResponse.onSuccess(ShipperSuccessCode.OK,
                 shipperMatchingService.listMatchRequestedWithPriority(account).stream()
-                        .map(result -> ShipperDeliveryListDto.fromDelivery(
+                        .map(result -> shipperService.toDeliveryListDto(
                                 result.delivery(), result.estimatedTimeMinutes()))
                         .toList());
     }
@@ -80,7 +80,10 @@ public class ShipperController {
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Parameter(description = "배송 상태 필터", example = "DELIVERING")
             @RequestParam(required = false) DeliveryState status) {
-         return APIResponse.onSuccess(ShipperSuccessCode.OK, shipperService.listAllByShipper(account, status).stream().map(ShipperDeliveryListDto::fromDelivery).toList());
+         return APIResponse.onSuccess(ShipperSuccessCode.OK,
+                 shipperService.listAllByShipper(account, status).stream()
+                         .map(shipperService::toDeliveryListDto)
+                         .toList());
     }
 
     @GetMapping("/{deliveryId}/")

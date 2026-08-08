@@ -62,7 +62,8 @@ class ShipperServiceTest {
                 .createdAt(createdAt)
                 .build();
 
-        ShipperDeliveryListDto result = ShipperDeliveryListDto.fromDelivery(delivery, 30);
+        ShipperDeliveryListDto result = ShipperDeliveryListDto.fromDelivery(
+                delivery, 30, imageKey -> imageKey);
 
         assertThat(result.getCreatedAt()).isEqualTo(createdAt);
         assertThat(result.getEstimatedTimeMinutes()).isEqualTo(30);

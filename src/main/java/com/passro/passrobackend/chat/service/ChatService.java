@@ -13,6 +13,7 @@ import com.passro.passrobackend.chat.repository.ChatMessageRepository;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
+import com.passro.passrobackend.file.service.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ public class ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final DeliveryRepository deliveryRepository;
+    private final S3Service s3Service;
 
     // 채팅 참여자 여부 검증 (sender 또는 shipper만 접근 가능)
     private Delivery getDeliveryAndValidateAccess(Long deliveryId, Account account) {
@@ -85,7 +87,7 @@ public class ChatService {
 
         return new ChatRoomInfoResponseDto(
                 partner.getNickname(),
-                partner.getPicture(),
+                imageUrl(partner.getPicture()),
                 delivery.getDeliveryGoodInfo() != null
                         ? delivery.getDeliveryGoodInfo().getName()
                         : null,
@@ -116,7 +118,7 @@ public class ChatService {
 
                     return new ChatRoomListItemResponseDto(
                             delivery.getId(),
-                            ChatPartnerDto.from(partner),
+                            ChatPartnerDto.from(partner, this::imageUrl),
                             delivery.getDeliveryGoodInfo() != null ? delivery.getDeliveryGoodInfo().getName() : null,
                             lastMsg != null ? lastMsg.getContent() : null,
                             lastMsg != null ? lastMsg.getCreatedAt() : null,
@@ -127,6 +129,13 @@ public class ChatService {
                         ChatRoomListItemResponseDto::lastMessageAt,
                         Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
+    }
+
+    private String imageUrl(String imageKey) {
+        if (imageKey == null || imageKey.isBlank()) {
+            return null;
+        }
+        return s3Service.getPresignedDownloadUrlString(imageKey);
     }
 
     // 메시지 전송

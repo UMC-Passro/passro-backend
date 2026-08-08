@@ -14,6 +14,7 @@ import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.shipper.dto.ShipperDeliveryDetailDto;
+import com.passro.passrobackend.shipper.dto.ShipperDeliveryListDto;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -44,7 +45,25 @@ public class ShipperService {
         AccountPlace senderAccountPlace = findAccountPlace(delivery.getSender());
         AccountPlace shipperAccountPlace = findAccountPlace(delivery.getShipper());
         return ShipperDeliveryDetailDto.fromDelivery(
-                delivery, logs, senderAccountPlace, shipperAccountPlace);
+                delivery, logs, senderAccountPlace, shipperAccountPlace,
+                this::imageUrl);
+    }
+
+    public ShipperDeliveryListDto toDeliveryListDto(Delivery delivery) {
+        return toDeliveryListDto(delivery, null);
+    }
+
+    public ShipperDeliveryListDto toDeliveryListDto(
+            Delivery delivery, Integer estimatedTimeMinutes) {
+        return ShipperDeliveryListDto.fromDelivery(
+                delivery, estimatedTimeMinutes, this::imageUrl);
+    }
+
+    private String imageUrl(String imageKey) {
+        if (imageKey == null || imageKey.isBlank()) {
+            return null;
+        }
+        return s3Service.getPresignedDownloadUrlString(imageKey);
     }
 
     private AccountPlace findAccountPlace(Account account) {

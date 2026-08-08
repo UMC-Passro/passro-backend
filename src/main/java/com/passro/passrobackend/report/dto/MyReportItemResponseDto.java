@@ -10,6 +10,7 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 
 @Getter
 @AllArgsConstructor
@@ -27,7 +28,8 @@ public class MyReportItemResponseDto {
     private List<ReportImageResponseDto> images;
     private LocalDateTime createdAt;
 
-    public static MyReportItemResponseDto from(Report report) {
+    public static MyReportItemResponseDto from(
+            Report report, Function<String, String> imageUrlResolver) {
         return new MyReportItemResponseDto(
                 report.getId(),
                 report.getTargetType(),
@@ -40,7 +42,7 @@ public class MyReportItemResponseDto {
                 report.getStatus(),
                 report.getImages().stream()
                         .sorted(Comparator.comparing(ri -> ri.getDisplayOrder()))
-                        .map(ReportImageResponseDto::from)
+                        .map(image -> ReportImageResponseDto.from(image, imageUrlResolver))
                         .toList(),
                 report.getCreatedAt()
         );

@@ -63,6 +63,11 @@ public class Account extends BaseEntity {
     public void changePhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
+
+    public void changePicture(String picture) {
+        this.picture = picture;
+    }
+
     public void usePoint(long amount) {
         validatePointAmount(amount);
         long currentPoint = currentPoint();

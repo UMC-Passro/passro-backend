@@ -157,6 +157,11 @@ public class AccountService {
         account.changeName(dto.getName());
         account.changeBirth(dto.getBirth());
         account.changePhoneNumber(dto.getPhoneNumber());
+        if (dto.getPicture() != null && !dto.getPicture().isBlank()
+                && !dto.getPicture().equals(account.getPicture())) {
+            s3Service.validateUploadedImage(dto.getPicture());
+            account.changePicture(dto.getPicture());
+        }
 
         accountRepository.save(account);
 

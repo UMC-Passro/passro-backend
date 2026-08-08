@@ -252,6 +252,13 @@ public class S3Service {
 		return getPresignedDownloadUrl(objectKey, DEFAULT_SIGNATURE_DURATION);
 	}
 
+	public String getPresignedDownloadUrlString(String objectKey) {
+		if (!StringUtils.hasText(objectKey)) {
+			return null;
+		}
+		return getPresignedDownloadUrl(objectKey).toString();
+	}
+
 	public URL getPresignedDownloadUrl(String objectKey, Duration signatureDuration) {
 		try {
             validate(objectKey, signatureDuration);

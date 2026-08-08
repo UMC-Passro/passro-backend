@@ -19,6 +19,7 @@ import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
+import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.sender.dto.SenderDeliveryDetailDto;
 import com.passro.passrobackend.sender.dto.SenderDeliveryListDto;
@@ -59,6 +60,9 @@ class SenderQueryServiceTest {
 
     @Mock
     private DeliveryPointProperties deliveryPointProperties;
+
+    @Mock
+    private S3Service s3Service;
 
     @InjectMocks
     private SenderQueryService senderQueryService;
@@ -155,6 +159,7 @@ class SenderQueryServiceTest {
 
         given(senderDeliveryValidator.getDeliveryAndValidateOwnership(100L, sender)).willReturn(delivery);
         given(deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(delivery)).willReturn(List.of(log1, log2));
+        given(s3Service.getPresignedDownloadUrlString("profile.jpg")).willReturn("profile.jpg");
 
         // When
         SenderDeliveryDetailDto result = senderQueryService.getDeliveryDetail(sender, 100L);

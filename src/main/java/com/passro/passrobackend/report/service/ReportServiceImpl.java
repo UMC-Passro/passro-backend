@@ -93,7 +93,8 @@ public class ReportServiceImpl implements ReportService {
 
         return new MyReportListResponseDto(
                 page.getContent().stream()
-                        .map(MyReportItemResponseDto::from)
+                        .map(report -> MyReportItemResponseDto.from(
+                                report, this::imageUrl))
                         .toList(),
                 page.getNumber(),
                 page.getSize(),
@@ -101,6 +102,13 @@ public class ReportServiceImpl implements ReportService {
                 page.getTotalPages(),
                 page.hasNext()
         );
+    }
+
+    private String imageUrl(String imageKey) {
+        if (imageKey == null || imageKey.isBlank()) {
+            return null;
+        }
+        return s3Service.getPresignedDownloadUrlString(imageKey);
     }
 
     @Override

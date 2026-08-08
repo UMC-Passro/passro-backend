@@ -12,6 +12,7 @@ import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryGoodInfo;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
+import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.place.entity.Place;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,6 +47,7 @@ class ChatServiceTest {
 
     @Mock ChatMessageRepository chatMessageRepository;
     @Mock DeliveryRepository deliveryRepository;
+    @Mock S3Service s3Service;
 
     @InjectMocks ChatService chatService;
 
@@ -65,6 +67,8 @@ class ChatServiceTest {
         given(shipper.getId()).willReturn(2L);
         given(shipper.getNickname()).willReturn("shipper닉네임");
         given(shipper.getPicture()).willReturn("shipper.jpg");
+        given(s3Service.getPresignedDownloadUrlString("sender.jpg")).willReturn("sender.jpg");
+        given(s3Service.getPresignedDownloadUrlString("shipper.jpg")).willReturn("shipper.jpg");
 
         outsider = mock(Account.class);
         given(outsider.getId()).willReturn(99L);

@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.function.Function;
 
 @Getter
 @Builder
@@ -40,13 +41,16 @@ public class SenderDeliveryDetailDto {
         private Place originPlace;
         private Place destPlace;
 
-        public static ShipperInfo fromAccount(Account account, AccountPlace accountPlace) {
+        public static ShipperInfo fromAccount(
+                Account account,
+                AccountPlace accountPlace,
+                Function<String, String> imageUrlResolver) {
             if (account == null) {
                 return null;
             }
             return ShipperInfo.builder()
                     .name(account.getName())
-                    .picture(account.getPicture())
+                    .picture(imageUrlResolver.apply(account.getPicture()))
                     .originPlace(accountPlace != null ? accountPlace.getStartPlace() : null)
                     .destPlace(accountPlace != null ? accountPlace.getDestinationPlace() : null)
                     .build();
@@ -63,21 +67,25 @@ public class SenderDeliveryDetailDto {
         private String image;
         private LocalDateTime createdAt;
 
-        public static DeliveryLogInfo fromEntity(DeliveryLog log) {
+        public static DeliveryLogInfo fromEntity(
+                DeliveryLog log, Function<String, String> imageUrlResolver) {
             if (log == null) {
                 return null;
             }
             return DeliveryLogInfo.builder()
                     .id(log.getId())
                     .type(log.getType())
-                    .image(log.getImage())
+                    .image(imageUrlResolver.apply(log.getImage()))
                     .createdAt(log.getCreatedAt())
                     .build();
         }
     }
 
     public static SenderDeliveryDetailDto fromEntity(
-            Delivery delivery, List<DeliveryLog> logs, AccountPlace shipperAccountPlace) {
+            Delivery delivery,
+            List<DeliveryLog> logs,
+            AccountPlace shipperAccountPlace,
+            Function<String, String> imageUrlResolver) {
         return SenderDeliveryDetailDto.builder()
                 .id(delivery.getId())
                 .name(delivery.getDeliveryGoodInfo() != null
@@ -86,8 +94,11 @@ public class SenderDeliveryDetailDto {
                 .originPlace(delivery.getOrigin())
                 .destPlace(delivery.getDest())
                 .status(delivery.getStatus())
-                .shipperInfo(ShipperInfo.fromAccount(delivery.getShipper(), shipperAccountPlace))
-                .deliveryTimeLine(logs != null ? logs.stream().map(DeliveryLogInfo::fromEntity).toList() : List.of())
+                .shipperInfo(ShipperInfo.fromAccount(
+                        delivery.getShipper(), shipperAccountPlace, imageUrlResolver))
+                .deliveryTimeLine(logs != null
+                        ? logs.stream().map(log -> DeliveryLogInfo.fromEntity(log, imageUrlResolver)).toList()
+                        : List.of())
                 .build();
     }
 }
