@@ -48,6 +48,7 @@ public class ShipperDeliveryDetailDto {
     @AllArgsConstructor
     public static class SenderInfo {
         private String name;
+        private String nickname;
         private String picture;
         private Place originPlace;
         private Place destPlace;
@@ -62,6 +63,7 @@ public class ShipperDeliveryDetailDto {
 
             return SenderInfo.builder()
                     .name(account.getName())
+                    .nickname(account.getNickname())
                     .picture(imageUrlResolver.apply(account.getPicture()))
                     .originPlace(accountPlace != null ? accountPlace.getStartPlace() : null)
                     .destPlace(accountPlace != null ? accountPlace.getDestinationPlace() : null)
@@ -75,6 +77,7 @@ public class ShipperDeliveryDetailDto {
     @AllArgsConstructor
     public static class ShipperInfo {
         private String name;
+        private String nickname;
         private String picture;
         private Place originPlace;
         private Place destPlace;
@@ -89,6 +92,7 @@ public class ShipperDeliveryDetailDto {
 
             return ShipperInfo.builder()
                     .name(account.getName())
+                    .nickname(account.getNickname())
                     .picture(imageUrlResolver.apply(account.getPicture()))
                     .originPlace(accountPlace != null ? accountPlace.getStartPlace() : null)
                     .destPlace(accountPlace != null ? accountPlace.getDestinationPlace() : null)
