@@ -23,7 +23,15 @@ public enum NotificationSuccessCode implements BaseSuccessCode {
 
     DELETED(HttpStatus.OK,
             "NOTIFICATION200_4",
-            "알림 삭제 성공.");
+            "알림 삭제 성공."),
+
+    READ_ALL_OK(HttpStatus.OK,
+            "NOTIFICATION200_5",
+            "전체 알림 확인 처리 성공."),
+
+    DELETED_ALL(HttpStatus.OK,
+            "NOTIFICATION200_6",
+            "전체 알림 삭제 성공.");
 
     private final HttpStatus status;
     private final String code;
