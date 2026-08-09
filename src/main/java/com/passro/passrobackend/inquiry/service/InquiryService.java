@@ -21,6 +21,10 @@ public class InquiryService {
     public InquiryResponseDto createInquiry(Account account, InquiryCreateRequestDto request) {
         String imageKey = normalizeImageKey(request.getImageKey());
 
+        if (imageKey != null) {
+            s3Service.validateUploadedImage(imageKey);
+        }
+
         Inquiry inquiry = Inquiry.builder()
                 .account(account)
                 .category(request.getCategory())

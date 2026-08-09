@@ -32,6 +32,10 @@ public class DeliveryInquiryService {
 
         String imageKey = normalizeImageKey(request.getImageKey());
 
+        if (imageKey != null) {
+            s3Service.validateUploadedImage(imageKey);
+        }
+
         DeliveryInquiry inquiry = DeliveryInquiry.builder()
                 .delivery(delivery)
                 .account(account)
