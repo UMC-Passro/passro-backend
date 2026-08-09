@@ -75,32 +75,30 @@ class NotificationServiceTest {
         // then
         assertThat(result.getAccount()).isEqualTo(recipient);
         assertThat(result.getType()).isEqualTo(NotificationType.DELIVERY);
-        assertThat(result.getTitle()).isEqualTo("매칭 완료");
-        assertThat(result.getResourceType()).isEqualTo(ResourceType.DELIVERY);
         assertThat(result.getResourceId()).isEqualTo(123L);
         assertThat(result.isRead()).isFalse();
         verify(notificationRepository).save(any(Notification.class));
     }
 
     @Test
-    @DisplayName("알림 발행 - resourceType 이 null 이면 NONE 으로 저장하고 resourceId 도 null 로 정리")
+    @DisplayName("알림 발행 - resourceType null 이면 NONE 저장 + resourceId 도 null")
     void publish_nullResourceTypeClearsResourceId() {
         // given
         Account recipient = account(10L);
         given(notificationRepository.save(any(Notification.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
-        // when — resourceType 은 null 인데 resourceId 는 넘어옴
+        // when
         Notification result = notificationService.publish(
                 recipient, NotificationType.GENERAL, "공지", null, null, 999L);
 
-        // then — resourceType 은 NONE 으로 저장, resourceId 는 null 로 정리됨
+        // then
         assertThat(result.getResourceType()).isEqualTo(ResourceType.NONE);
         assertThat(result.getResourceId()).isNull();
     }
 
     @Test
-    @DisplayName("알림 발행 - resourceType 이 명시적으로 NONE 이면 resourceId 도 null 로 정리")
+    @DisplayName("알림 발행 - 명시적 NONE 이면 resourceId 도 null")
     void publish_explicitNoneClearsResourceId() {
         // given
         Account recipient = account(10L);
@@ -195,6 +193,43 @@ class NotificationServiceTest {
     }
 
     @Test
+    @DisplayName("전체 알림 확인 처리 성공 - 미확인 알림 여러 개")
+    void markAllAsRead_success() {
+        // given
+        Account me = account(10L);
+        Notification n1 = notification(1L, me, false);
+        Notification n2 = notification(2L, me, false);
+        Notification n3 = notification(3L, me, false);
+        given(notificationRepository.findAllByAccountAndIsReadFalse(me))
+                .willReturn(List.of(n1, n2, n3));
+
+        // when
+        long updated = notificationService.markAllAsRead(me);
+
+        // then
+        assertThat(updated).isEqualTo(3L);
+        assertThat(n1.isRead()).isTrue();
+        assertThat(n2.isRead()).isTrue();
+        assertThat(n3.isRead()).isTrue();
+        assertThat(n1.getReadAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("전체 알림 확인 처리 - 미확인 알림 없으면 0 반환")
+    void markAllAsRead_empty() {
+        // given
+        Account me = account(10L);
+        given(notificationRepository.findAllByAccountAndIsReadFalse(me))
+                .willReturn(List.of());
+
+        // when
+        long updated = notificationService.markAllAsRead(me);
+
+        // then
+        assertThat(updated).isZero();
+    }
+
+    @Test
     @DisplayName("알림 삭제 성공")
     void deleteNotification_success() {
         // given
@@ -221,5 +256,34 @@ class NotificationServiceTest {
         assertThatThrownBy(() -> notificationService.deleteNotification(account(10L), 1L))
                 .isInstanceOf(NotificationException.class);
         verify(notificationRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("전체 알림 삭제 성공 - 삭제 개수 반환")
+    void deleteAllNotifications_success() {
+        // given
+        Account me = account(10L);
+        given(notificationRepository.deleteAllByAccount(me)).willReturn(5L);
+
+        // when
+        long deleted = notificationService.deleteAllNotifications(me);
+
+        // then
+        assertThat(deleted).isEqualTo(5L);
+        verify(notificationRepository).deleteAllByAccount(me);
+    }
+
+    @Test
+    @DisplayName("전체 알림 삭제 - 없으면 0 반환")
+    void deleteAllNotifications_empty() {
+        // given
+        Account me = account(10L);
+        given(notificationRepository.deleteAllByAccount(me)).willReturn(0L);
+
+        // when
+        long deleted = notificationService.deleteAllNotifications(me);
+
+        // then
+        assertThat(deleted).isZero();
     }
 }

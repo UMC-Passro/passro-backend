@@ -16,6 +16,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
@@ -86,12 +88,30 @@ public class NotificationService {
     }
 
     /**
+     * 내 모든 미확인 알림을 확인 처리 (반환값 = 처리된 개수)
+     */
+    @Transactional
+    public long markAllAsRead(Account account) {
+        List<Notification> unread = notificationRepository.findAllByAccountAndIsReadFalse(account);
+        unread.forEach(Notification::markAsRead);
+        return unread.size();
+    }
+
+    /**
      * 개별 알림 삭제 (본인 알림만)
      */
     @Transactional
     public void deleteNotification(Account account, Long notificationId) {
         Notification notification = findOwnedNotification(account, notificationId);
         notificationRepository.delete(notification);
+    }
+
+    /**
+     * 내 모든 알림 삭제 (반환값 = 삭제된 개수)
+     */
+    @Transactional
+    public long deleteAllNotifications(Account account) {
+        return notificationRepository.deleteAllByAccount(account);
     }
 
     // 본인 소유 확인 헬퍼
