@@ -13,6 +13,9 @@ import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.file.service.S3Service;
+import com.passro.passrobackend.notification.enums.NotificationType;
+import com.passro.passrobackend.notification.enums.ResourceType;
+import com.passro.passrobackend.notification.service.NotificationService;
 import com.passro.passrobackend.shipper.dto.ShipperDeliveryDetailDto;
 import com.passro.passrobackend.shipper.dto.ShipperDeliveryListDto;
 import java.util.List;
@@ -31,6 +34,7 @@ public class ShipperService {
     private final AccountPlaceRepository accountPlaceRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final S3Service s3Service;
+    private final NotificationService notificationService;
 
     public List<Delivery> listAllByShipper(Account account, DeliveryState status) {
         return status == null
@@ -91,6 +95,11 @@ public class ShipperService {
         delivery.setStatus(DeliveryState.MATCHED);
         deliveryRepository.save(delivery);
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.MATCHED));
+        publishDeliveryNotification(
+                delivery.getSender(),
+                delivery,
+                "배송 매칭 완료",
+                "배송기사가 배정되었습니다.");
     }
 
     private void validateNotOwnDelivery(Delivery delivery, Account shipper) {
@@ -120,6 +129,11 @@ public class ShipperService {
         delivery.setStatus(DeliveryState.DELIVERING);
         deliveryRepository.save(delivery);
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.PICKED_UP, image));
+        publishDeliveryNotification(
+                delivery.getSender(),
+                delivery,
+                "물품 인수 완료",
+                "배송기사가 물품을 인수하여 배송을 시작했습니다.");
     }
 
     @Transactional
@@ -140,6 +154,11 @@ public class ShipperService {
         delivery.setStatus(DeliveryState.CONFIRM_REQUESTED);
         deliveryRepository.save(delivery);
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.DELIVERED, image));
+        publishDeliveryNotification(
+                delivery.getSender(),
+                delivery,
+                "배송 완료 확인 요청",
+                "배송기사가 배송을 완료했습니다. 물품을 확인해 주세요.");
     }
 
     private Delivery getDelivery(Long id) {
@@ -167,5 +186,19 @@ public class ShipperService {
 
     private String validateUploadedImage(String imageKey) {
         return s3Service.finalizeUploadedImage(imageKey, "delivery-images/");
+    }
+
+    private void publishDeliveryNotification(
+            Account recipient,
+            Delivery delivery,
+            String title,
+            String content) {
+        notificationService.publish(
+                recipient,
+                NotificationType.DELIVERY,
+                title,
+                content,
+                ResourceType.DELIVERY,
+                delivery.getId());
     }
 }

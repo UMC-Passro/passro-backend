@@ -15,6 +15,7 @@ import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryLogRepository;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
+import com.passro.passrobackend.notification.service.NotificationService;
 import com.passro.passrobackend.shipper.service.ShipperService;
 import com.passro.passrobackend.support.IntegrationTestSupport;
 import java.util.List;
@@ -39,6 +40,9 @@ class ShipperDeliveryIntegrationTest extends IntegrationTestSupport {
 
     @Autowired
     private PlaceRepository placeRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Test
     void shipperDeliveryDetailContainsCurrentStationFields() throws Exception {
@@ -254,6 +258,7 @@ class ShipperDeliveryIntegrationTest extends IntegrationTestSupport {
                         deliveryLogRepository.findAllByDeliveryOrderByCreatedAtAsc(persistedDelivery));
                 deliveryRepository.delete(persistedDelivery);
             }
+            notificationService.deleteAllNotifications(sender);
             accountRepository.deleteAllById(
                     List.of(sender.getId(), firstShipper.getId(), secondShipper.getId()));
         }
