@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,11 +20,15 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     // 특정 계정의 미확인 알림 수
     long countByAccountAndIsReadFalse(Account account);
 
-    // 특정 계정의 미확인 알림 목록 (전체 확인 처리용)
-    List<Notification> findAllByAccountAndIsReadFalse(Account account);
+    // 특정 계정의 미확인 알림을 모두 확인 처리 (bulk update, 반환값 = 처리된 개수)
+    @Modifying
+    @Query("update Notification n set n.isRead = true, n.readAt = :readAt " +
+            "where n.account = :account and n.isRead = false")
+    long markAllAsReadByAccount(@Param("account") Account account,
+                                @Param("readAt") LocalDateTime readAt);
 
     // 특정 계정의 알림 전체 삭제 (반환값 = 삭제된 개수)
     @Modifying
     @Query("delete from Notification n where n.account = :account")
-    long deleteAllByAccount(Account account);
+    long deleteAllByAccount(@Param("account") Account account);
 }

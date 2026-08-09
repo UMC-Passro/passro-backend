@@ -19,12 +19,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -193,25 +195,19 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("전체 알림 확인 처리 성공 - 미확인 알림 여러 개")
+    @DisplayName("전체 알림 확인 처리 성공 - bulk update, 처리 개수 반환")
     void markAllAsRead_success() {
         // given
         Account me = account(10L);
-        Notification n1 = notification(1L, me, false);
-        Notification n2 = notification(2L, me, false);
-        Notification n3 = notification(3L, me, false);
-        given(notificationRepository.findAllByAccountAndIsReadFalse(me))
-                .willReturn(List.of(n1, n2, n3));
+        given(notificationRepository.markAllAsReadByAccount(eq(me), any(LocalDateTime.class)))
+                .willReturn(3L);
 
         // when
         long updated = notificationService.markAllAsRead(me);
 
         // then
         assertThat(updated).isEqualTo(3L);
-        assertThat(n1.isRead()).isTrue();
-        assertThat(n2.isRead()).isTrue();
-        assertThat(n3.isRead()).isTrue();
-        assertThat(n1.getReadAt()).isNotNull();
+        verify(notificationRepository).markAllAsReadByAccount(eq(me), any(LocalDateTime.class));
     }
 
     @Test
@@ -219,8 +215,8 @@ class NotificationServiceTest {
     void markAllAsRead_empty() {
         // given
         Account me = account(10L);
-        given(notificationRepository.findAllByAccountAndIsReadFalse(me))
-                .willReturn(List.of());
+        given(notificationRepository.markAllAsReadByAccount(eq(me), any(LocalDateTime.class)))
+                .willReturn(0L);
 
         // when
         long updated = notificationService.markAllAsRead(me);
