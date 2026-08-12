@@ -6,6 +6,8 @@ import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.account.repository.AccountRepository;
 import com.passro.passrobackend.chat.dto.ChatMessageRequestDto;
 import com.passro.passrobackend.chat.dto.ChatMessageResponseDto;
+import com.passro.passrobackend.chat.dto.ChatMessageSendResponseDto;
+import com.passro.passrobackend.chat.dto.ChatRoomResponseDto;
 import com.passro.passrobackend.chat.dto.ChatRoomInfoResponseDto;
 import com.passro.passrobackend.chat.exception.ChatException;
 import com.passro.passrobackend.chat.exception.code.ChatErrorCode;
@@ -96,13 +98,17 @@ class ChatControllerTest {
     // @DisplayName("메시지 전송 - 200 반환 및 content 확인")
     void sendMessage_success() throws Exception {
         ChatMessageResponseDto dto = new ChatMessageResponseDto(1L, 1L, "내닉네임", "테스트 메시지", false, LocalDateTime.now());
-        given(chatService.sendMessage(eq(1L), any(), any())).willReturn(dto);
+        ChatMessageSendResponseDto response = new ChatMessageSendResponseDto(
+                dto.id(), dto.senderId(), dto.senderNickname(), dto.content(), dto.isRead(), dto.createdAt(),
+                new ChatRoomResponseDto(10L, 1L, LocalDateTime.now()));
+        given(chatService.sendMessage(eq(1L), any(), any())).willReturn(response);
 
         mockMvc.perform(post("/chat/1/messages")
                         .param("accountId", "1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ChatMessageRequestDto("테스트 메시지"))))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.chatRoom.id").value(10))
                 .andExpect(jsonPath("$.result.content").value("테스트 메시지"));
     }
 

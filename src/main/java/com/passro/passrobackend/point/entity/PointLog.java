@@ -45,8 +45,8 @@ public class PointLog extends BaseEntity {
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "delivery_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "delivery_id", nullable = true)
     private Delivery delivery;
 
     @ManyToOne(fetch = FetchType.LAZY)

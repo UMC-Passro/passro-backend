@@ -108,6 +108,27 @@ class S3ServiceTest {
     }
 
     @Test
+    void copyValidatedUploadToMarketImagesDirectoryAndDeleteTemporaryObject() {
+        given(s3Client.headObject(any(HeadObjectRequest.class)))
+                .willReturn(HeadObjectResponse.builder()
+                        .contentType("image/jpeg")
+                        .contentLength(4L)
+                        .build());
+        given(s3Client.getObjectAsBytes(any(GetObjectRequest.class)))
+                .willReturn(ResponseBytes.fromByteArray(
+                        GetObjectResponse.builder().build(),
+                        new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x00}));
+
+        String finalKey = s3Service.finalizeUploadedImage(JPEG_UPLOAD_KEY, "market-images/");
+
+        assertThat(finalKey)
+                .startsWith("market-images/")
+                .endsWith(".jpg");
+        verify(s3Client).copyObject(any(CopyObjectRequest.class));
+        verify(s3Client).deleteObject(any(DeleteObjectRequest.class));
+    }
+
+    @Test
     void rejectInvalidFinalDirectoryWhenFinalizingUploadedImage() {
         assertThatThrownBy(() -> s3Service.finalizeUploadedImage(JPEG_UPLOAD_KEY, "invalid-images/"))
                 .isInstanceOf(FileException.class)

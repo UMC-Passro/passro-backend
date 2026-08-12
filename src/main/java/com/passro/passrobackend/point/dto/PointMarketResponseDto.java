@@ -18,6 +18,8 @@ public class PointMarketResponseDto {
     private Long id;
     private String name;
     private Long price;
+    private String category;
+    private String imageKey;
 
     public static PointMarketResponseDto from(Market market) {
         if (market == null) {
@@ -27,6 +29,8 @@ public class PointMarketResponseDto {
                 .id(market.getId())
                 .name(market.getName())
                 .price(market.getPrice())
+                .category(market.categoryOrDefault().getLabel())
+                .imageKey(market.getImageKey())
                 .build();
     }
 }

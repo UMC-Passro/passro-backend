@@ -25,6 +25,9 @@ import com.passro.passrobackend.subway.dto.SubwayRouteResponseDto;
 import com.passro.passrobackend.subway.dto.SubwayStationResponseDto;
 import com.passro.passrobackend.subway.service.SubwayService;
 import com.passro.passrobackend.file.service.S3Service;
+import com.passro.passrobackend.notification.enums.NotificationType;
+import com.passro.passrobackend.notification.enums.ResourceType;
+import com.passro.passrobackend.notification.service.NotificationService;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
@@ -63,6 +66,9 @@ class SenderCommandServiceTest {
 
     @Mock
     private S3Service s3Service;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private SenderCommandService senderCommandService;
@@ -180,6 +186,13 @@ class SenderCommandServiceTest {
         // Then
         assertThat(delivery.getStatus()).isEqualTo(DeliveryState.DELIVERED);
         verify(pointService).settleDelivery(2L, delivery, 1700L);
+        verify(notificationService).publish(
+                shipper,
+                NotificationType.DELIVERY,
+                "배송 완료",
+                "발송자가 배송 완료를 승인했습니다.",
+                ResourceType.DELIVERY,
+                100L);
     }
 
     @Test

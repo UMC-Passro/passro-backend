@@ -60,6 +60,14 @@ public class NotificationController {
                 notificationService.markAsRead(account, id));
     }
 
+    @PatchMapping("/read-all")
+    @Operation(summary = "전체 알림 확인 처리", description = "로그인한 사용자의 미확인 알림을 모두 확인 상태로 변경합니다.")
+    public APIResponse<Long> markAllAsRead(
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
+        long updatedCount = notificationService.markAllAsRead(account);
+        return APIResponse.onSuccess(NotificationSuccessCode.READ_ALL_OK, updatedCount);
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "알림 삭제", description = "개별 알림을 삭제합니다.")
     public APIResponse<Void> deleteNotification(
@@ -67,6 +75,14 @@ public class NotificationController {
             @Parameter(description = "알림 ID", example = "1") @PathVariable Long id) {
         notificationService.deleteNotification(account, id);
         return APIResponse.onSuccess(NotificationSuccessCode.DELETED, null);
+    }
+
+    @DeleteMapping
+    @Operation(summary = "전체 알림 삭제", description = "로그인한 사용자의 모든 알림을 삭제합니다.")
+    public APIResponse<Long> deleteAllNotifications(
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account) {
+        long deletedCount = notificationService.deleteAllNotifications(account);
+        return APIResponse.onSuccess(NotificationSuccessCode.DELETED_ALL, deletedCount);
     }
 
     // 페이지네이션 요청 값 검증

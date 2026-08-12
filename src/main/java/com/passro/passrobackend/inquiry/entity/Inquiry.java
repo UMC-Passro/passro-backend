@@ -32,4 +32,8 @@ public class Inquiry extends BaseEntity {
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
+
+    // 첨부 이미지 S3 키 (사진 없으면 null)
+    @Column(length = 512)
+    private String imageKey;
 }

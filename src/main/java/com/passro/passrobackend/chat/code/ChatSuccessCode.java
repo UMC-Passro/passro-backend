@@ -15,7 +15,11 @@ public enum ChatSuccessCode implements BaseSuccessCode {
 
     CREATED(HttpStatus.CREATED,
             "CHAT201_1",
-            "메시지 전송 성공.");
+            "메시지 전송 성공."),
+
+    LEFT(HttpStatus.OK,
+            "CHAT200_2",
+            "채팅방 나가기 성공.");
 
     private final HttpStatus status;
     private final String code;

@@ -3,6 +3,7 @@ package com.passro.passrobackend.shipper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
@@ -10,6 +11,9 @@ import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
+import com.passro.passrobackend.notification.enums.NotificationType;
+import com.passro.passrobackend.notification.enums.ResourceType;
+import com.passro.passrobackend.notification.service.NotificationService;
 import com.passro.passrobackend.shipper.dto.ShipperDeliveryListDto;
 import com.passro.passrobackend.shipper.service.ShipperService;
 import java.time.LocalDateTime;
@@ -19,12 +23,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class ShipperServiceTest {
 
     @Mock
     private DeliveryRepository deliveryRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private ShipperService shipperService;
@@ -84,5 +95,77 @@ class ShipperServiceTest {
                 .isInstanceOf(DeliveryException.class)
                 .extracting("code")
                 .isEqualTo(DeliveryErrorCode.SELF_DELIVERY_NOT_ALLOWED);
+    }
+
+    @Test
+    void matchingPublishesNotificationToSender() {
+        Account sender = Account.builder().id(1L).build();
+        Account shipper = Account.builder().id(2L).build();
+        Delivery delivery = Delivery.builder()
+                .id(10L)
+                .sender(sender)
+                .status(DeliveryState.WAIT)
+                .terms(true)
+                .build();
+        given(deliveryRepository.findByIdForUpdate(10L)).willReturn(java.util.Optional.of(delivery));
+
+        shipperService.matchAccept(shipper, 10L);
+
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryState.MATCHED);
+        verify(notificationService).publish(
+                sender,
+                NotificationType.DELIVERY,
+                "배송 매칭 완료",
+                "배송기사가 배정되었습니다.",
+                ResourceType.DELIVERY,
+                10L);
+    }
+
+    @Test
+    void pickupPublishesNotificationToSender() {
+        Account sender = Account.builder().id(1L).build();
+        Account shipper = Account.builder().id(2L).build();
+        Delivery delivery = Delivery.builder()
+                .id(10L)
+                .sender(sender)
+                .shipper(shipper)
+                .status(DeliveryState.MATCHED)
+                .build();
+        given(deliveryRepository.findByIdForUpdate(10L)).willReturn(java.util.Optional.of(delivery));
+
+        shipperService.acquireAccept(shipper, 10L);
+
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryState.DELIVERING);
+        verify(notificationService).publish(
+                sender,
+                NotificationType.DELIVERY,
+                "물품 인수 완료",
+                "배송기사가 물품을 인수하여 배송을 시작했습니다.",
+                ResourceType.DELIVERY,
+                10L);
+    }
+
+    @Test
+    void deliveryConfirmationPublishesNotificationToSender() {
+        Account sender = Account.builder().id(1L).build();
+        Account shipper = Account.builder().id(2L).build();
+        Delivery delivery = Delivery.builder()
+                .id(10L)
+                .sender(sender)
+                .shipper(shipper)
+                .status(DeliveryState.DELIVERING)
+                .build();
+        given(deliveryRepository.findByIdForUpdate(10L)).willReturn(java.util.Optional.of(delivery));
+
+        shipperService.acquireConfirm(shipper, 10L);
+
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryState.CONFIRM_REQUESTED);
+        verify(notificationService).publish(
+                sender,
+                NotificationType.DELIVERY,
+                "배송 완료 확인 요청",
+                "배송기사가 배송을 완료했습니다. 물품을 확인해 주세요.",
+                ResourceType.DELIVERY,
+                10L);
     }
 }

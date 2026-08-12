@@ -16,6 +16,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
@@ -24,12 +26,6 @@ public class NotificationService {
 
     /**
      * 알림 발행 (다른 도메인 서비스가 호출)
-     * @param recipient 알림 수신자
-     * @param type 알림 종류
-     * @param title 알림 제목
-     * @param content 알림 내용 (nullable)
-     * @param resourceType 클릭 시 이동할 자원 종류 (null 이면 NONE 으로 저장)
-     * @param resourceId 자원 ID (resourceType 이 NONE 이면 null 로 저장하여 정합성 유지)
      */
     @Transactional
     public Notification publish(Account recipient,
@@ -40,7 +36,6 @@ public class NotificationService {
                                 Long resourceId) {
         ResourceType effectiveResourceType =
                 resourceType != null ? resourceType : ResourceType.NONE;
-        // NONE 이면 resourceId 도 null 로 강제 (자원 종류 없이 ID만 남는 상태 방지)
         Long effectiveResourceId =
                 effectiveResourceType == ResourceType.NONE ? null : resourceId;
 
@@ -56,9 +51,6 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
-    /**
-     * 내 알림 목록 조회 (최신순, 페이지네이션)
-     */
     @Transactional(readOnly = true)
     public Page<NotificationResponseDto> getMyNotifications(Account account, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
@@ -66,18 +58,12 @@ public class NotificationService {
                 .map(NotificationResponseDto::fromNotification);
     }
 
-    /**
-     * 미확인 알림 수
-     */
     @Transactional(readOnly = true)
     public UnreadCountResponseDto getUnreadCount(Account account) {
         long count = notificationRepository.countByAccountAndIsReadFalse(account);
         return UnreadCountResponseDto.builder().unreadCount(count).build();
     }
 
-    /**
-     * 개별 알림 확인 처리 (본인 알림만)
-     */
     @Transactional
     public NotificationResponseDto markAsRead(Account account, Long notificationId) {
         Notification notification = findOwnedNotification(account, notificationId);
@@ -86,12 +72,26 @@ public class NotificationService {
     }
 
     /**
-     * 개별 알림 삭제 (본인 알림만)
+     * 내 모든 미확인 알림을 확인 처리 (bulk update, 반환값 = 처리된 개수)
+     * 엔티티를 로드하지 않고 DB 레벨에서 한 번에 처리하여 메모리 사용량과 성능 최적화
      */
+    @Transactional
+    public long markAllAsRead(Account account) {
+        return notificationRepository.markAllAsReadByAccount(account, LocalDateTime.now());
+    }
+
     @Transactional
     public void deleteNotification(Account account, Long notificationId) {
         Notification notification = findOwnedNotification(account, notificationId);
         notificationRepository.delete(notification);
+    }
+
+    /**
+     * 내 모든 알림 삭제 (반환값 = 삭제된 개수)
+     */
+    @Transactional
+    public long deleteAllNotifications(Account account) {
+        return notificationRepository.deleteAllByAccount(account);
     }
 
     // 본인 소유 확인 헬퍼
