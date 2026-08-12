@@ -4,7 +4,6 @@ import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import jakarta.persistence.LockModeType;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Lock;
@@ -69,22 +68,6 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>
         WHERE d.sender = :sender
     """)
     List<Delivery> findAllBySender(@Param("sender") Account sender);
-
-
-    // 사용자가 참여 중인 활성 채팅방 목록 조회 (WAIT, CANCEL 제외)
-    @Query("""
-        SELECT d
-        FROM Delivery d
-        LEFT JOIN FETCH d.sender
-        LEFT JOIN FETCH d.shipper
-        LEFT JOIN FETCH d.deliveryGoodInfo
-        WHERE (d.sender = :account OR d.shipper = :account)
-        AND d.status NOT IN :excludedStatuses
-    """)
-    List<Delivery> findAllActiveChatRoomsByAccount(
-            @Param("account") Account account,
-            @Param("excludedStatuses") Collection<DeliveryState> excludedStatuses
-    );
 
     @Query("""
         SELECT d

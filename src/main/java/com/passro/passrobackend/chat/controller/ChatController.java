@@ -4,6 +4,7 @@ import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.chat.code.ChatSuccessCode;
 import com.passro.passrobackend.chat.dto.ChatMessageRequestDto;
 import com.passro.passrobackend.chat.dto.ChatMessageResponseDto;
+import com.passro.passrobackend.chat.dto.ChatMessageSendResponseDto;
 import com.passro.passrobackend.chat.dto.ChatRoomInfoResponseDto;
 import com.passro.passrobackend.chat.service.ChatService;
 import com.passro.passrobackend.global.response.APIResponse;
@@ -47,11 +48,11 @@ public class ChatController {
 
     @Operation(
             summary = "메시지 전송",
-            description = "메시지를 전송한다. 전송된 메시지는 isRead=false로 저장되며, 상대방이 메시지 조회 시 자동으로 읽음 처리된다."
+            description = "메시지를 전송합니다. 해당 deliveryId의 채팅방이 없으면 최초 전송 시 생성하며, 채팅방과 저장된 메시지를 함께 반환합니다."
     )
     @ApiResponse(responseCode = "200", description = "메시지 전송 성공", useReturnTypeSchema = true)
     @PostMapping("/messages")
-    public APIResponse<ChatMessageResponseDto> sendMessage(
+    public APIResponse<ChatMessageSendResponseDto> sendMessage(
             @PathVariable Long deliveryId,
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account,
             @Valid @RequestBody ChatMessageRequestDto request
@@ -82,5 +83,19 @@ public class ChatController {
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account
     ) {
         return APIResponse.onSuccess(ChatSuccessCode.OK, chatService.getUnreadCount(deliveryId, account));
+    }
+
+    @Operation(
+            summary = "채팅방 나가기",
+            description = "채팅방을 현재 사용자의 목록에서 제거합니다. 상대방의 채팅방과 기존 메시지는 유지되며, 나간 사용자는 해당 채팅방에 다시 접근하거나 메시지를 전송할 수 없습니다. 반복 요청도 성공합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "채팅방 나가기 성공", useReturnTypeSchema = true)
+    @DeleteMapping
+    public APIResponse<Void> leaveChatRoom(
+            @PathVariable Long deliveryId,
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "account") Account account
+    ) {
+        chatService.leaveChatRoom(deliveryId, account);
+        return APIResponse.onSuccess(ChatSuccessCode.LEFT, null);
     }
 }
