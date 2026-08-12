@@ -44,7 +44,7 @@ public class S3Service {
 	private static final Pattern UPLOAD_IMAGE_KEY_PATTERN = Pattern.compile(
 			"uploads/images/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|jpeg|png|webp)");
 	private static final Pattern FINAL_IMAGE_KEY_PATTERN = Pattern.compile(
-			"(delivery-images|report-images)/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|jpeg|png|webp)");
+			"(delivery-images|report-images|market-images)/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|jpeg|png|webp)");
 
 	private final S3Presigner s3Presigner;
 	private final S3Client s3Client;
@@ -132,7 +132,9 @@ public class S3Service {
 			throw new FileException(FileErrorCode.INVALID_FILE_NAME);
 		}
 		if (!StringUtils.hasText(finalDirectory)
-				|| !(finalDirectory.equals("delivery-images/") || finalDirectory.equals("report-images/"))) {
+				|| !(finalDirectory.equals("delivery-images/")
+				|| finalDirectory.equals("report-images/")
+				|| finalDirectory.equals("market-images/"))) {
 			throw new FileException(FileErrorCode.INVALID_FILE_NAME);
 		}
 
