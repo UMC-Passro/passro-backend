@@ -44,6 +44,8 @@ public class SubwayService {
     private static final String SOURCE_STATION_COLUMN = "출발역";
     private static final String TARGET_STATION_COLUMN = "도착역";
     private static final int DEFAULT_EDGE_COST = 1;
+    private static final double MAX_TRANSFER_DISTANCE_KILOMETERS = 0.5;
+    private static final double EARTH_RADIUS_KILOMETERS = 6371.0;
     private final PlaceRepository placeRepository;
     private final Map<String, SubwayNode> nodesByRouteAndStation = new LinkedHashMap<>();
     private final Map<Long, SubwayNode> nodesById = new HashMap<>();
@@ -279,16 +281,38 @@ public class SubwayService {
     private void connectTransferStations() {
         for (List<SubwayNode> stationNodes : nodesByTransferStation.values()) {
             for (int sourceIndex = 0; sourceIndex < stationNodes.size(); sourceIndex++) {
-                SubwayNode source = stationNodes.get(sourceIndex);
+                    SubwayNode source = stationNodes.get(sourceIndex);
                 for (int targetIndex = sourceIndex + 1; targetIndex < stationNodes.size(); targetIndex++) {
                     SubwayNode target = stationNodes.get(targetIndex);
-                    if (!source.getRoute().equals(target.getRoute())) {
+                    if (!source.getRoute().equals(target.getRoute())
+                            && isWithinTransferDistance(source, target)) {
                         connectBidirectionally(source, target, true, 3);
                         // 환승에 가중치 3 부여
                     }
                 }
             }
         }
+    }
+
+    private boolean isWithinTransferDistance(SubwayNode source, SubwayNode target) {
+        if (source.getLatitude() == null || source.getLongitude() == null
+                || target.getLatitude() == null || target.getLongitude() == null) {
+            return false;
+        }
+
+        double sourceLatitude = Math.toRadians(source.getLatitude().doubleValue());
+        double targetLatitude = Math.toRadians(target.getLatitude().doubleValue());
+        double latitudeDelta = targetLatitude - sourceLatitude;
+        double longitudeDelta = Math.toRadians(
+                target.getLongitude().subtract(source.getLongitude()).doubleValue());
+        double latitudeComponent = Math.sin(latitudeDelta / 2);
+        double longitudeComponent = Math.sin(longitudeDelta / 2);
+        double haversine = latitudeComponent * latitudeComponent
+                + Math.cos(sourceLatitude) * Math.cos(targetLatitude)
+                * longitudeComponent * longitudeComponent;
+        double distance = 2 * EARTH_RADIUS_KILOMETERS
+                * Math.asin(Math.sqrt(haversine));
+        return distance <= MAX_TRANSFER_DISTANCE_KILOMETERS;
     }
     private void connectBidirectionally(SubwayNode first, SubwayNode second, boolean crossroute) {
         addDirectedEdge(first, second, crossroute);
