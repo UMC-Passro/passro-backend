@@ -44,13 +44,31 @@ class PlaceServiceTest {
                 .subwayStationName("서울역")
                 .build();
         given(placeRepository.count()).willReturn(1L);
-        given(placeRepository.existsByLatitudeIsNullOrLongitudeIsNull()).willReturn(true);
         given(placeRepository.findAll()).willReturn(List.of(existingPlace));
 
         placeService.initialize();
 
         assertThat(existingPlace.getLatitude()).isEqualByComparingTo("37.55301784");
         assertThat(existingPlace.getLongitude()).isEqualByComparingTo("126.9697643");
+        then(placeRepository).should().saveAll(List.of(existingPlace));
+    }
+
+    @Test
+    void initializeCorrectsExistingCoordinatesThatDifferFromSubwayCsv() {
+        Place existingPlace = Place.builder()
+                .id(1L)
+                .subwayRouteName("9호선")
+                .subwayStationName("신반포")
+                .latitude(new BigDecimal("37.505933"))
+                .longitude(new BigDecimal("127.004044"))
+                .build();
+        given(placeRepository.count()).willReturn(1L);
+        given(placeRepository.findAll()).willReturn(List.of(existingPlace));
+
+        placeService.initialize();
+
+        assertThat(existingPlace.getLatitude()).isEqualByComparingTo("37.50358");
+        assertThat(existingPlace.getLongitude()).isEqualByComparingTo("126.99643");
         then(placeRepository).should().saveAll(List.of(existingPlace));
     }
 

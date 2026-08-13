@@ -24,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -77,6 +78,12 @@ public class AccountService {
         String phoneNumber = account.getPhoneNumber();
         SubwayStationResponseDto startPlace = SubwayStationResponseDto.from(accountPlace.getStartPlace());
         SubwayStationResponseDto destinationPlace = SubwayStationResponseDto.from(accountPlace.getDestinationPlace());
+        List<SubwayStationResponseDto> wayPoints = wayPointRepository
+                .findAllByAccountPlaceOrderByVisitOrderAsc(accountPlace)
+                .stream()
+                .map(WayPoint::getPlace)
+                .map(SubwayStationResponseDto::from)
+                .toList();
         Long deliveryCount = deliveryRepository.countByShipper(account);
         Long point = account.getPoint();
 
@@ -86,7 +93,7 @@ public class AccountService {
             rating = ratingDTO.getAverageRating();
 
         return new AccountResDTO.ShipperMyPage(
-                picture, nickname, name, birth, phoneNumber, startPlace, destinationPlace,
+                picture, nickname, name, birth, phoneNumber, startPlace, destinationPlace, wayPoints,
                 deliveryCount, point, account.getCreatedAt(), rating);
     }
 

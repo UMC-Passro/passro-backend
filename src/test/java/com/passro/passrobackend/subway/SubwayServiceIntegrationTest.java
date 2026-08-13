@@ -40,6 +40,13 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void sameNamedStationsFarApartAreNotConnectedAsTransfers() {
+        assertNoEdgeBetween(requiredNode("경의중앙", "양평"), requiredNode("5호선", "양평"));
+        assertNoEdgeBetween(requiredNode("부산 1호선", "좌천"), requiredNode("부산 동해", "좌천"));
+        assertNoEdgeBetween(requiredNode("경의중앙", "신촌"), requiredNode("2호선", "신촌"));
+    }
+
+    @Test
     void routeCanContinueThroughJeongjaTransfer() {
         SubwayNode bundangMigeum = requiredNode("수인분당", "미금(분당서울대병원)");
         SubwayNode bundangJeongja = requiredNode("수인분당", "정자");
@@ -456,6 +463,13 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
                 .filter(edge -> edge.getTarget().getId().equals(target.getId()))
                 .findFirst()
                 .orElseThrow();
+    }
+
+    private void assertNoEdgeBetween(SubwayNode source, SubwayNode target) {
+        assertThat(source.getEdges())
+                .noneMatch(edge -> edge.getTarget().getId().equals(target.getId()));
+        assertThat(target.getEdges())
+                .noneMatch(edge -> edge.getTarget().getId().equals(source.getId()));
     }
 
     private Set<String> adjacentStationNames(String routeName, String stationName) {

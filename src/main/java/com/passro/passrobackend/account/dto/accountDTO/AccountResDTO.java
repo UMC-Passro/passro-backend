@@ -7,6 +7,7 @@ import lombok.Getter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class AccountResDTO {
 
@@ -21,6 +22,7 @@ public class AccountResDTO {
         private String phoneNumber;
         private SubwayStationResponseDto startPlace;
         private SubwayStationResponseDto destinationPlace;
+        private List<SubwayStationResponseDto> wayPoints;
         private Long deliveryCount;
         private Long point;
         private LocalDateTime createdAt;

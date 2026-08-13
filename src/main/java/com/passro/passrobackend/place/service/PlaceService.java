@@ -36,10 +36,6 @@ public class PlaceService {
     @PostConstruct
     public void initialize() {
         long placeCount = placeRepository.count();
-        if (placeCount > 0 && !placeRepository.existsByLatitudeIsNullOrLongitudeIsNull()) {
-            return;
-        }
-
         List<Place> places = readSubwayPlaces();
         if (placeCount == 0) {
             placeRepository.saveAll(places);
@@ -47,7 +43,7 @@ public class PlaceService {
             return;
         }
 
-        updateMissingCoordinates(places);
+        synchronizeCoordinates(places);
     }
 
     public List<Place> searchByKeyword(String keyword) {
@@ -124,15 +120,16 @@ public class PlaceService {
         }
     }
 
-    private void updateMissingCoordinates(List<Place> parsedPlaces) {
+    private void synchronizeCoordinates(List<Place> parsedPlaces) {
         Map<String, Place> parsedPlaceByKey = new LinkedHashMap<>();
         for (Place place : parsedPlaces) {
             parsedPlaceByKey.put(placeKey(place), place);
         }
 
         List<Place> updatedPlaces = placeRepository.findAll().stream()
-                .filter(place -> place.getLatitude() == null || place.getLongitude() == null)
                 .filter(place -> parsedPlaceByKey.containsKey(placeKey(place)))
+                .filter(place -> hasDifferentCoordinates(
+                        place, parsedPlaceByKey.get(placeKey(place))))
                 .peek(place -> {
                     Place parsedPlace = parsedPlaceByKey.get(placeKey(place));
                     place.updateCoordinates(parsedPlace.getLatitude(), parsedPlace.getLongitude());
@@ -142,7 +139,14 @@ public class PlaceService {
         if (!updatedPlaces.isEmpty()) {
             placeRepository.saveAll(updatedPlaces);
         }
-        log.info("기존 지하철역 {}건의 위도·경도를 보완했습니다.", updatedPlaces.size());
+        log.info("기존 지하철역 {}건의 위도·경도를 동기화했습니다.", updatedPlaces.size());
+    }
+
+    private boolean hasDifferentCoordinates(Place existingPlace, Place parsedPlace) {
+        return existingPlace.getLatitude() == null
+                || existingPlace.getLongitude() == null
+                || existingPlace.getLatitude().compareTo(parsedPlace.getLatitude()) != 0
+                || existingPlace.getLongitude().compareTo(parsedPlace.getLongitude()) != 0;
     }
 
     private String placeKey(Place place) {
