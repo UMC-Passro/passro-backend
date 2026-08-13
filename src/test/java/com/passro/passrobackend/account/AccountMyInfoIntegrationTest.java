@@ -1,6 +1,7 @@
 package com.passro.passrobackend.account;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -8,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.account.entity.AccountPlace;
+import com.passro.passrobackend.account.entity.WayPoint;
 import com.passro.passrobackend.account.repository.AccountPlaceRepository;
 import com.passro.passrobackend.account.repository.WayPointRepository;
 import com.passro.passrobackend.place.entity.Place;
@@ -61,6 +63,26 @@ class AccountMyInfoIntegrationTest extends IntegrationTestSupport {
                 .destinationPlace(destinationPlace)
                 .build());
         return account;
+    }
+
+    @Test
+    void shipperMyPageReturnsSavedWayPointsForProfileEdit() throws Exception {
+        Account account = createAccountWithRoute("profile-waypoint");
+        AccountPlace accountPlace = accountPlaceRepository.findByAccount(account).orElseThrow();
+        wayPointRepository.saveAndFlush(WayPoint.builder()
+                .accountPlace(accountPlace)
+                .place(wayPointPlace)
+                .visitOrder(0)
+                .build());
+
+        mockMvc.perform(get("/mypage/shipper")
+                        .header("Authorization", bearer(accessToken(account))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.startPlace.id").value(startPlace.getId()))
+                .andExpect(jsonPath("$.result.destinationPlace.id").value(destinationPlace.getId()))
+                .andExpect(jsonPath("$.result.wayPoints[0].id").value(wayPointPlace.getId()))
+                .andExpect(jsonPath("$.result.wayPoints[0].routeName").value("2호선"))
+                .andExpect(jsonPath("$.result.wayPoints[0].stationName").value("선릉"));
     }
 
     @Test
