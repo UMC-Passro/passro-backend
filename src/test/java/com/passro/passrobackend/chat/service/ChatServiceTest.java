@@ -322,7 +322,7 @@ class ChatServiceTest {
         @DisplayName("polling 조회 결과가 비어있으면 읽음 처리하지 않음")
         void getMessagesAfter_doesNotMarkAsReadWhenNoNewMessages() {
             given(deliveryRepository.findById(1L)).willReturn(Optional.of(delivery));
-            given(chatMessageRepository.findAllResponseByDeliveryIdAndIdGreaterThanOrderByCreatedAtAsc(1L, 3L))
+            given(chatMessageRepository.findAllResponseByDeliveryIdAndIdGreaterThanOrderByIdAsc(1L, 3L))
                     .willReturn(List.of());
 
             chatService.getMessagesAfter(1L, 3L, sender);
@@ -341,7 +341,7 @@ class ChatServiceTest {
                     false,
                     LocalDateTime.now());
             given(deliveryRepository.findById(1L)).willReturn(Optional.of(delivery));
-            given(chatMessageRepository.findAllResponseByDeliveryIdAndIdGreaterThanOrderByCreatedAtAsc(1L, 3L))
+            given(chatMessageRepository.findAllResponseByDeliveryIdAndIdGreaterThanOrderByIdAsc(1L, 3L))
                     .willReturn(List.of(unreadPartnerMessage));
 
             List<ChatMessageResponseDto> result = chatService.getMessagesAfter(1L, 3L, sender);

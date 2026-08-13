@@ -56,7 +56,7 @@ public class ChatService {
     public List<ChatMessageResponseDto> getMessagesAfter(Long deliveryId, Long afterId, Account account) {
         getDeliveryAndValidateAccess(deliveryId, account);
         List<ChatMessageResponseDto> messages = chatMessageRepository
-                .findAllResponseByDeliveryIdAndIdGreaterThanOrderByCreatedAtAsc(deliveryId, afterId);
+                .findAllResponseByDeliveryIdAndIdGreaterThanOrderByIdAsc(deliveryId, afterId);
         if (hasUnreadPartnerMessage(messages, account.getId())) {
             chatMessageRepository.markAllAsRead(deliveryId, account.getId());
             return markPartnerMessagesAsRead(messages, account.getId());

@@ -46,9 +46,9 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             JOIN m.sender sender
             WHERE m.delivery.id = :deliveryId
               AND m.id > :afterId
-            ORDER BY m.createdAt ASC
+            ORDER BY m.id ASC
             """)
-    List<ChatMessageResponseDto> findAllResponseByDeliveryIdAndIdGreaterThanOrderByCreatedAtAsc(
+    List<ChatMessageResponseDto> findAllResponseByDeliveryIdAndIdGreaterThanOrderByIdAsc(
             @Param("deliveryId") Long deliveryId,
             @Param("afterId") Long afterId);
 
