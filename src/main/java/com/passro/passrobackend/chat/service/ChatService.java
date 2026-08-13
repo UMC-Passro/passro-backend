@@ -48,21 +48,20 @@ public class ChatService {
     public List<ChatMessageResponseDto> getMessages(Long deliveryId, Account account) {
         getDeliveryAndValidateAccess(deliveryId, account);
         chatMessageRepository.markAllAsRead(deliveryId, account.getId());
-        return chatMessageRepository.findAllByDelivery_IdOrderByCreatedAtAsc(deliveryId)
-                .stream()
-                .map(ChatMessageResponseDto::from)
-                .toList();
+        return chatMessageRepository.findAllResponseByDeliveryIdOrderByCreatedAtAsc(deliveryId);
     }
 
     // polling: lastMessageId 이후 새 메시지만 조회 — 조회 시 상대방 메시지 읽음 처리
     @Transactional
     public List<ChatMessageResponseDto> getMessagesAfter(Long deliveryId, Long afterId, Account account) {
         getDeliveryAndValidateAccess(deliveryId, account);
-        chatMessageRepository.markAllAsRead(deliveryId, account.getId());
-        return chatMessageRepository.findAllByDelivery_IdAndIdGreaterThanOrderByCreatedAtAsc(deliveryId, afterId)
-                .stream()
-                .map(ChatMessageResponseDto::from)
-                .toList();
+        List<ChatMessageResponseDto> messages = chatMessageRepository
+                .findAllResponseByDeliveryIdAndIdGreaterThanOrderByIdAsc(deliveryId, afterId);
+        if (hasUnreadPartnerMessage(messages, account.getId())) {
+            chatMessageRepository.markAllAsRead(deliveryId, account.getId());
+            return markPartnerMessagesAsRead(messages, account.getId());
+        }
+        return messages;
     }
 
     // 안읽은 메시지 수 조회
@@ -133,6 +132,28 @@ public class ChatService {
             return null;
         }
         return s3Service.getPresignedDownloadUrlString(imageKey);
+    }
+
+    private boolean hasUnreadPartnerMessage(List<ChatMessageResponseDto> messages, Long accountId) {
+        return messages.stream()
+                .anyMatch(message -> !message.senderId().equals(accountId) && !message.isRead());
+    }
+
+    private List<ChatMessageResponseDto> markPartnerMessagesAsRead(
+            List<ChatMessageResponseDto> messages,
+            Long accountId
+    ) {
+        return messages.stream()
+                .map(message -> message.senderId().equals(accountId) || message.isRead()
+                        ? message
+                        : new ChatMessageResponseDto(
+                                message.id(),
+                                message.senderId(),
+                                message.senderNickname(),
+                                message.content(),
+                                true,
+                                message.createdAt()))
+                .toList();
     }
 
     // 메시지 전송
