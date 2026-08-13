@@ -311,7 +311,7 @@ class ChatServiceTest {
         @DisplayName("전체 메시지 조회 시 상대방 메시지 읽음 처리 호출")
         void getMessages_marksAsRead() {
             given(deliveryRepository.findById(1L)).willReturn(Optional.of(delivery));
-            given(chatMessageRepository.findAllByDelivery_IdOrderByCreatedAtAsc(1L)).willReturn(List.of());
+            given(chatMessageRepository.findAllResponseByDeliveryIdOrderByCreatedAtAsc(1L)).willReturn(List.of());
 
             chatService.getMessages(1L, sender);
 
@@ -319,26 +319,50 @@ class ChatServiceTest {
         }
 
         @Test
-        @DisplayName("polling 조회 시 상대방 메시지 읽음 처리 호출")
-        void getMessagesAfter_marksAsRead() {
+        @DisplayName("polling 조회 결과가 비어있으면 읽음 처리하지 않음")
+        void getMessagesAfter_doesNotMarkAsReadWhenNoNewMessages() {
             given(deliveryRepository.findById(1L)).willReturn(Optional.of(delivery));
-            given(chatMessageRepository.findAllByDelivery_IdAndIdGreaterThanOrderByCreatedAtAsc(1L, 3L)).willReturn(List.of());
+            given(chatMessageRepository.findAllResponseByDeliveryIdAndIdGreaterThanOrderByCreatedAtAsc(1L, 3L))
+                    .willReturn(List.of());
 
             chatService.getMessagesAfter(1L, 3L, sender);
 
+            then(chatMessageRepository).should(never()).markAllAsRead(anyLong(), anyLong());
+        }
+
+        @Test
+        @DisplayName("polling 조회 결과에 상대방 unread 메시지가 있으면 읽음 처리 호출")
+        void getMessagesAfter_marksAsReadWhenUnreadPartnerMessageExists() {
+            ChatMessageResponseDto unreadPartnerMessage = new ChatMessageResponseDto(
+                    4L,
+                    shipper.getId(),
+                    "shipper닉네임",
+                    "새 메시지",
+                    false,
+                    LocalDateTime.now());
+            given(deliveryRepository.findById(1L)).willReturn(Optional.of(delivery));
+            given(chatMessageRepository.findAllResponseByDeliveryIdAndIdGreaterThanOrderByCreatedAtAsc(1L, 3L))
+                    .willReturn(List.of(unreadPartnerMessage));
+
+            List<ChatMessageResponseDto> result = chatService.getMessagesAfter(1L, 3L, sender);
+
             then(chatMessageRepository).should().markAllAsRead(1L, sender.getId());
+            assertThat(result.get(0).isRead()).isTrue();
         }
 
         @Test
         @DisplayName("전체 메시지 조회 결과 반환")
         void getMessages_returnsMappedDtos() {
-            ChatMessage message = mock(ChatMessage.class);
-            given(message.getId()).willReturn(1L);
-            given(message.getSender()).willReturn(sender);
-            given(message.getContent()).willReturn("안녕하세요");
+            ChatMessageResponseDto message = new ChatMessageResponseDto(
+                    1L,
+                    sender.getId(),
+                    "sender닉네임",
+                    "안녕하세요",
+                    false,
+                    LocalDateTime.now());
 
             given(deliveryRepository.findById(1L)).willReturn(Optional.of(delivery));
-            given(chatMessageRepository.findAllByDelivery_IdOrderByCreatedAtAsc(1L)).willReturn(List.of(message));
+            given(chatMessageRepository.findAllResponseByDeliveryIdOrderByCreatedAtAsc(1L)).willReturn(List.of(message));
 
             List<ChatMessageResponseDto> result = chatService.getMessages(1L, sender);
 
