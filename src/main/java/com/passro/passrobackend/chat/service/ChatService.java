@@ -152,7 +152,8 @@ public class ChatService {
                                 message.senderNickname(),
                                 message.content(),
                                 true,
-                                message.createdAt()))
+                                message.createdAt(),
+                                message.imageKey()))
                 .toList();
     }
 
@@ -169,10 +170,16 @@ public class ChatService {
                         .build()));
         validateNotLeft(chatRoom, account);
 
+        String imageKey = normalizeImageKey(request.imageKey());
+        if (imageKey != null) {
+            s3Service.validateUploadedImage(imageKey);
+        }
+
         ChatMessage message = ChatMessage.builder()
                 .delivery(delivery)
                 .sender(account)
                 .content(request.content())
+                .imageKey(imageKey)
                 .build();
 
         return ChatMessageSendResponseDto.of(chatRoom, chatMessageRepository.save(message));
@@ -213,5 +220,9 @@ public class ChatService {
         if (chatRoom.hasLeft(account.getId())) {
             throw new ChatException(ChatErrorCode.CHAT_ROOM_ALREADY_LEFT);
         }
+    }
+
+    private String normalizeImageKey(String imageKey) {
+        return imageKey == null || imageKey.isBlank() ? null : imageKey;
     }
 }

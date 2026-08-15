@@ -33,6 +33,9 @@ public class ChatMessage extends BaseEntity {
     @Column(nullable = false, length = 1000)
     private String content;
 
+    @Column(length = 500)
+    private String imageKey;
+
     @Column(nullable = false)
     private boolean isRead = false;
 

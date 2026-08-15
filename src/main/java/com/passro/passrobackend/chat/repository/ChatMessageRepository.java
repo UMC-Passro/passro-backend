@@ -23,7 +23,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
                 sender.nickname,
                 m.content,
                 m.isRead,
-                m.createdAt
+                m.createdAt,
+                m.imageKey
             )
             FROM ChatMessage m
             JOIN m.sender sender
@@ -40,7 +41,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
                 sender.nickname,
                 m.content,
                 m.isRead,
-                m.createdAt
+                m.createdAt,
+                m.imageKey
             )
             FROM ChatMessage m
             JOIN m.sender sender

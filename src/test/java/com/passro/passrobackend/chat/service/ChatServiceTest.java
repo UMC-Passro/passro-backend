@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -420,6 +421,30 @@ class ChatServiceTest {
             assertThat(result.chatRoom().id()).isEqualTo(10L);
             assertThat(result.content()).isEqualTo("두 번째 메시지");
             then(chatRoomRepository).should(never()).save(any());
+        }
+
+        @Test
+        @DisplayName("이미지 키가 있으면 업로드 검증 후 메시지에 저장")
+        void sendMessage_withImageKey_validatesAndSavesImageKey() {
+            String imageKey = "uploads/images/chat-image.png";
+            ChatRoom existingRoom = chatRoom(10L, delivery);
+            ChatMessage saved = mock(ChatMessage.class);
+            given(saved.getId()).willReturn(3L);
+            given(saved.getSender()).willReturn(sender);
+            given(saved.getContent()).willReturn("이미지 첨부");
+            given(saved.getImageKey()).willReturn(imageKey);
+            given(deliveryRepository.findByIdForUpdate(1L)).willReturn(Optional.of(delivery));
+            given(chatRoomRepository.findByDeliveryId(1L)).willReturn(Optional.of(existingRoom));
+            given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(saved);
+
+            ChatMessageSendResponseDto result = chatService.sendMessage(
+                    1L, new ChatMessageRequestDto("이미지 첨부", imageKey), sender);
+
+            ArgumentCaptor<ChatMessage> messageCaptor = ArgumentCaptor.forClass(ChatMessage.class);
+            then(s3Service).should().validateUploadedImage(imageKey);
+            then(chatMessageRepository).should().save(messageCaptor.capture());
+            assertThat(messageCaptor.getValue().getImageKey()).isEqualTo(imageKey);
+            assertThat(result.imageKey()).isEqualTo(imageKey);
         }
 
         @Test

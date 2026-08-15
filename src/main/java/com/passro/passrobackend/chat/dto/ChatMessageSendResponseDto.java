@@ -14,8 +14,22 @@ public record ChatMessageSendResponseDto(
         String content,
         boolean isRead,
         LocalDateTime createdAt,
+        @Schema(description = "첨부 이미지 S3 키", nullable = true)
+        String imageKey,
         ChatRoomResponseDto chatRoom
 ) {
+    public ChatMessageSendResponseDto(
+            Long id,
+            Long senderId,
+            String senderNickname,
+            String content,
+            boolean isRead,
+            LocalDateTime createdAt,
+            ChatRoomResponseDto chatRoom
+    ) {
+        this(id, senderId, senderNickname, content, isRead, createdAt, null, chatRoom);
+    }
+
     public static ChatMessageSendResponseDto of(ChatRoom chatRoom, ChatMessage message) {
         return new ChatMessageSendResponseDto(
                 message.getId(),
@@ -24,6 +38,7 @@ public record ChatMessageSendResponseDto(
                 message.getContent(),
                 message.isRead(),
                 message.getCreatedAt(),
+                message.getImageKey(),
                 ChatRoomResponseDto.from(chatRoom));
     }
 }

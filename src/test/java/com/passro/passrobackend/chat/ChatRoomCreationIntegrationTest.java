@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.chat.entity.ChatMessage;
 import com.passro.passrobackend.chat.repository.ChatMessageRepository;
 import com.passro.passrobackend.chat.repository.ChatRoomRepository;
 import com.passro.passrobackend.delivery.entity.Delivery;
@@ -74,6 +75,19 @@ class ChatRoomCreationIntegrationTest extends IntegrationTestSupport {
         assertThat(chatRoomRepository.findByDeliveryId(delivery.getId())).isPresent();
         assertThat(chatMessageRepository.findAllByDelivery_IdOrderByCreatedAtAsc(delivery.getId()))
                 .hasSize(2);
+
+        chatMessageRepository.saveAndFlush(ChatMessage.builder()
+                .delivery(delivery)
+                .sender(sender)
+                .content("이미지 첨부 메시지")
+                .imageKey("uploads/images/chat-image.png")
+                .build());
+
+        mockMvc.perform(get("/chat/{deliveryId}/messages", delivery.getId())
+                        .header("Authorization", bearer(shipperToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result[2].content").value("이미지 첨부 메시지"))
+                .andExpect(jsonPath("$.result[2].imageKey").value("uploads/images/chat-image.png"));
 
         mockMvc.perform(delete("/chat/{deliveryId}", delivery.getId())
                         .header("Authorization", bearer(token)))
