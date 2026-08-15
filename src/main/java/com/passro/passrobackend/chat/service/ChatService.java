@@ -185,6 +185,33 @@ public class ChatService {
         return ChatMessageSendResponseDto.of(chatRoom, chatMessageRepository.save(message));
     }
 
+    /**
+     * 배송 상태 변경 안내를 채팅방에 등록하고, 검증·확정된 이미지가 있으면 함께 첨부한다.
+     * 전달자가 채팅방을 나간 상태여도 발송자는 상태 변경 및 증빙 이미지를 확인할 수 있어야 하므로
+     * 사용자 채팅 전송의 퇴장 여부 검증은 적용하지 않는다.
+     */
+    @Transactional
+    public void sendDeliveryStatusMessage(
+            Delivery delivery,
+            Account sender,
+            String content,
+            String imageKey
+    ) {
+        validateAccess(delivery, sender);
+
+        chatRoomRepository.findByDeliveryId(delivery.getId())
+                .orElseGet(() -> chatRoomRepository.save(ChatRoom.builder()
+                        .delivery(delivery)
+                        .build()));
+
+        chatMessageRepository.save(ChatMessage.builder()
+                .delivery(delivery)
+                .sender(sender)
+                .content(content)
+                .imageKey(normalizeImageKey(imageKey))
+                .build());
+    }
+
     // 채팅방 나가기 — 상대방의 채팅방과 메시지는 유지하고 요청자에게만 숨김 처리
     @Transactional
     public void leaveChatRoom(Long deliveryId, Account account) {

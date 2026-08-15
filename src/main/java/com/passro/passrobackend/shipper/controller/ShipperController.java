@@ -126,7 +126,9 @@ public class ShipperController {
 
     @PatchMapping("/{deliveryId}/acquire")
     @ResponseBody
-    @Operation(summary = "물품 인수 처리", description = "물품을 인수하고 배송 상태를 배송 중으로 변경합니다.")
+    @Operation(
+            summary = "물품 인수 처리",
+            description = "물품을 인수하고 배송 상태를 배송 중으로 변경합니다. 해당 배송 채팅방에 상태 메시지가 자동 등록되며, 이미지가 있으면 함께 첨부됩니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "인수 처리 성공", useReturnTypeSchema = true,
                     content = @Content(examples = @ExampleObject(name = "SHIPPER200_1", summary = "물품 인수 처리 성공", value = SHIPPER_OK))),
@@ -144,7 +146,9 @@ public class ShipperController {
 
     @PatchMapping("/{deliveryId}/confirm")
     @ResponseBody
-    @Operation(summary = "배송 완료 확인 요청", description = "발송자에게 배송 완료 확인을 요청합니다.")
+    @Operation(
+            summary = "배송 완료 확인 요청",
+            description = "발송자에게 배송 완료 확인을 요청합니다. 해당 배송 채팅방에 상태 메시지가 자동 등록되며, 이미지가 있으면 함께 첨부됩니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "확인 요청 성공", useReturnTypeSchema = true,
                     content = @Content(examples = @ExampleObject(name = "SHIPPER200_1", summary = "배송 완료 확인 요청 성공", value = SHIPPER_OK))),

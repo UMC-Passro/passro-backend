@@ -3,6 +3,7 @@ package com.passro.passrobackend.shipper.service;
 import com.passro.passrobackend.account.entity.Account;
 import com.passro.passrobackend.account.entity.AccountPlace;
 import com.passro.passrobackend.account.repository.AccountPlaceRepository;
+import com.passro.passrobackend.chat.service.ChatService;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.entity.DeliveryLog;
 import com.passro.passrobackend.delivery.enums.DeliveryLogType;
@@ -35,6 +36,7 @@ public class ShipperService {
     private final ApplicationEventPublisher eventPublisher;
     private final S3Service s3Service;
     private final NotificationService notificationService;
+    private final ChatService chatService;
 
     public List<Delivery> listAllByShipper(Account account, DeliveryState status) {
         return status == null
@@ -129,6 +131,11 @@ public class ShipperService {
         delivery.setStatus(DeliveryState.DELIVERING);
         deliveryRepository.save(delivery);
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.PICKED_UP, image));
+        chatService.sendDeliveryStatusMessage(
+                delivery,
+                shipper,
+                "전달자가 물품을 인수했어요!",
+                image);
         publishDeliveryNotification(
                 delivery.getSender(),
                 delivery,
@@ -154,6 +161,11 @@ public class ShipperService {
         delivery.setStatus(DeliveryState.CONFIRM_REQUESTED);
         deliveryRepository.save(delivery);
         eventPublisher.publishEvent(new DeliveryLogEvent(delivery, DeliveryLogType.DELIVERED, image));
+        chatService.sendDeliveryStatusMessage(
+                delivery,
+                shipper,
+                "전달자가 물품 전달을 완료했어요!",
+                image);
         publishDeliveryNotification(
                 delivery.getSender(),
                 delivery,

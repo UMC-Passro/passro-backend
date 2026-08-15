@@ -461,6 +461,54 @@ class ChatServiceTest {
     }
 
     @Nested
+    @DisplayName("배송 상태 이미지 전송")
+    class SendDeliveryStatusMessage {
+
+        @Test
+        @DisplayName("채팅방이 없으면 생성하고 확정된 이미지 키로 메시지 저장")
+        void createsRoomAndSavesImageMessage() {
+            String imageKey = "delivery-images/pickup-final.png";
+            given(chatRoomRepository.findByDeliveryId(1L)).willReturn(Optional.empty());
+            given(chatRoomRepository.save(any(ChatRoom.class)))
+                    .willAnswer(invocation -> invocation.getArgument(0));
+
+            chatService.sendDeliveryStatusMessage(
+                    delivery,
+                    shipper,
+                    "전달자가 물품을 인수했어요!",
+                    imageKey);
+
+            ArgumentCaptor<ChatMessage> messageCaptor = ArgumentCaptor.forClass(ChatMessage.class);
+            then(chatRoomRepository).should().save(any(ChatRoom.class));
+            then(chatMessageRepository).should().save(messageCaptor.capture());
+            assertThat(messageCaptor.getValue().getDelivery()).isEqualTo(delivery);
+            assertThat(messageCaptor.getValue().getSender()).isEqualTo(shipper);
+            assertThat(messageCaptor.getValue().getContent()).isEqualTo("전달자가 물품을 인수했어요!");
+            assertThat(messageCaptor.getValue().getImageKey()).isEqualTo(imageKey);
+            then(s3Service).should(never()).validateUploadedImage(any());
+        }
+
+        @Test
+        @DisplayName("이미지가 없어도 상태 메시지 저장")
+        void savesStatusMessageWithoutImage() {
+            ChatRoom existingRoom = chatRoom(10L, delivery);
+            given(chatRoomRepository.findByDeliveryId(1L)).willReturn(Optional.of(existingRoom));
+
+            chatService.sendDeliveryStatusMessage(
+                    delivery,
+                    shipper,
+                    "전달자가 물품 전달을 완료했어요!",
+                    null);
+
+            ArgumentCaptor<ChatMessage> messageCaptor = ArgumentCaptor.forClass(ChatMessage.class);
+            then(chatMessageRepository).should().save(messageCaptor.capture());
+            assertThat(messageCaptor.getValue().getContent())
+                    .isEqualTo("전달자가 물품 전달을 완료했어요!");
+            assertThat(messageCaptor.getValue().getImageKey()).isNull();
+        }
+    }
+
+    @Nested
     @DisplayName("채팅방 나가기")
     class LeaveChatRoom {
 

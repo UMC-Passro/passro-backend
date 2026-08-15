@@ -6,11 +6,13 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.passro.passrobackend.account.entity.Account;
+import com.passro.passrobackend.chat.service.ChatService;
 import com.passro.passrobackend.delivery.entity.Delivery;
 import com.passro.passrobackend.delivery.enums.DeliveryState;
 import com.passro.passrobackend.delivery.exception.DeliveryException;
 import com.passro.passrobackend.delivery.exception.code.DeliveryErrorCode;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
+import com.passro.passrobackend.file.service.S3Service;
 import com.passro.passrobackend.notification.enums.NotificationType;
 import com.passro.passrobackend.notification.enums.ResourceType;
 import com.passro.passrobackend.notification.service.NotificationService;
@@ -36,6 +38,12 @@ class ShipperServiceTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private S3Service s3Service;
+
+    @Mock
+    private ChatService chatService;
 
     @InjectMocks
     private ShipperService shipperService;
@@ -143,6 +151,11 @@ class ShipperServiceTest {
                 "배송기사가 물품을 인수하여 배송을 시작했습니다.",
                 ResourceType.DELIVERY,
                 10L);
+        verify(chatService).sendDeliveryStatusMessage(
+                delivery,
+                shipper,
+                "전달자가 물품을 인수했어요!",
+                null);
     }
 
     @Test
@@ -167,5 +180,56 @@ class ShipperServiceTest {
                 "배송기사가 배송을 완료했습니다. 물품을 확인해 주세요.",
                 ResourceType.DELIVERY,
                 10L);
+        verify(chatService).sendDeliveryStatusMessage(
+                delivery,
+                shipper,
+                "전달자가 물품 전달을 완료했어요!",
+                null);
+    }
+
+    @Test
+    void pickupImageIsSentToDeliveryChatRoom() {
+        Account sender = Account.builder().id(1L).build();
+        Account shipper = Account.builder().id(2L).build();
+        Delivery delivery = Delivery.builder()
+                .id(10L)
+                .sender(sender)
+                .shipper(shipper)
+                .status(DeliveryState.MATCHED)
+                .build();
+        given(deliveryRepository.findByIdForUpdate(10L)).willReturn(java.util.Optional.of(delivery));
+        given(s3Service.finalizeUploadedImage("uploads/images/pickup.png", "delivery-images/"))
+                .willReturn("delivery-images/pickup-final.png");
+
+        shipperService.acquireAccept(shipper, 10L, "uploads/images/pickup.png");
+
+        verify(chatService).sendDeliveryStatusMessage(
+                delivery,
+                shipper,
+                "전달자가 물품을 인수했어요!",
+                "delivery-images/pickup-final.png");
+    }
+
+    @Test
+    void completionImageIsSentToDeliveryChatRoom() {
+        Account sender = Account.builder().id(1L).build();
+        Account shipper = Account.builder().id(2L).build();
+        Delivery delivery = Delivery.builder()
+                .id(10L)
+                .sender(sender)
+                .shipper(shipper)
+                .status(DeliveryState.DELIVERING)
+                .build();
+        given(deliveryRepository.findByIdForUpdate(10L)).willReturn(java.util.Optional.of(delivery));
+        given(s3Service.finalizeUploadedImage("uploads/images/complete.png", "delivery-images/"))
+                .willReturn("delivery-images/complete-final.png");
+
+        shipperService.acquireConfirm(shipper, 10L, "uploads/images/complete.png");
+
+        verify(chatService).sendDeliveryStatusMessage(
+                delivery,
+                shipper,
+                "전달자가 물품 전달을 완료했어요!",
+                "delivery-images/complete-final.png");
     }
 }
