@@ -1,5 +1,6 @@
 package com.passro.passrobackend.chat.repository;
 
+import com.passro.passrobackend.chat.dto.ChatMessageResponseDto;
 import com.passro.passrobackend.chat.entity.ChatMessage;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -14,6 +15,44 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     List<ChatMessage> findAllByDelivery_IdOrderByCreatedAtAsc(Long deliveryId);
 
     List<ChatMessage> findAllByDelivery_IdAndIdGreaterThanOrderByCreatedAtAsc(Long deliveryId, Long afterId);
+
+    @Query("""
+            SELECT new com.passro.passrobackend.chat.dto.ChatMessageResponseDto(
+                m.id,
+                sender.id,
+                sender.nickname,
+                m.content,
+                m.isRead,
+                m.createdAt,
+                m.imageKey
+            )
+            FROM ChatMessage m
+            JOIN m.sender sender
+            WHERE m.delivery.id = :deliveryId
+            ORDER BY m.createdAt ASC
+            """)
+    List<ChatMessageResponseDto> findAllResponseByDeliveryIdOrderByCreatedAtAsc(
+            @Param("deliveryId") Long deliveryId);
+
+    @Query("""
+            SELECT new com.passro.passrobackend.chat.dto.ChatMessageResponseDto(
+                m.id,
+                sender.id,
+                sender.nickname,
+                m.content,
+                m.isRead,
+                m.createdAt,
+                m.imageKey
+            )
+            FROM ChatMessage m
+            JOIN m.sender sender
+            WHERE m.delivery.id = :deliveryId
+              AND m.id > :afterId
+            ORDER BY m.id ASC
+            """)
+    List<ChatMessageResponseDto> findAllResponseByDeliveryIdAndIdGreaterThanOrderByIdAsc(
+            @Param("deliveryId") Long deliveryId,
+            @Param("afterId") Long afterId);
 
     // 상대방이 보낸 안읽은 메시지를 일괄 읽음 처리
     @Modifying

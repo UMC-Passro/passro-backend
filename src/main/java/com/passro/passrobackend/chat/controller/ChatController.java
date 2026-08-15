@@ -48,7 +48,8 @@ public class ChatController {
 
     @Operation(
             summary = "메시지 전송",
-            description = "메시지를 전송합니다. 해당 deliveryId의 채팅방이 없으면 최초 전송 시 생성하며, 채팅방과 저장된 메시지를 함께 반환합니다."
+            description = "메시지를 전송합니다. imageKey는 선택값이며, POST /file/image/upload-url로 먼저 업로드한 이미지 키를 전달합니다. " +
+                    "해당 deliveryId의 채팅방이 없으면 최초 전송 시 생성하며, 채팅방과 저장된 메시지를 함께 반환합니다."
     )
     @ApiResponse(responseCode = "200", description = "메시지 전송 성공", useReturnTypeSchema = true)
     @PostMapping("/messages")
