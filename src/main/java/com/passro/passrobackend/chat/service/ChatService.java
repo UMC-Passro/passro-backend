@@ -153,7 +153,8 @@ public class ChatService {
                                 message.content(),
                                 true,
                                 message.createdAt(),
-                                message.imageKey()))
+                                message.imageKey(),
+                                message.systemMessage()))
                 .toList();
     }
 
@@ -180,6 +181,7 @@ public class ChatService {
                 .sender(account)
                 .content(request.content())
                 .imageKey(imageKey)
+                .systemMessage(false)
                 .build();
 
         return ChatMessageSendResponseDto.of(chatRoom, chatMessageRepository.save(message));
@@ -209,6 +211,7 @@ public class ChatService {
                 .sender(sender)
                 .content(content)
                 .imageKey(normalizeImageKey(imageKey))
+                .systemMessage(true)
                 .build());
     }
 

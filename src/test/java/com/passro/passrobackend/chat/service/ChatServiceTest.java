@@ -400,7 +400,9 @@ class ChatServiceTest {
             assertThat(result.chatRoom().deliveryId()).isEqualTo(1L);
             assertThat(result.content()).isEqualTo("테스트 메시지");
             then(chatRoomRepository).should().save(any(ChatRoom.class));
-            then(chatMessageRepository).should().save(any(ChatMessage.class));
+            ArgumentCaptor<ChatMessage> messageCaptor = ArgumentCaptor.forClass(ChatMessage.class);
+            then(chatMessageRepository).should().save(messageCaptor.capture());
+            assertThat(messageCaptor.getValue().isSystemMessage()).isFalse();
         }
 
         @Test
@@ -485,6 +487,7 @@ class ChatServiceTest {
             assertThat(messageCaptor.getValue().getSender()).isEqualTo(shipper);
             assertThat(messageCaptor.getValue().getContent()).isEqualTo("전달자가 물품을 인수했어요!");
             assertThat(messageCaptor.getValue().getImageKey()).isEqualTo(imageKey);
+            assertThat(messageCaptor.getValue().isSystemMessage()).isTrue();
             then(s3Service).should(never()).validateUploadedImage(any());
         }
 
@@ -505,6 +508,7 @@ class ChatServiceTest {
             assertThat(messageCaptor.getValue().getContent())
                     .isEqualTo("전달자가 물품 전달을 완료했어요!");
             assertThat(messageCaptor.getValue().getImageKey()).isNull();
+            assertThat(messageCaptor.getValue().isSystemMessage()).isTrue();
         }
     }
 

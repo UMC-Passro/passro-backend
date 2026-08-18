@@ -36,6 +36,10 @@ public class ChatMessage extends BaseEntity {
     @Column(length = 500)
     private String imageKey;
 
+    @Builder.Default
+    @Column(name = "system_message", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean systemMessage = false;
+
     @Column(nullable = false)
     private boolean isRead = false;
 

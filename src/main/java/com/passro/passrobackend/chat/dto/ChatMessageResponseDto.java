@@ -14,7 +14,9 @@ public record ChatMessageResponseDto(
         boolean isRead,
         LocalDateTime createdAt,
         @Schema(description = "첨부 이미지 S3 키", nullable = true)
-        String imageKey
+        String imageKey,
+        @Schema(description = "시스템 메시지 여부", example = "false")
+        boolean systemMessage
 ) {
     public ChatMessageResponseDto(
             Long id,
@@ -24,7 +26,19 @@ public record ChatMessageResponseDto(
             boolean isRead,
             LocalDateTime createdAt
     ) {
-        this(id, senderId, senderNickname, content, isRead, createdAt, null);
+        this(id, senderId, senderNickname, content, isRead, createdAt, null, false);
+    }
+
+    public ChatMessageResponseDto(
+            Long id,
+            Long senderId,
+            String senderNickname,
+            String content,
+            boolean isRead,
+            LocalDateTime createdAt,
+            String imageKey
+    ) {
+        this(id, senderId, senderNickname, content, isRead, createdAt, imageKey, false);
     }
 
     public static ChatMessageResponseDto from(ChatMessage message) {
@@ -35,7 +49,8 @@ public record ChatMessageResponseDto(
                 message.getContent(),
                 message.isRead(),
                 message.getCreatedAt(),
-                message.getImageKey()
+                message.getImageKey(),
+                message.isSystemMessage()
         );
     }
 }

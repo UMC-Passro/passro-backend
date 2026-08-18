@@ -51,6 +51,7 @@ class ChatRoomCreationIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.code").value("CHAT201_1"))
                 .andExpect(jsonPath("$.result.chatRoom.deliveryId").value(delivery.getId()))
                 .andExpect(jsonPath("$.result.content").value("첫 메시지"))
+                .andExpect(jsonPath("$.result.systemMessage").value(false))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -79,15 +80,17 @@ class ChatRoomCreationIntegrationTest extends IntegrationTestSupport {
         chatMessageRepository.saveAndFlush(ChatMessage.builder()
                 .delivery(delivery)
                 .sender(sender)
-                .content("이미지 첨부 메시지")
+                .content("시스템 이미지 메시지")
                 .imageKey("uploads/images/chat-image.png")
+                .systemMessage(true)
                 .build());
 
         mockMvc.perform(get("/chat/{deliveryId}/messages", delivery.getId())
                         .header("Authorization", bearer(shipperToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result[2].content").value("이미지 첨부 메시지"))
-                .andExpect(jsonPath("$.result[2].imageKey").value("uploads/images/chat-image.png"));
+                .andExpect(jsonPath("$.result[2].content").value("시스템 이미지 메시지"))
+                .andExpect(jsonPath("$.result[2].imageKey").value("uploads/images/chat-image.png"))
+                .andExpect(jsonPath("$.result[2].systemMessage").value(true));
 
         mockMvc.perform(delete("/chat/{deliveryId}", delivery.getId())
                         .header("Authorization", bearer(token)))
