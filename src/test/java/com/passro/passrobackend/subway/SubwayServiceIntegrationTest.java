@@ -367,6 +367,27 @@ class SubwayServiceIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void gtxAConnectsOperationalSegmentsButKeepsSuseoAndSeoulDisconnected() {
+        assertThat(adjacentStationNames("GTX-A", "동탄"))
+                .containsExactly("구성");
+        assertThat(adjacentStationNames("GTX-A", "구성"))
+                .containsExactlyInAnyOrder("동탄", "성남");
+        assertThat(adjacentStationNames("GTX-A", "성남"))
+                .containsExactlyInAnyOrder("구성", "수서");
+        assertThat(adjacentStationNames("GTX-A", "수서"))
+                .containsExactly("성남");
+
+        assertNoEdgeBetween(
+                requiredNode("GTX-A", "수서"),
+                requiredNode("GTX-A", "서울역"));
+
+        assertThat(adjacentStationNames("GTX-A", "서울역"))
+                .containsExactly("연신내");
+        assertThat(adjacentStationNames("GTX-A", "운정중앙"))
+                .containsExactly("킨텍스");
+    }
+
+    @Test
     void everyCorrectedBranchingRouteRemainsConnected() {
         assertSameRouteConnected("1호선");
         assertSameRouteConnected("2호선");
