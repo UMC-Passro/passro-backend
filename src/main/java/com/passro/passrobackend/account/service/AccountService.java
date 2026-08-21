@@ -12,6 +12,7 @@ import com.passro.passrobackend.account.repository.AccountRepository;
 import com.passro.passrobackend.account.repository.WayPointRepository;
 import com.passro.passrobackend.delivery.repository.DeliveryRepository;
 import com.passro.passrobackend.file.service.S3Service;
+import com.passro.passrobackend.notification.service.NotificationService;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
 import com.passro.passrobackend.review.dto.ReviewAverageResponseDto;

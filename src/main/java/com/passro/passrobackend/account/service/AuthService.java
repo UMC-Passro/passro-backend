@@ -13,6 +13,9 @@ import com.passro.passrobackend.account.repository.AccountRepository;
 import com.passro.passrobackend.account.repository.WayPointRepository;
 import com.passro.passrobackend.global.jwt.JwtProperties;
 import com.passro.passrobackend.global.jwt.JwtProvider;
+import com.passro.passrobackend.notification.enums.NotificationType;
+import com.passro.passrobackend.notification.enums.ResourceType;
+import com.passro.passrobackend.notification.service.NotificationService;
 import com.passro.passrobackend.place.entity.Place;
 import com.passro.passrobackend.place.repository.PlaceRepository;
 import jakarta.transaction.Transactional;
@@ -32,6 +35,7 @@ import java.util.List;
 public class AuthService {
 
     private final AsyncMailService asyncMailService;
+    private final NotificationService notificationService;
 
     private final AccountRepository accountRepository;
     private final AccountPlaceRepository accountPlaceRepository;
@@ -88,7 +92,7 @@ public class AuthService {
                 .phoneNumber(dto.getPhoneNumber())
                 .birth(dto.getBirth())
                 .certified(false)
-                .point(0L)
+                .point(10000L)
                 .picture(dto.getPicture())
                 .role(AccountRole.USER)
                 .build());
@@ -101,6 +105,7 @@ public class AuthService {
 
         saveWayPoints(dto.getWayPoints(), accountPlace);
 
+        notificationService.publish(account, NotificationType.GENERAL, "회원가입을 환영합니다!", "10,000포인트가 지급되었습니다", ResourceType.NONE, null);
 
         stringRedisTemplate.delete(VERIFIED_PREFIX + dto.getMail());
         stringRedisTemplate.delete(RESEND_COOLDOWN_PREFIX + dto.getMail());
